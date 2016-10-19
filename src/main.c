@@ -11,9 +11,9 @@
  * Plan is as following:
  *  1. Upon init allocate big chunk of memory and divide it into the from_space and to_space ptrs	OK
  *  2. Initialize one big block on from_space								OK
- *  3. Upon gc_malloc call reduce the required size from the chunk and offset the big block ptr		OK
- *  4. Implementing mark_from_chunk which marks blocks in heap from a memory chunk                      OK
- *  5. Implementing gc_mark which proceeds mark phase
+ *  3. Upon gc_malloc call reduce the required size from the chunk and offset the big block ptr		TODO add collection phase
+ *  4. Implementing mark_from_chunk which marks blocks in heap from a memory chunk                OK
+ *  5. Implementing gc_mark which proceeds mark phase                                             TODO check marking from stack && BSS
  *  6. Implementing gc_copy which copies semispaces
  *  7. Implementing gc_collect which calls gc_mark, gc_copy and swiches semispaces
  *  - not yet solving problem of using up all memory

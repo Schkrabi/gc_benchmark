@@ -168,7 +168,9 @@ block_t *split_block(block_t **src, size_t size)
 int gc_init()
 {
     void *chunk;
+#ifdef __gnu_linux__
     extern char __bss_start; // Provided by the linker.
+#endif    
 
     chunk = get_memory_primitive(2*SEMISPACE_SIZE);
     if(chunk == NULL)
@@ -186,7 +188,8 @@ int gc_init()
         return 3;
     }
     remaining_block = from_space;
-    
+
+#ifdef __gnu_linux__    
     stack_bottom = get_stack_bottom();
     
     BBSstart = (void*)&__bss_start;
@@ -197,6 +200,11 @@ int gc_init()
         fprintf(stderr, "Unable to init BBSend\n");
         return 4;
     }
+#else
+    BBSstart = NULL;
+    BBSend = NULL;
+    stack_bottom = NULL;
+#endif    
     
     return 0;
 }
@@ -388,4 +396,15 @@ int gc_mark()
     
     //Mark from BSS
     mark_from_chunk(BBSstart, BBSend);
+}
+
+/**
+ * Carries out the "sweep" part of the algorithm
+ * @par src space from which data will be copied (from_space)
+ * @par dst space to which memory blocks will be evacuated (to_space)
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_copy(block_t *src, block_t *dst)
+{
+  
 }

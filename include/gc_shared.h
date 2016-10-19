@@ -198,7 +198,23 @@ extern void *BBSstart;
  */
 extern void *BBSend;
 
+/**
+ * Macro for filling the stack_top variable with proper value
+ * @remark Currently working only oon GNU Linux 
+ */
+#ifdef __gnu_linux__
 #define REFRESH_STACK_TOP asm volatile ("mov %%rbp, %0" : "=r" (stack_top));
+#else
+#define REFRESH_STACK_TOP
+#endif
+
+/**
+ * Carries out the "sweep" part of the algorithm
+ * @par src space from which data will be copied (from_space)
+ * @par dst space to which memory blocks will be evacuated (to_space)
+ * @return 0 if everything went well, error code otherwise
+ */
+ int gc_copy(block_t *src, block_t *dst);
 
 #endif
 
