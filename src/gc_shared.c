@@ -4,6 +4,7 @@
  * This file contains implementation of shared variables and functions from gc_shared.h
  */
 #include "gc_shared.h"
+#include <stdlib.h>
 
 #define DEBUG
 
@@ -21,6 +22,11 @@ block_t *to_space;
  * Block containing remaining memory in active semispace
  */
 block_t *remaining_block;
+
+/**
+ * Ptr to the remaining portion fo to space during copy phase
+ */
+block_t *remaining_to_space;
 
 void *stack_top;
 void *stack_bottom;
@@ -59,7 +65,11 @@ unsigned is_marked(block_t *block)
 void *get_memory_primitive(size_t size)
 {
     //Primitive call, should be a system call but not important now
+#ifndef DEBUG
     return malloc(size);
+#else
+    return calloc(size, 1);
+#endif
 }
 
 /**
@@ -157,6 +167,7 @@ block_t *split_block(block_t **src, size_t size)
     *src = init_block_from_chunk(ptr, (*src)->size - aligned_size);
     split->size = aligned_size;
     split->marked = 0;
+    split->forward = NULL;
     
     return split;	
 }
@@ -190,7 +201,7 @@ int gc_init()
     remaining_block = from_space;
 
 #ifdef __gnu_linux__    
-    stack_bottom = get_stack_bottom();
+    //stack_bottom = get_stack_bottom();
     
     BBSstart = (void*)&__bss_start;
     
@@ -268,13 +279,10 @@ int mark_from_chunk(void *start, void *end)
     {
         ptr = *it;
 #ifdef DEBUG
-        printf("scanning ptr: %p\n", ptr);
-#endif     
+        if(ptr != NULL) printf("Scanning ptr %p\n", ptr);
+#endif
         for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
         {
-#ifdef DEBUG
-            printf("scanning in block %p - %p\n", block, next_block(block));
-#endif
             if(is_pointer_to(block, ptr))
             {
 #ifdef DEBUG
@@ -376,6 +384,8 @@ void *get_stack_bottom()
     return bottom;
 }
 
+#define BBS_IGNORE
+
 /**
  * Carries out memory marking phase of Garbage Collector
  * @return 0 if everything went well, otherwise error code
@@ -385,17 +395,61 @@ int gc_mark()
     block_t *block;
     
     //Mark from heap
-    for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
-    {
-        mark_from_chunk(get_data_start(block), get_data_end(block));
-    }
+    //for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
+    //{
+    //    mark_from_chunk(get_data_start(block), get_data_end(block));
+    //}
     
     //Mark from stack
     REFRESH_STACK_TOP
-    mark_from_chunk(stack_bottom, stack_top);
+    mark_from_chunk(stack_top, stack_bottom);
     
+#ifndef BBS_IGNORE
     //Mark from BSS
     mark_from_chunk(BBSstart, BBSend);
+#endif
+}
+
+void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
+{
+    long unsigned int ptr_ul, src_ul, dst_ul;
+    ptr_ul = (long unsigned int) ptr;
+    src_ul = (long unsigned int) src;
+    dst_ul = (long unsigned int) dst;
+    
+    return (void*)(dst_ul + (ptr_ul - src_ul));
+}
+
+int gc_copy_chunk(void *start, void *end)
+{
+    void **i;
+    
+    for(i = start; i < end; i++)
+    {
+        void    *ptr;
+        block_t *block;
+        ptr = *i;
+        for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
+        {
+            if(is_pointer_to(block, ptr))
+            {
+                if(block->forward == NULL)
+                {
+                    block_t *dst;
+                    dst = split_block(&remaining_to_space, block->size);
+                    block->forward = dst;
+                    memcpy(get_data_start(dst), get_data_start(block), block->size);
+                    gc_copy_chunk(get_data_start(dst), get_data_end(dst));
+                }
+                else
+                {
+                    *i = get_forwarding_addr(ptr, block, (block_t*)block->forward);
+                }
+            }
+        }
+        
+    }
+    return 0;
 }
 
 /**
@@ -404,7 +458,22 @@ int gc_mark()
  * @par dst space to which memory blocks will be evacuated (to_space)
  * @return 0 if everything went well, error code otherwise
  */
-int gc_copy(block_t *src, block_t *dst)
+int gc_collect()
 {
-  
+    REFRESH_STACK_TOP
+    remaining_to_space = to_space;
+    gc_copy_chunk(stack_top, stack_bottom);
+    gc_swich_semispaces();
+    return 0;
 }
+
+int gc_swich_semispaces()
+{
+    block_t *tmp;
+    tmp = to_space;
+    to_space = from_space;
+    from_space = tmp;
+    remaining_block = remaining_to_space;
+    remaining_to_space = to_space;
+}
+

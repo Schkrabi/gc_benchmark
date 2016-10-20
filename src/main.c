@@ -24,7 +24,10 @@
 
 #define TEST_SIZE 3
 
-int main(int argc, char *argv[])
+/**
+ * Main executed function
+ */
+int sub_main(int argc, char *argv[])
 {
     int err_msg, i;
     void **parray;
@@ -45,7 +48,9 @@ int main(int argc, char *argv[])
         parray[i] = gc_malloc(sizeof(int));
     }
     
-    gc_mark();
+    not_marked = NULL;
+    
+    gc_collect();
     
     for(i = 0; i < TEST_SIZE; i++)
     {
@@ -58,7 +63,19 @@ int main(int argc, char *argv[])
         printf("block %p, size %u, marked %d\n", block, block->size, block->marked);
     }
 
-    printf("\n");    
+    printf("\n");  
+    printf("%p\n", not_marked);
+}
+
+/**
+ * Main entrypoint Garbage collector initial setup
+ */
+int main(int argc, char *argv[])
+{
+    SET_STACK_BOTTOM
+    gc_init();
+    
+    sub_main(argc, argv);
 
     return 0;
 }

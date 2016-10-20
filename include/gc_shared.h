@@ -23,6 +23,10 @@ typedef struct
 {
     size_t size;
     unsigned marked; //Wasting space, but should not be important for this implementation
+    /**
+     * Forwarding address for copying algorthm
+     */
+    void *forward;
 } block_t;
 
 /**
@@ -209,12 +213,26 @@ extern void *BBSend;
 #endif
 
 /**
+ * Save current stack pointer as stack bottom
+ * @remark Currently only for GNU Linux
+ */ 
+#ifdef __gnu_linux__
+#define SET_STACK_BOTTOM asm volatile ("mov %%rbp, %0" : "=r" (stack_bottom));
+#else
+#define SAVE_STACK_BOTTOM
+#endif
+
+/**
  * Carries out the "sweep" part of the algorithm
  * @par src space from which data will be copied (from_space)
  * @par dst space to which memory blocks will be evacuated (to_space)
  * @return 0 if everything went well, error code otherwise
  */
- int gc_copy(block_t *src, block_t *dst);
+ int gc_collect();
+ 
+ void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst);
+ int gc_copy_chunk(void *start, void *end);
+ int gc_swich_semispaces();
 
 #endif
 
