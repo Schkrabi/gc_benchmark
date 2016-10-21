@@ -6,21 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gc_shared.h"
-
-/*
- * Plan is as following:
- *  1. Upon init allocate big chunk of memory and divide it into the from_space and to_space ptrs	OK
- *  2. Initialize one big block on from_space								OK
- *  3. Upon gc_malloc call reduce the required size from the chunk and offset the big block ptr		TODO add collection phase
- *  4. Implementing mark_from_chunk which marks blocks in heap from a memory chunk                OK
- *  5. Implementing gc_mark which proceeds mark phase                                             TODO check marking from stack && BSS
- *  6. Implementing gc_copy which copies semispaces
- *  7. Implementing gc_collect which calls gc_mark, gc_copy and swiches semispaces
- *  - not yet solving problem of using up all memory
- *  - ignoring static pointers in roots
- *  - allocating in advance, do not take into account programs that do not allocate at all
- *  - iterating throught the heap via size, ie calling next_block until complete size overflows
- */
+#include "gc_cheney.h"
 
 #define TEST_SIZE 3
 
@@ -60,11 +46,13 @@ int sub_main(int argc, char *argv[])
     printf("Dumping all active memory blocks\n");
     for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
     {
-        printf("block %p, size %u, marked %d\n", block, block->size, block->marked);
+        printf("block %p, size %u\n", block, (unsigned int)block->size);
     }
 
     printf("\n");  
     printf("%p\n", not_marked);
+    
+    return 0;
 }
 
 /**
@@ -75,7 +63,5 @@ int main(int argc, char *argv[])
     SET_STACK_BOTTOM
     gc_init();
     
-    sub_main(argc, argv);
-
-    return 0;
+    return sub_main(argc, argv);
 }
