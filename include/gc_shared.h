@@ -3,16 +3,11 @@
  * @author Mgr. Radomir Skrabal
  * 
  * This file contains definitions of shared structures and functions among the garbage collectors
- * 
- * TODO Currently kind of mess in here. Mixed with copying collector. Will move the code later (probably when will be building custom collector)
  */
 #ifndef GC_SHARED_H
 #define GC_SHARED_H
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 /**
  * Header for a logical memory block
@@ -22,7 +17,6 @@
 typedef struct
 {
     size_t size;
-    unsigned marked; //Wasting space, but should not be important for this implementation
     /**
      * Forwarding address for copying algorthm
      */
@@ -35,13 +29,6 @@ typedef struct
  * @return pointer to the next memory block
  */
 block_t *next_block(block_t *block);
-
-/**
- * Predicate for checking GC marks
- * @par block - pointer to the memory block
- * @return 1 if block is marked, 0 otherwise
- */
-unsigned is_marked(block_t *block);
 
 /**
  * Call to system for get raw memory
@@ -101,88 +88,12 @@ size_t align_size(size_t size);
 block_t *split_block(block_t **src, size_t size);
 
 /**
- * Size of the semispace
- */
-#define SEMISPACE_SIZE 1024
-
-/**
- * from space heap (active heap)
- */
-extern block_t *from_space;
-/**
- * to space heap (copy heap)
- */
-extern block_t *to_space;
-
-/**
- * Block containing remaining memory in active semispace
- */
-extern block_t *remaining_block;
-
-/**
- * Initializes the Garbage Collector objects
- * @return If everything went well 0, otherwise error code
- */
-int gc_init();
-
-/**
- * Returns pointer right after the end of semispace
- * @par semispace_ptr pointer to the start of a semispace
- * @return pointer right after end of semispace
- */
-void* semispace_end(void *semispace_ptr);
-
-/**
- * End user function for memory allocation
- * @par size memory to be allocated in bytes
- * @return pointer to allocated memory or NULL
- */
-void *gc_malloc(size_t size);
-
-/**
  * Predicates whetter the pointer points to the memory block
  * @par block block of a memory
  * @par ptr pointer
  * @return 1 if ptr points into block, 0 otherwise
  */
 int is_pointer_to(block_t *block, void *ptr);
-
-/**
- * Marks memory block in the heap by pointers from given chunk
- * @par start start of a memory chunk (must be aligned)
- * @par end end of a memory chunk
- * @return 0 if everything went well, otherwise error code
- */
-int mark_from_chunk(void *start, void *end);
-
-/**
- * Reads one line from opened file
- * @param file read file
- * @param buffer buffer where read characters are stored
- * @param max_site size of buffer
- * @returns number of read characters or -1 on error
- */
-size_t read_line(FILE *file, char* buffer, size_t max_size);
-
-/**
- * Opens the file /proc/self/maps and retrieves the line containing stack mapping
- * @param buffer buffer where the line is stored
- * @param max_size size of buffer
- * @returns length of the returned line
- */
-int get_stack_line(char *buffer, size_t max_size);
-
-/**
- * Gets the bottom of the stack from /proc/self/maps file
- * @returns pointer to the bottom of the stack
- */
-void *get_stack_bottom();
-
-/**
- * Carries out memory marking phase of Garbage Collector
- * @return 0 if everything went well, otherwise error code
- */
-int gc_mark();
 
 /**
  * Bottom of a stack
@@ -221,18 +132,6 @@ extern void *BBSend;
 #else
 #define SAVE_STACK_BOTTOM
 #endif
-
-/**
- * Carries out the "sweep" part of the algorithm
- * @par src space from which data will be copied (from_space)
- * @par dst space to which memory blocks will be evacuated (to_space)
- * @return 0 if everything went well, error code otherwise
- */
- int gc_collect();
- 
- void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst);
- int gc_copy_chunk(void *start, void *end);
- int gc_swich_semispaces();
 
 #endif
 
