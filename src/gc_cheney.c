@@ -68,7 +68,6 @@ int gc_init()
 #else
     BBSstart = NULL;
     BBSend = NULL;
-    stack_bottom = NULL;
 #endif    
     
     return 0;

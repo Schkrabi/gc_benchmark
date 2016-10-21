@@ -117,21 +117,13 @@ extern void *BBSend;
  * Macro for filling the stack_top variable with proper value
  * @remark Currently working only oon GNU Linux 
  */
-#ifdef __gnu_linux__
 #define REFRESH_STACK_TOP asm volatile ("mov %%rbp, %0" : "=r" (stack_top));
-#else
-#define REFRESH_STACK_TOP
-#endif
 
 /**
  * Save current stack pointer as stack bottom
  * @remark Currently only for GNU Linux
  */ 
-#ifdef __gnu_linux__
 #define SET_STACK_BOTTOM asm volatile ("mov %%rbp, %0" : "=r" (stack_bottom));
-#else
-#define SAVE_STACK_BOTTOM
-#endif
 
 #endif
 
