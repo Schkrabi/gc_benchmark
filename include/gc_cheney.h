@@ -49,11 +49,23 @@ void* semispace_end(void *semispace_ptr);
  */
 void *gc_malloc(size_t size);
 
+void *gc_malloc_atom();
+void *gc_malloc_struct();
+void *gc_malloc_array();
+
 /**
  * Collects the memory
  * @return Always 0
  */
  int gc_collect();
+ 
+ /**
+ * Carries out the "sweep" part of the algorithm
+ * @par roots Array of root elements for garbage collection
+ * @par size size of a roots arraay
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_collect_from_roots(block_t *roots[], size_t size);
  
 /**
  * Return forwarding address for a given pointer

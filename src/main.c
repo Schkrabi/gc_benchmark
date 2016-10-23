@@ -10,47 +10,50 @@
 
 #define TEST_SIZE 3
 
-/**
- * Main executed function
- */
-int sub_main(int argc, char *argv[])
+int mem_dump()
 {
-    int err_msg, i;
-    void **parray;
-    int *not_marked;
     block_t *block;
-    
-    err_msg = gc_init();
-    if(err_msg != 0)
-    {
-            printf("Initialization error, code %d\n", err_msg);
-    }
-    
-    parray = gc_malloc(TEST_SIZE*sizeof(void*));
-    not_marked = gc_malloc(TEST_SIZE*sizeof(int));
-    
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        parray[i] = gc_malloc(sizeof(int));
-    }
-    
-    not_marked = NULL;
-    
-    gc_collect();
-    
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        printf("%p\n", parray[i]);
-    }
     
     printf("Dumping all active memory blocks\n");
     for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
     {
         printf("block %p, size %u\n", block, (unsigned int)block->size);
     }
+}
 
-    printf("\n");  
-    printf("%p\n", not_marked);
+/**
+ * Main executed function
+ */
+int sub_main(int argc, char *argv[])
+{
+    block_t *roots[1];
+    void **tmp1, **tmp2;
+    int i;
+    
+    roots[0] = (block_t*)malloc(sizeof(block_t) + 2*sizeof(void*));
+    
+    roots[0]->size = 2*sizeof(void*);
+    roots[0]->forward = NULL;
+    
+    tmp1 = (void*)(roots[0] + 1);
+    tmp2 = tmp1 + 1;
+    
+    *tmp1 = gc_malloc(TEST_SIZE * sizeof(int*));
+    *tmp2 = gc_malloc(TEST_SIZE * sizeof(int));
+    *tmp2 = NULL;
+    
+    //for(i = 0; i < TEST_SIZE; i++)
+    //{
+    //  (*tmp1)[i] = gc_malloc(sizeof(int));
+    //  *((*tmp1)[i]) = i;
+    //}
+    
+    mem_dump();
+    
+    gc_collect_from_roots(roots, 1);
+    
+    
+    mem_dump();
     
     return 0;
 }
@@ -60,8 +63,14 @@ int sub_main(int argc, char *argv[])
  */
 int main(int argc, char *argv[])
 {
+    int err_msg;
+    
     SET_STACK_BOTTOM
-    gc_init();
+    err_msg = gc_init();
+    if(err_msg != 0)
+    {
+            printf("Initialization error, code %d\n", err_msg);
+    }
     
     return sub_main(argc, argv);
 }

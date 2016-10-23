@@ -29,6 +29,11 @@ block_t *remaining_block;
 block_t *remaining_to_space;
 
 /**
+ * Ptr that marks remaining block to be scanned by cheneys algorithm
+ */
+//block_t *todo_pointer;
+
+/**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
  */
@@ -120,15 +125,52 @@ void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
 
 /**
  * Carries out the "sweep" part of the algorithm
- * @par src space from which data will be copied (from_space)
- * @par dst space to which memory blocks will be evacuated (to_space)
  * @return 0 if everything went well, error code otherwise
  */
 int gc_collect()
 {
+    block_t *todo_ptr;
+    
     REFRESH_STACK_TOP
     remaining_to_space = to_space;
+    todo_ptr = to_space;
     gc_walk_chunk(stack_top, stack_bottom);
+    
+    while(todo_ptr < remaining_to_space)
+    {
+      gc_walk_chunk(get_data_start(todo_ptr), get_data_end(todo_ptr));
+      todo_ptr = next_block(todo_ptr);
+    }
+    
+    gc_swich_semispaces();
+    return 0;
+}
+
+/**
+ * Carries out the "sweep" part of the algorithm
+ * @par roots Array of root elements for garbage collection
+ * @par size size of a roots arraay
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_collect_from_roots(block_t *roots[], size_t size)
+{
+    block_t *todo_ptr;
+    int i;
+    
+    remaining_to_space = to_space;
+    todo_ptr = to_space;
+    
+    for(i = 0; i < size; i++)
+    {
+      gc_walk_chunk(get_data_start(roots[i]), get_data_end(roots[i]));
+    }                                                                   
+    
+    while(todo_ptr < remaining_to_space)
+    {
+      gc_walk_chunk(get_data_start(todo_ptr), get_data_end(todo_ptr));
+      todo_ptr = next_block(todo_ptr);
+    }
+    
     gc_swich_semispaces();
     return 0;
 }
@@ -158,7 +200,6 @@ int gc_walk_chunk(void *start, void *end)
                     dst = split_block(&remaining_to_space, block->size);
                     block->forward = dst;
                     memcpy(get_data_start(dst), get_data_start(block), block->size);
-                    gc_walk_chunk(get_data_start(dst), get_data_end(dst));
                 }
                 else
                 {

@@ -9,6 +9,23 @@
 
 #include <stdlib.h>
 
+typedef char byte;
+
+/**
+ * Structure for keeping info about structures
+ */
+typedef struct
+{
+  /**
+   * Number of references in the structure
+   */
+  size_t number_of_references;
+  /**
+   * Offsets from the structure pointer to the references
+   */
+  unsigned int *offsets;
+} struct_info_t; 
+
 /**
  * Header for a logical memory block
  * @remark Convention size slot is available free space in the block.
@@ -21,7 +38,23 @@ typedef struct
      * Forwarding address for copying algorthm
      */
     void *forward;
+    /**
+     * Type of an object in memory Atom/Structure/Array
+     */
+    byte type;
+    /**
+     * Pointer to the info about allocated structure
+     * @remark for TYPE_ATOM memory is always NULL
+     */
+    struct_info_t *info;
 } block_t;
+
+/** 
+ * Allocated memory types
+ */
+#define MEM_TYPE_ATOM 0
+#define MEM_TYPE_STRUCT 1
+#define MEM_TYPE_ARRAY 2
 
 /**
  * Gets next block of memory
