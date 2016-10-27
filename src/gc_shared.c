@@ -155,3 +155,19 @@ int is_pointer_to(block_t *block, void *ptr)
     return ptr >= start && ptr < end;
 }
 
+#ifdef __gnu_linux__
+#define ART_PTR_T unsigned long long
+#else
+#define ART_PTR_T unsigned long
+#endif                                                 
+
+/**
+ * Returns ptr to the value of a structure slot givven by an offset
+ * @par struct_ptr pointer to the allocated structure            
+ * @par offset offset to the slot from start of the structure
+ */
+void *get_ptr_to_slot(void *struct_ptr, unsigned long offset)
+{
+  return (void*)((ART_PTR)struct_ptr + (ART_PTR)offset);
+}
+

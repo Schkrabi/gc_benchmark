@@ -21,12 +21,18 @@ int mem_dump()
     }
 }
 
+typedef struct 
+{
+  int value;
+  void *ptr1, *ptr2;
+} test_struct_t;
+
 /**
  * Main executed function
  */
 int sub_main(int argc, char *argv[])
 {
-    block_t *roots[1];
+    /*block_t *roots[1];
     void **tmp1, **tmp2;
     int i;
     
@@ -53,7 +59,26 @@ int sub_main(int argc, char *argv[])
     gc_collect_from_roots(roots, 1);
     
     
-    mem_dump();
+    mem_dump();*/
+    
+    struct_info_t *struct_info;
+    test_struct_t test_instance;
+    int i;
+    
+    struct_info = (struct_info_t*)malloc(sizeof(struct_info_t));
+    
+    struct_info[0].number_of_references = 2;
+    struct_info[0].offsets = malloc(2*sizeof(unsigned long));
+    
+    struct_info[0].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
+    struct_info[0].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
+    
+    printf("no of refs: %d\n", struct_info[0].number_of_references);
+    printf("offsets:\n");
+    for(i = 0; i < struct_info[0].number_of_references; i++)
+    {
+      printf("%p\n", struct_info[0].offsets[i]);
+    }   
     
     return 0;
 }
