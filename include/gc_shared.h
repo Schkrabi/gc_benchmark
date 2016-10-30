@@ -16,14 +16,18 @@ typedef char byte;
  */
 typedef struct
 {
-  /**
-   * Number of references in the structure
-   */
-  size_t number_of_references;
-  /**
-   * Offsets from the structure pointer to the references
-   */
-  unsigned long *offsets;
+    /**
+     * Size of the structure in bytes
+     */
+    size_t struct_size;
+    /**
+    * Number of references in the structure
+    */
+    size_t number_of_references;
+    /**
+    * Offsets from the structure pointer to the references
+    */
+    unsigned long *offsets;
 } struct_info_t; 
 
 /**
@@ -33,6 +37,9 @@ typedef struct
  */
 typedef struct
 {
+    /**
+     * Size in bytes of allocated space
+     */
     size_t size;
     /**
      * Forwarding address for copying algorthm
@@ -43,10 +50,18 @@ typedef struct
      */
     byte type;
     /**
+     * If this is an array memory block contains a size of this array
+     */
+    size_t array_size;
+    /**
      * Pointer to the info about allocated structure
      * @remark for TYPE_ATOM memory is always NULL
      */
     struct_info_t *info;
+    /**
+     * Indicates whetter allocate atomic value is ptr
+     */
+    int atom_is_ptr;
 } block_t;
 
 /** 
@@ -55,6 +70,50 @@ typedef struct
 #define MEM_TYPE_ATOM 0
 #define MEM_TYPE_STRUCT 1
 #define MEM_TYPE_ARRAY 2
+
+/**
+ * Getters
+ * Quite primitive right now but will raise in importance during optimization phase
+ */
+size_t block_get_size(block_t *block);
+void *block_get_forward(block_t *block);
+byte block_get_type(block_t *block);
+size_t block_get_array_size(block_t *block);
+struct_info_t *block_get_info(block_t *block);
+int block_atom_is_ptr(block_t *block);
+
+/**
+ * Setters
+ * Quite primitive right now but will raise in importance during optimization phase
+ */
+int block_set_size(block_t *block, size_t size);
+int block_set_forward(block_t *block, void *forward);
+int block_set_type(block_t *block, byte type);
+int block_set_array_size(block_t *block, size_t size);
+int block_set_info(block_t *block, struct_info_t *info);
+int block_set_atom_is_ptr(block_t *block, int is_ptr);
+
+/**
+ * Predicates whetter the block has a forwarding addr set
+ * @par block a memory block
+ * @return 1 if the address is set, 0 otherwise
+ */
+int block_has_forward(block_t *block);
+
+/**
+ * Copies the metadata of a block to other block
+ * @par src source memory block
+ * @par dst destination memory block
+ * @return always 0
+ */
+int copy_block_metadata(block_t *src, block_t *dst);
+
+/**
+ * Predicates whetter this block contains structures
+ * @par block memory block
+ * @return 1 if this block contains structures, 0 otherwise
+ */
+int block_is_struct_block(block_t *block);
 
 /**
  * Gets next block of memory

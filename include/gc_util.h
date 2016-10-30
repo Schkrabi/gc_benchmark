@@ -10,6 +10,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef __gnu_linux__
+typedef unsigned long long art_ptr_t;
+#else
+typedef unsigned long art_ptr_t;
+#endif 
+
 /**
  * Reads one line from opened file
  * @param file read file

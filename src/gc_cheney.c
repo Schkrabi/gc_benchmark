@@ -107,6 +107,138 @@ void *gc_malloc(size_t size)
 }
 
 /**
+ * Allocates a block of given size
+ * @par size size of the new block
+ * @return pointer to the memory block
+ */
+block_t *alloc_block_of_size(size_t size)
+{
+    block_t *block;
+    
+    block = split_block(&remaining_block, size);
+    if(block == NULL)
+    {
+        gc_collect();
+        //gc_collect_from_roots(roots);
+        block = split_block(&remaining_block, size);
+        if(block == NULL)
+        {
+            fprintf(stderr, "Out of memory!");
+        }
+    }
+    return block;
+}
+
+/**
+ * Allocate memory bloc for singe atomic value
+ * @par size size of the value in bytes
+ * @par is_pointer indicates whetter allocated value is pointer
+ */
+void *gc_malloc_atom(size_t size, int is_pointer)
+{
+    block_t *block;
+    
+    block = alloc_block_of_size(size);
+    
+    if(block == NULL)
+    {
+        return block;
+    }
+    
+    block_set_type(block, MEM_TYPE_ATOM);
+    block_set_atom_is_ptr(block, is_pointer);
+    
+    return get_data_start(block);
+}
+
+/**
+ * Allocate memory block for single struct value
+ * @par type pointer to the sturct type descriptor
+ */
+void *gc_malloc_struct(struct_info_t *type)
+{
+    block_t *block;
+    
+    if(type == NULL)
+    {
+        return NULL;
+    }
+    
+    block = alloc_block_of_size(type->struct_size);
+    
+    if(block == NULL)
+    {
+        return block;
+    }
+    
+    block_set_type(block, MEM_TYPE_STRUCT);
+    block_set_info(block, type);
+    
+    return get_data_start(block);
+}
+
+/**
+ * Allocates memory block for array of atomic values
+ * @par number_of_elements number of elements in array
+ * @par is_pointer flag that indicates whetter values in array are pointers
+ * @return pointer to allocated memory or NULL
+ */
+void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer)
+{
+    block_t *block;
+    size_t size;
+    
+    if(number_of_elements == 0 || atom_size == 0)
+    {
+        return NULL;
+    }
+    
+    size = number_of_elements * atom_size;
+    block = alloc_block_of_size(size);
+    
+    if(block == NULL)
+    {
+        return block;
+    }
+    
+    block_set_type(block, MEM_TYPE_ARRAY);
+    block_set_array_size(block, number_of_elements);
+    block_set_atom_is_ptr(block, is_pointer);
+    
+    return get_data_start(block); 
+}
+/**
+ * Allocates memory block for array of structures
+ * @par number_of_elements number of elements in array
+ * @par type pointer to the struct type descriptor
+ * @return pointer to allocated memory or NULL
+ */
+void *gc_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type)
+{
+    block_t *block;
+    size_t size;
+    
+    if(number_of_elements == 0 || type == NULL)
+    {
+        return NULL;
+    }
+    
+    size = number_of_elements * type->struct_size;
+    block = alloc_block_of_size(size);
+    
+    if(block == NULL)
+    {
+        return block;
+    }
+    
+    block_set_type(block, MEM_TYPE_ARRAY);
+    block_set_array_size(block, number_of_elements);
+    block_set_info(block, type);
+    
+    return get_data_start(block);
+}
+
+/**
  * Return forwarding address for a given pointer
  * @par ptr original pointer
  * @par src memory block to which the ptr points to
@@ -129,7 +261,7 @@ void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
  */
 int gc_collect()
 {
-    block_t *todo_ptr;
+   /* block_t *todo_ptr;
     
     REFRESH_STACK_TOP
     remaining_to_space = to_space;
@@ -143,7 +275,9 @@ int gc_collect()
     }
     
     gc_swich_semispaces();
-    return 0;
+    return 0;*/
+   //TODO remiplement !!!
+   return 0;
 }
 
 /**
@@ -152,7 +286,7 @@ int gc_collect()
  * @par size size of a roots arraay
  * @return 0 if everything went well, error code otherwise
  */
-int gc_collect_from_roots(block_t *roots[], size_t size)
+int gc_collect_from_roots(void *roots[], size_t size)
 {
     block_t *todo_ptr;
     int i;
@@ -162,12 +296,12 @@ int gc_collect_from_roots(block_t *roots[], size_t size)
     
     for(i = 0; i < size; i++)
     {
-      gc_walk_chunk(get_data_start(roots[i]), get_data_end(roots[i]));
+      gc_scan_ptr(roots[i]);
     }                                                                   
     
     while(todo_ptr < remaining_to_space)
     {
-      gc_walk_chunk(get_data_start(todo_ptr), get_data_end(todo_ptr));
+      gc_walk_block(todo_ptr);
       todo_ptr = next_block(todo_ptr);
     }
     
@@ -176,40 +310,146 @@ int gc_collect_from_roots(block_t *roots[], size_t size)
 }
 
 /**
- * Recursive method for walking the memory chunks to carry out the copying collection
- * @par start start pointer of a chunk
- * @par end pointer after the end of a chunk
- * @return Always 0
+ * Scans the pointer if it points towards any memory and evacuates if if so
+ * @par ptr scanned pointer
+ * @return 0 if pointer do not points anywhere, forwarding address otherwise
  */
-int gc_walk_chunk(void *start, void *end)
+void *gc_scan_ptr(void *ptr)
+{
+    block_t *block;
+    
+    for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
+    {
+        if(is_pointer_to(block, ptr))
+        {
+            if(!block_has_forward(block))
+            {
+                block_t *dst;
+                dst = split_block(&remaining_to_space, block->size);
+                copy_block_metadata(block, dst);
+                
+                block_set_forward(block, dst);
+                memcpy(get_data_start(dst), get_data_start(block), block->size);
+                
+                return dst;
+            }
+            else
+            {
+                return get_forwarding_addr(ptr, block, block_get_forward(block));
+            }
+        }
+    }
+    return NULL;
+}
+
+/**
+ * Scans the chunk of memory containign pointers
+ * @par start pointer to the start of memory chunk
+ * @par end pointer behind the end of memory chunk
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_scan_chunk(void *start, void *end)
 {
     void **i;
     
     for(i = start; i < (void**)end; i++)
     {
-        void    *ptr;
-        block_t *block;
-        ptr = *i;
-        for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
-        {
-            if(is_pointer_to(block, ptr))
-            {
-                if(block->forward == NULL)
-                {
-                    block_t *dst;
-                    dst = split_block(&remaining_to_space, block->size);
-                    block->forward = dst;
-                    memcpy(get_data_start(dst), get_data_start(block), block->size);
-                }
-                else
-                {
-                    *i = get_forwarding_addr(ptr, block, (block_t*)block->forward);
-                }
-            }
-        }
+        void *fwd;
+        fwd = gc_scan_ptr(*i);
         
+        if(fwd != NULL)
+        {
+            *i = fwd;
+        }
     }
     return 0;
+}
+
+/**
+ * Scans the structure in memory
+ * @par ptr pointer to the structure
+ * @par info descriptor of the structure
+ */
+int gc_scan_struct(void *ptr, struct_info_t *info)
+{
+    int i;
+    
+    for(i = 0; i < info->number_of_references; i++)
+    {
+        void **slot_ptr, *fwd;
+        slot_ptr = (void**)(ptr + info->offsets[i]);
+        
+        fwd = gc_scan_ptr(*slot_ptr);
+        
+        if(fwd != NULL)
+        {
+            *slot_ptr = fwd;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Scans the (copied) block of memory and copies the references it points to to the to_space
+ * @par block memory block to be scanned
+ * @return if everything went well 0 otherwise error code
+ */
+int gc_walk_block(block_t *block)
+{
+    switch(block_get_type(block))
+    {
+        case MEM_TYPE_ATOM:
+            return gc_walk_atom(block);
+        case MEM_TYPE_STRUCT:
+            return gc_walk_struct(block);
+        case MEM_TYPE_ARRAY:
+            return gc_walk_array(block);
+    }
+}
+
+/**
+ * Scans the block of type MEM_TYPE_ATOM
+ * @par block block of memory of type MEM_TYPE_ATOM
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_walk_atom(block_t *block)
+{
+    if(block_atom_is_ptr(block))
+    {
+        return gc_scan_chunk(get_data_start(block), get_data_end(block));
+    }
+}
+/**
+ * Scans the block of type MEM_TYPE_STRUCT
+ * @par block block of memory of type MEM_TYPE_STRUCT
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_walk_struct(block_t *block)
+{
+    gc_scan_struct(get_data_start(block), block_get_info(block));
+}
+/**
+ * Scans the block of type MEM_TYPE_ARRAY
+ * @par block block of memory of type MEM_TYPE_ARRAY
+ * @return 0 if everything went well, error code otherwise
+ */
+int gc_walk_array(block_t *block)
+{
+    if(block_is_struct_block(block))
+    {
+        void *ptr;
+        struct_info_t *info;
+        
+        info = block_get_info(block);
+        for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += info->struct_size)
+        {
+            gc_scan_struct(ptr, info);
+        }
+    }
+    else if(block_atom_is_ptr(block))
+    {
+        gc_scan_chunk(get_data_start(block), get_data_end(block));
+    }
 }
 
 /**

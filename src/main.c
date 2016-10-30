@@ -7,18 +7,106 @@
 #include <stdlib.h>
 #include "gc_shared.h"
 #include "gc_cheney.h"
+#include <string.h>
 
 #define TEST_SIZE 3
 
-int mem_dump()
+int mem_dump(FILE *file);
+int dump_block(FILE *file, block_t *block);
+int dump_block_atom(FILE *file, block_t *block);
+int dump_block_struct(FILE *file, block_t *block);
+int dump_block_array(FILE *file, block_t *block);
+int struct_info_to_string(struct_info_t *info, char **buff);
+
+int mem_dump(FILE *file)
 {
     block_t *block;
     
-    printf("Dumping all active memory blocks\n");
+    fprintf(file, "Dumping all active memory blocks\n");
     for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
     {
-        printf("block %p, size %u\n", block, (unsigned int)block->size);
+        dump_block(file, block);
     }
+}
+
+int dump_block(FILE *file, block_t *block)
+{
+    switch(block_get_type(block))
+    {
+        case MEM_TYPE_ATOM:
+            dump_block_atom(file, block);
+            break;
+        case MEM_TYPE_STRUCT:
+            dump_block_struct(file, block);
+            break;
+        case MEM_TYPE_ARRAY:
+            dump_block_array(file, block);
+            break;
+    }
+}
+
+int dump_block_atom(FILE *file, block_t *block)
+{
+    fprintf(file, "Block ATOM %p, size %u, is pointer %d\n", block, (unsigned int)block_get_size(block), block_atom_is_ptr(block));
+}
+
+int dump_block_struct(FILE *file, block_t *block)
+{
+    char *buff;
+    
+    struct_info_to_string(block_get_info(block), &buff);
+    fprintf(file, "Block STRUCT %p, size %u, struct info: %s\n", block, (unsigned int)block_get_size(block), buff);
+    
+    free(buff);
+}
+
+int dump_block_array(FILE *file, block_t *block)
+{
+    if(!block_is_struct_block(block))
+    {
+        fprintf(    file, 
+                    "Block ARRAY ATOM %p, size %u, array size %u, is pointer %d\n", 
+                    block, 
+                    (unsigned int)block_get_size(block), 
+                    (unsigned int)block_get_array_size(block), 
+                    block_atom_is_ptr(block));
+    }
+    else
+    {
+        char *buff;
+        struct_info_to_string(block->info, &buff);
+        
+        fprintf(    file,
+                    "Block ARRAY STRUCT %p, size %u, array size %u, struct info %s\n",
+                    block,
+                    (unsigned int)block_get_size(block),
+                    (unsigned int)block_get_array_size(block),
+                    buff);
+        free(buff);
+    }
+}
+
+int struct_info_to_string(struct_info_t *info, char **buff)
+{
+    char *aux, *tmp;
+    int i;
+    
+    *buff = malloc(5000 * sizeof(char));
+    aux = malloc(1000 * sizeof(char));
+    tmp = malloc(10 * sizeof(char));
+    
+    aux[0] = '\0';
+    for(i = 0; i < info->number_of_references; i++)
+    {
+        sprintf(tmp, "%x ", (unsigned int)info->offsets[i]);
+        
+        strcat(aux, tmp);
+    }
+    
+    sprintf(*buff, "Struct Info %p, number_of_references %u, offsets: %s", info, (unsigned int)info->number_of_references, aux);
+    free(aux);
+    free(tmp);
+    return 0;
 }
 
 typedef struct 
@@ -32,37 +120,11 @@ typedef struct
  */
 int sub_main(int argc, char *argv[])
 {
-    /*block_t *roots[1];
-    void **tmp1, **tmp2;
-    int i;
-    
-    roots[0] = (block_t*)malloc(sizeof(block_t) + 2*sizeof(void*));
-    
-    roots[0]->size = 2*sizeof(void*);
-    roots[0]->forward = NULL;
-    
-    tmp1 = (void*)(roots[0] + 1);
-    tmp2 = tmp1 + 1;
-    
-    *tmp1 = gc_malloc(TEST_SIZE * sizeof(int*));
-    *tmp2 = gc_malloc(TEST_SIZE * sizeof(int));
-    *tmp2 = NULL;
-    
-    //for(i = 0; i < TEST_SIZE; i++)
-    //{
-    //  (*tmp1)[i] = gc_malloc(sizeof(int));
-    //  *((*tmp1)[i]) = i;
-    //}
-    
-    mem_dump();
-    
-    gc_collect_from_roots(roots, 1);
-    
-    
-    mem_dump();*/
-    
     struct_info_t *struct_info;
     test_struct_t test_instance;
+    void *roots[4], **ptr_src1, **ptr_src2;
+    int *atom_test, *array_test;
+    test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
     int i;
     
     struct_info = (struct_info_t*)malloc(sizeof(struct_info_t));
@@ -72,13 +134,48 @@ int sub_main(int argc, char *argv[])
     
     struct_info[0].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
     struct_info[0].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
+    struct_info[0].struct_size = sizeof(test_struct_t);
     
-    printf("no of refs: %d\n", struct_info[0].number_of_references);
-    printf("offsets:\n");
-    for(i = 0; i < struct_info[0].number_of_references; i++)
-    {
-      printf("%p\n", struct_info[0].offsets[i]);
-    }   
+    printf("Initial memory dump:\n");
+    mem_dump(stdout);
+    
+    atom_test = gc_malloc_atom(sizeof(int), 0);
+    struct_test = gc_malloc_struct(struct_info);
+    array_test = gc_malloc_array_of_atoms(TEST_SIZE, sizeof(int), 0);
+    struct_array_test = gc_malloc_array_of_struct(TEST_SIZE, struct_info);
+    
+    ptr_src1 = (void**)gc_malloc_atom(sizeof(void*), 1);
+    *ptr_src1 = atom_test;
+    
+    ptr_src2 = (void**)gc_malloc_array_of_atoms(TEST_SIZE, sizeof(void*), 1);
+    ptr_src2[0] = atom_test;
+    ptr_src2[1] = struct_test;
+    ptr_src2[2] = NULL;
+    
+    ptr_src3 = (test_struct_t*)gc_malloc_struct(struct_info);
+    ptr_src3->ptr1 = NULL;
+    ptr_src3->ptr2 = struct_test;
+    
+    ptr_src4 = (test_struct_t*)gc_malloc_array_of_struct(TEST_SIZE, struct_info);
+    ptr_src4[0].ptr1 = array_test;
+    ptr_src4[0].ptr2 = atom_test;
+    ptr_src4[1].ptr1 = NULL;
+    ptr_src4[1].ptr2 = atom_test;
+    ptr_src4[2].ptr1 = struct_test;
+    ptr_src4[2].ptr2 = NULL;
+    
+    printf("\nMemory dump after allocation:\n");
+    mem_dump(stdout);
+    
+    roots[0] = ptr_src1;
+    roots[1] = ptr_src2;
+    roots[2] = ptr_src3;
+    roots[3] = ptr_src4;
+    
+    gc_collect_from_roots(roots, 4);
+    
+    printf("\nMemory dump after collection:\n");
+    mem_dump(stdout);
     
     return 0;
 }
