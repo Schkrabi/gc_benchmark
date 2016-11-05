@@ -30,10 +30,20 @@ extern block_t *to_space;
 extern block_t *remaining_block;
 
 /**
+ * Roots used for automatic garbage collection
+ */
+extern void **gc_roots;
+
+/**
+ * Number of roots in gc_roots
+ */
+extern size_t gc_roots_count;
+
+/**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
  */
-int gc_init();
+int gc_cheney_init();
 
 /**
  * Returns pointer right after the end of semispace
@@ -41,13 +51,6 @@ int gc_init();
  * @return pointer right after end of semispace
  */
 void* semispace_end(void *semispace_ptr);
-
-/**
- * End user function for memory allocation
- * @par size memory to be allocated in bytes
- * @return pointer to allocated memory or NULL
- */
-void *gc_malloc(size_t size);
 
 /**
  * Allocates a block of given size
@@ -62,14 +65,14 @@ block_t *alloc_block_of_size(size_t size);
  * @par is_pointer indicates whetter allocated value is pointer
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_atom(size_t size, int is_pointer);
+void *gc_cheney_malloc_atom(size_t size, int is_pointer);
 
 /**
  * Allocate memory block for single struct value
  * @par type pointer to the sturct type descriptor
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_struct(struct_info_t *type);
+void *gc_cheney_malloc_struct(struct_info_t *type);
 
 /**
  * Allocates memory block for array of atomic values
@@ -77,20 +80,20 @@ void *gc_malloc_struct(struct_info_t *type);
  * @par is_pointer flag that indicates whetter values in array are pointers
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer);
+void *gc_cheney_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer);
 /**
  * Allocates memory block for array of structures
  * @par number_of_elements number of elements in array
  * @par type pointer to the struct type descriptor
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type);
+void *gc_cheney_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type);
 
 /**
  * Collects the memory
  * @return Always 0
  */
- int gc_collect();
+ int gc_cheney_collect();
  
  /**
  * Carries out the "sweep" part of the algorithm

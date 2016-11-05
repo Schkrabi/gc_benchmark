@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I../include/ -g
-DEPS=gc_shared.h
-OBJ=gc_shared.o main.o gc_util.o gc_cheney.o
+DEPS=gc_shared.h gc_cheney.h gc_util.h garbage_collector.h binary_tree.h 
+OBJ=gc_shared.o main.o gc_util.o gc_cheney.o garbage_collector.o binary_tree.o
 
 %.o: ./src/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

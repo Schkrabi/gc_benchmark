@@ -6,10 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gc_shared.h"
+#include "garbage_collector.h"
 #include "gc_cheney.h"
 #include <string.h>
 
 #define TEST_SIZE 3
+#define NO_COLLECTOR 0
+#define CHENEY_GC 1
 
 int mem_dump(FILE *file);
 int dump_block(FILE *file, block_t *block);
@@ -122,7 +125,7 @@ int sub_main(int argc, char *argv[])
 {
     struct_info_t *struct_info;
     test_struct_t test_instance;
-    void *roots[4], **ptr_src1, **ptr_src2;
+    void **ptr_src1, **ptr_src2;
     int *atom_test, *array_test;
     test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
     int i;
@@ -167,12 +170,15 @@ int sub_main(int argc, char *argv[])
     printf("\nMemory dump after allocation:\n");
     mem_dump(stdout);
     
-    roots[0] = ptr_src1;
-    roots[1] = ptr_src2;
-    roots[2] = ptr_src3;
-    roots[3] = ptr_src4;
+    gc_roots_count = 4;
+    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
     
-    gc_collect_from_roots(roots, 4);
+    gc_roots[0] = ptr_src1;
+    gc_roots[1] = ptr_src2;
+    gc_roots[2] = ptr_src3;
+    gc_roots[3] = ptr_src4;
+    
+    gc_collect();
     
     printf("\nMemory dump after collection:\n");
     mem_dump(stdout);
@@ -188,6 +194,8 @@ int main(int argc, char *argv[])
     int err_msg;
     
     SET_STACK_BOTTOM
+    used_gc = CHENEY_GC;
+    
     err_msg = gc_init();
     if(err_msg != 0)
     {

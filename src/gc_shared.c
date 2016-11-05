@@ -187,11 +187,11 @@ block_t *next_block(block_t *block)
 void *get_memory_primitive(size_t size)
 {
     //Primitive call, should be a system call but not important now
-#ifndef DEBUG
-    return malloc(size);
-#else
+//#ifndef DEBUG
+//    return malloc(size);
+//#else
     return calloc(size, 1);
-#endif
+//#endif
 }
 
 /**

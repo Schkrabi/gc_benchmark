@@ -29,15 +29,20 @@ block_t *remaining_block;
 block_t *remaining_to_space;
 
 /**
- * Ptr that marks remaining block to be scanned by cheneys algorithm
+ * Roots used for automatic garbage collection
  */
-//block_t *todo_pointer;
+void **gc_roots;
+
+/**
+ * Number of roots in gc_roots
+ */
+size_t gc_roots_count;
 
 /**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
  */
-int gc_init()
+int gc_cheney_init()
 {
     void *chunk;
 #ifdef __gnu_linux__
@@ -60,6 +65,7 @@ int gc_init()
         return 3;
     }
     remaining_block = from_space;
+    gc_roots_count = 0;
 
 #ifdef __gnu_linux__        
     BBSstart = (void*)&__bss_start;
@@ -89,24 +95,6 @@ void* semispace_end(void *semispace_ptr)
 }
 
 /**
- * End user function for memory allocation
- * @par size memory to be allocated in bytes
- * @return pointer to allocated memory or NULL
- */
-void *gc_malloc(size_t size)
-{
-    block_t *block;
-
-    block = split_block(&remaining_block, size);
-
-#ifdef DEBUG
-    printf("malloc call: size: %d, allocated: size: %d, remaining block: size : %d\n", size, block->size, remaining_block->size);
-#endif
-
-    return get_data_start(block);	
-}
-
-/**
  * Allocates a block of given size
  * @par size size of the new block
  * @return pointer to the memory block
@@ -118,8 +106,7 @@ block_t *alloc_block_of_size(size_t size)
     block = split_block(&remaining_block, size);
     if(block == NULL)
     {
-        gc_collect();
-        //gc_collect_from_roots(roots);
+        gc_cheney_collect();
         block = split_block(&remaining_block, size);
         if(block == NULL)
         {
@@ -134,7 +121,7 @@ block_t *alloc_block_of_size(size_t size)
  * @par size size of the value in bytes
  * @par is_pointer indicates whetter allocated value is pointer
  */
-void *gc_malloc_atom(size_t size, int is_pointer)
+void *gc_cheney_malloc_atom(size_t size, int is_pointer)
 {
     block_t *block;
     
@@ -155,7 +142,7 @@ void *gc_malloc_atom(size_t size, int is_pointer)
  * Allocate memory block for single struct value
  * @par type pointer to the sturct type descriptor
  */
-void *gc_malloc_struct(struct_info_t *type)
+void *gc_cheney_malloc_struct(struct_info_t *type)
 {
     block_t *block;
     
@@ -183,7 +170,7 @@ void *gc_malloc_struct(struct_info_t *type)
  * @par is_pointer flag that indicates whetter values in array are pointers
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer)
+void *gc_cheney_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer)
 {
     block_t *block;
     size_t size;
@@ -213,7 +200,7 @@ void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int 
  * @par type pointer to the struct type descriptor
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type)
+void *gc_cheney_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type)
 {
     block_t *block;
     size_t size;
@@ -259,25 +246,9 @@ void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
  * Carries out the "sweep" part of the algorithm
  * @return 0 if everything went well, error code otherwise
  */
-int gc_collect()
+int gc_cheney_collect()
 {
-   /* block_t *todo_ptr;
-    
-    REFRESH_STACK_TOP
-    remaining_to_space = to_space;
-    todo_ptr = to_space;
-    gc_walk_chunk(stack_top, stack_bottom);
-    
-    while(todo_ptr < remaining_to_space)
-    {
-      gc_walk_chunk(get_data_start(todo_ptr), get_data_end(todo_ptr));
-      todo_ptr = next_block(todo_ptr);
-    }
-    
-    gc_swich_semispaces();
-    return 0;*/
-   //TODO remiplement !!!
-   return 0;
+   return gc_collect_from_roots(gc_roots, gc_roots_count);
 }
 
 /**
