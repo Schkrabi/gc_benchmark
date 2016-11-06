@@ -9,8 +9,10 @@
 #include "garbage_collector.h"
 #include "gc_cheney.h"
 #include <string.h>
+#include "binary_tree.h"
+#include <time.h>
 
-#define TEST_SIZE 3
+#define TEST_SIZE 20
 #define NO_COLLECTOR 0
 #define CHENEY_GC 1
 
@@ -118,10 +120,7 @@ typedef struct
   void *ptr1, *ptr2;
 } test_struct_t;
 
-/**
- * Main executed function
- */
-int sub_main(int argc, char *argv[])
+int gc_test()
 {
     struct_info_t *struct_info;
     test_struct_t test_instance;
@@ -182,6 +181,47 @@ int sub_main(int argc, char *argv[])
     
     printf("\nMemory dump after collection:\n");
     mem_dump(stdout);
+}
+
+/**
+ * Main executed function
+ */
+int sub_main(int argc, char *argv[])
+{
+    btree_t *btree;
+    int i;
+    long n;
+    
+    srand(time(0));
+    btree = NULL;
+    
+    printf("\nInserting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("inserting %d, is_succes?: %d\n", n, btree_insert(&btree, n));
+    }    
+    
+    printf("\nSearching:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("searchig for %d, is succes?: %p\n", n, btree_search(btree, n));
+    }
+    
+    printf("\nDeleting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("deleteing %d, is success?: %d\n", n, btree_delete(&btree, n));
+    }
+    
+    /*btree_insert(&btree, 1);
+    btree_insert(&btree, 0);
+    btree_insert(&btree, 2);
+    
+    btree_delete(&btree, 0);
+    btree_delete(&btree, 0);*/
     
     return 0;
 }
@@ -192,9 +232,12 @@ int sub_main(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int err_msg;
+    struct_info_t info;
     
     SET_STACK_BOTTOM
     used_gc = CHENEY_GC;
+    
+    btree_make_descriptor(&info);
     
     err_msg = gc_init();
     if(err_msg != 0)

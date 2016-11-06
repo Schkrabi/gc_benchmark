@@ -52,4 +52,11 @@ int btree_make_descriptor(struct_info_t *info);
   */
  int btree_delete(btree_t **root, long value);
  
+ /**
+  * Returs rightmost node of the tree
+  * @par root searched tree
+  * @return pointer to the rightmost node pointer or root if tree has height of 1
+  */ 
+ btree_node_t **most_right_node(btree_t **root);
+ 
  #endif

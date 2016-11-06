@@ -80,34 +80,73 @@ btree_node_t *btree_search(btree_t *root, long value)
 * @par root pointer to the pointer of the tree root
 * @par value value to be deleted 
 * @return 1 if the value was deleted, 0 otherwise (value was noot present in a tree)
-* @remark This version should be probably more memory-friendly as it only copies a value and persists the pointer hierarchy
 */
 int btree_delete(btree_t **root, long value)
 {
-  btree_node_t *btree;
+    btree_node_t *btree;
   
-  if(*root == NULL)
-  {
-    return 0;
-  }
-  
-  btree = *root;
-  
-  if(btree->value == value)
-  {
-    if(btree->lchild == NULL)
+    if(*root == NULL)
     {
-      *root = btree->rchild;
-    }
-    if(btree->rchild == NULL)
-    {
-      *root = btree->lchild;
+        return 0;
     }
     
-    btree->value = ((btree_node_t*)btree->lchild)->value;
+    btree = *root;
     
-    return btree_delete((btree_t**)(&btree->lchild), btree->value);
-  }
-  
-  return btree_delete((btree_t**)(btree->value > value ? &btree->lchild : &btree->rchild), value);
+    if(btree->value == value)
+    {
+        btree_node_t **replacement;  
+        
+        if(btree->lchild == NULL)
+        {
+            *root = btree->rchild;
+            return 1;
+        }
+        if(btree->rchild == NULL)
+        {
+            *root = btree->lchild;
+            return 1;
+        }
+        
+        replacement = most_right_node((btree_t**)&btree->lchild);
+        
+        (*replacement)->lchild = btree->lchild;
+        (*replacement)->rchild = btree->rchild;
+        *root = *replacement;
+        *replacement = NULL;
+        
+        //In case that left subtree had height of 1, reference to the lchild might be circular
+        if(*root == (*root)->lchild)
+        {
+            (*root)->lchild = NULL;
+        }
+        
+        return 1;
+    }
+    
+    return btree_delete((btree_t**)(btree->value > value ? &btree->lchild : &btree->rchild), value);
 }
+
+/**
+  * Returs rightmost node of the tree
+  * @par root searched tree
+  * @return pointer to the rightmost node pointer or root if tree has height of 1
+  */ 
+ btree_node_t **most_right_node(btree_t **root)
+ {
+     btree_node_t *btree;
+     
+     if(    root == NULL
+        ||  *root == NULL)
+     {
+         return NULL;
+     }
+     
+     btree = *root;
+     
+     if(btree->rchild == NULL)
+     {
+         return root;
+     }
+     
+     return most_right_node((btree_t**)&btree->rchild);
+ }
