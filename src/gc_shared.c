@@ -50,7 +50,7 @@ int block_set_size(block_t *block, size_t size)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_size(NULL, %u)", (unsigned int)size);
+        fprintf(stderr, "\nerror: Call block_set_size(NULL, %u)\n\n", (unsigned int)size);
         return 0;
     }
     
@@ -61,7 +61,7 @@ int block_set_forward(block_t *block, void *forward)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_forward(NULL, %p)", forward);
+        fprintf(stderr, "\nerror: Call block_set_forward(NULL, %p)\n\n", forward);
         return 0;
     }
     
@@ -72,7 +72,7 @@ int block_set_type(block_t *block, byte type)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_type(NULL, %x)", type);
+        fprintf(stderr, "\nerror: Call block_set_type(NULL, %x)\n\n", type);
         return 0;
     }
     block->type = type;
@@ -82,7 +82,7 @@ int block_set_array_size(block_t *block, size_t size)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_array_size(NULL, %u)", (unsigned int)size);
+        fprintf(stderr, "\nerror: Call block_set_array_size(NULL, %u)\n\n", (unsigned int)size);
         return 0;
     }
     block->array_size = size;
@@ -92,7 +92,7 @@ int block_set_info(block_t *block, struct_info_t *info)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_info(NULL, %p)", info);
+        fprintf(stderr, "\nerror: Call block_set_info(NULL, %p)\n\n", info);
         return 0;
     }
     block->info = info;
@@ -102,7 +102,7 @@ int block_set_atom_is_ptr(block_t *block, int is_ptr)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "error: Call block_set_atom_is_ptr(NULL, %d)", is_ptr);
+        fprintf(stderr, "\nerror: Call block_set_atom_is_ptr(NULL, %d)\n\n", is_ptr);
         return 0;
     }
     block->atom_is_ptr = is_ptr;

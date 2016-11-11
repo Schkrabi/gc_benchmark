@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include "binary_tree.h" 
 #include "garbage_collector.h"
+#include "gc_util.h"
 
 struct_info_t *btree_descriptor;
  
@@ -25,8 +26,8 @@ int btree_make_descriptor(struct_info_t *info)
     info->struct_size = sizeof(btree_node_t);
     info->number_of_references = 2;
     info->offsets = (unsigned long*)malloc(2 * sizeof(unsigned long));
-    info->offsets[0] = (unsigned long)&measure.lchild - (unsigned long)&measure;
-    info->offsets[1] = (unsigned long)&measure.rchild - (unsigned long)&measure;
+    info->offsets[0] = (unsigned long)((art_ptr_t)&measure.lchild - (art_ptr_t)&measure);
+    info->offsets[1] = (unsigned long)((art_ptr_t)&measure.rchild - (art_ptr_t)&measure);
 }
 
 /**

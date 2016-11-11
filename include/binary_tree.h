@@ -22,7 +22,7 @@ extern struct_info_t *btree_descriptor;
  
 /**
  * Makes and sets the binary tree structure descriptor to the given descriptor pointer
- * Allso fills variable btree_descriptor necessary for algorythms
+ * Also fills variable btree_descriptor necessary for algorithms
  * @par info pointer to the initialized descriptor structure
  * @return 1 if everything went well 0 otherwise
  */

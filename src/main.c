@@ -11,114 +11,64 @@
 #include <string.h>
 #include "binary_tree.h"
 #include <time.h>
+#include "cyclic_list.h"
+#include "gc_util.h"
 
 #define TEST_SIZE 20
 #define NO_COLLECTOR 0
 #define CHENEY_GC 1
-
-int mem_dump(FILE *file);
-int dump_block(FILE *file, block_t *block);
-int dump_block_atom(FILE *file, block_t *block);
-int dump_block_struct(FILE *file, block_t *block);
-int dump_block_array(FILE *file, block_t *block);
-int struct_info_to_string(struct_info_t *info, char **buff);
-
-int mem_dump(FILE *file)
-{
-    block_t *block;
-    
-    fprintf(file, "Dumping all active memory blocks\n");
-    for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
-    {
-        dump_block(file, block);
-    }
-}
-
-int dump_block(FILE *file, block_t *block)
-{
-    switch(block_get_type(block))
-    {
-        case MEM_TYPE_ATOM:
-            dump_block_atom(file, block);
-            break;
-        case MEM_TYPE_STRUCT:
-            dump_block_struct(file, block);
-            break;
-        case MEM_TYPE_ARRAY:
-            dump_block_array(file, block);
-            break;
-    }
-}
-
-int dump_block_atom(FILE *file, block_t *block)
-{
-    fprintf(file, "Block ATOM %p, size %u, is pointer %d\n", block, (unsigned int)block_get_size(block), block_atom_is_ptr(block));
-}
-
-int dump_block_struct(FILE *file, block_t *block)
-{
-    char *buff;
-    
-    struct_info_to_string(block_get_info(block), &buff);
-    fprintf(file, "Block STRUCT %p, size %u, struct info: %s\n", block, (unsigned int)block_get_size(block), buff);
-    
-    free(buff);
-}
-
-int dump_block_array(FILE *file, block_t *block)
-{
-    if(!block_is_struct_block(block))
-    {
-        fprintf(    file, 
-                    "Block ARRAY ATOM %p, size %u, array size %u, is pointer %d\n", 
-                    block, 
-                    (unsigned int)block_get_size(block), 
-                    (unsigned int)block_get_array_size(block), 
-                    block_atom_is_ptr(block));
-    }
-    else
-    {
-        char *buff;
-        struct_info_to_string(block->info, &buff);
-        
-        fprintf(    file,
-                    "Block ARRAY STRUCT %p, size %u, array size %u, struct info %s\n",
-                    block,
-                    (unsigned int)block_get_size(block),
-                    (unsigned int)block_get_array_size(block),
-                    buff);
-        free(buff);
-    }
-}
-
-int struct_info_to_string(struct_info_t *info, char **buff)
-{
-    char *aux, *tmp;
-    int i;
-    
-    *buff = malloc(5000 * sizeof(char));
-    aux = malloc(1000 * sizeof(char));
-    tmp = malloc(10 * sizeof(char));
-    
-    aux[0] = '\0';
-    for(i = 0; i < info->number_of_references; i++)
-    {
-        sprintf(tmp, "%x ", (unsigned int)info->offsets[i]);
-        
-        strcat(aux, tmp);
-    }
-    
-    sprintf(*buff, "Struct Info %p, number_of_references %u, offsets: %s", info, (unsigned int)info->number_of_references, aux);
-    free(aux);
-    free(tmp);
-    return 0;
-}
 
 typedef struct 
 {
   int value;
   void *ptr1, *ptr2;
 } test_struct_t;
+
+int gc_test();
+int btree_test();
+int clist_test();
+/**
+ * Main executed function
+ */
+int sub_main(int argc, char *argv[]);
+
+/**
+ * Main entrypoint Garbage collector initial setup
+ */
+int main(int argc, char *argv[])
+{
+    int err_msg;
+    struct_info_t btree_info, clist_info;
+    
+    SET_STACK_BOTTOM
+    used_gc = CHENEY_GC;
+    
+    btree_make_descriptor(&btree_info);
+    clist_make_descriptor(&clist_info);
+    
+    err_msg = gc_init();
+    
+    srand(time(0));
+    
+    if(err_msg != 0)
+    {
+            fprintf(stderr, "Initialization error, code %d\n", err_msg);
+    }
+    
+    return sub_main(argc, argv);
+}
+
+/**
+ * Main executed function
+ */
+int sub_main(int argc, char *argv[])
+{
+    gc_test();
+    btree_test();
+    clist_test();
+    mem_dump(stdout);
+    return 0;
+}
 
 int gc_test()
 {
@@ -183,67 +133,64 @@ int gc_test()
     mem_dump(stdout);
 }
 
-/**
- * Main executed function
- */
-int sub_main(int argc, char *argv[])
+int btree_test()
 {
     btree_t *btree;
     int i;
     long n;
     
-    srand(time(0));
     btree = NULL;
     
     printf("\nInserting:\n");
     for(i = 0; i < TEST_SIZE; i++)
     {
         n = rand()%TEST_SIZE;
-        printf("inserting %d, is_succes?: %d\n", n, btree_insert(&btree, n));
+        printf("inserting %d, is_succes?: %d\n", (int)n, btree_insert(&btree, n));
     }    
     
     printf("\nSearching:\n");
     for(i = 0; i < TEST_SIZE; i++)
     {
         n = rand()%TEST_SIZE;
-        printf("searchig for %d, is succes?: %p\n", n, btree_search(btree, n));
+        printf("searchig for %d, is succes?: %p\n", (int)n, btree_search(btree, n));
     }
     
     printf("\nDeleting:\n");
     for(i = 0; i < TEST_SIZE; i++)
     {
         n = rand()%TEST_SIZE;
-        printf("deleteing %d, is success?: %d\n", n, btree_delete(&btree, n));
+        printf("deleteing %d, is success?: %d\n", (int)n, btree_delete(&btree, n));
     }
-    
-    /*btree_insert(&btree, 1);
-    btree_insert(&btree, 0);
-    btree_insert(&btree, 2);
-    
-    btree_delete(&btree, 0);
-    btree_delete(&btree, 0);*/
-    
-    return 0;
 }
 
-/**
- * Main entrypoint Garbage collector initial setup
- */
-int main(int argc, char *argv[])
+int clist_test()
 {
-    int err_msg;
-    struct_info_t info;
+    clist_t *clist;
+    int i;
+    long n;
+
+    clist = NULL;
     
-    SET_STACK_BOTTOM
-    used_gc = CHENEY_GC;
-    
-    btree_make_descriptor(&info);
-    
-    err_msg = gc_init();
-    if(err_msg != 0)
+    printf("\nInserting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
     {
-            printf("Initialization error, code %d\n", err_msg);
+        n = rand()%TEST_SIZE;
+        printf("inserting %d, is_succes?: %d\n", (int)n, clist_insert(&clist, n));
+    }    
+    
+    printf("\nSearching:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("searchig for %d, is succes?: %p\n", (int)n, clist_search(clist, n));
     }
     
-    return sub_main(argc, argv);
+    printf("\nDeleting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("deleteing %d, is success?: %d\n", (int)n, clist_delete(&clist, n));
+    }
+    
+    return 0;
 }

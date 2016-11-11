@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "gc_shared.h"
+#include "gc_cheney.h"
 
 #ifdef __gnu_linux__
 typedef unsigned long long art_ptr_t;
@@ -38,4 +40,46 @@ int get_stack_line(char *buffer, size_t max_size);
  * @returns pointer to the bottom of the stack
  */
 void *get_stack_bottom();
+
+/**
+ * Dumps information of allocated memory to the given file
+ * @par file output file
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int mem_dump(FILE *file);
+/**
+ * Dumps information about block of memory to the given file
+ * @par file output file
+ * @par block a memory block
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_block(FILE *file, block_t *block);
+/**
+ * Dumps a block of memory containign atomic value into a given file
+ * @par file output file
+ * @par block memory block of type MEM_TYPE_ATOM
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_block_atom(FILE *file, block_t *block);
+/**
+ * Dumps a block of memory containign strucutre into a given file
+ * @par file output file
+ * @par block memory block of type MEM_TYPE_STRUCT
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_block_struct(FILE *file, block_t *block);
+/**
+ * Dumps a block of memory containign an array into a file
+ * @par file output file
+ * @par block memory block of type MEM_TYPE_ARRAY
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_block_array(FILE *file, block_t *block);
+/**
+ * Creates a cstring containing readable information about struct_info_t structure
+ * @par info descriptor structure
+ * @par buf::out output parameter for the string
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int struct_info_to_string(struct_info_t *info, char **buff);
 #endif

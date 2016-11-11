@@ -13,7 +13,7 @@
 /**
  * Size of the semispace in bytes
  */
-#define SEMISPACE_SIZE 1024
+#define SEMISPACE_SIZE 1048576 
 
 /**
  * from space heap (active heap)
