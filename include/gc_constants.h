@@ -19,7 +19,7 @@
 /**
  * Size of the semispace in bytes if applicable
  */
-#define SEMISPACE_SIZE 1024//1048576 //1MB
+#define SEMISPACE_SIZE 1048576 //1MB
 
 /******************************************************************************
  *                              GARBAGE COLLECTORS                            *
@@ -77,7 +77,11 @@
                         x(clist_t, TYPE_CLIST_T) \
                         x(clist_node_t, TYPE_CLIST_T) \
                         x(clist_t*, TYPE_PTR) \
-                        x(clist_node_t*, TYPE_PTR)
+                        x(clist_node_t*, TYPE_PTR) \
+                        x(cdlist_t, TYPE_CDLIST_T) \
+                        x(cdlist_node_t, TYPE_CDLIST_T) \
+                        x(cdlist_t*, TYPE_PTR) \
+                        x(cdlist_node_t*, TYPE_PTR)
                         
 /** 
  * Allocated memory types

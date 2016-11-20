@@ -14,8 +14,9 @@
 #include "cyclic_list.h"
 #include "gc_util.h"
 #include "gc_constants.h"
+#include "cdouble_list.h"
 
-#define TEST_SIZE 3
+#define TEST_SIZE 20
 
 typedef struct 
 {
@@ -29,6 +30,7 @@ int clist_test();
 int init_type_table();
 int free_type_table();
 int type_test();
+int cdlist_test();
 /**
  * Main executed function
  */
@@ -65,10 +67,11 @@ int main(int argc, char *argv[])
 int sub_main(int argc, char *argv[])
 {
     gc_test();
-    //btree_test();
-    //clist_test();
-    //type_test();
-    //mem_dump(stdout);
+    btree_test();
+    clist_test();
+    type_test();
+    cdlist_test();
+    mem_dump(stdout);
     
     return 0;
 }
@@ -215,6 +218,43 @@ int clist_test()
     return 0;
 }
 
+int cdlist_test()
+{
+    cdlist_t *list;
+    int i;
+    long n;
+
+    list = NULL;
+    
+    printf("\nTESTING CYCLIC DOUBLE LINKED LIST:\n\n");
+    
+    printf("\nInserting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("inserting %d, is_succes?: %d\n", (int)n, cdlist_insert(&list, n));
+    }    
+    
+    printf("\nSearching:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("searchig for %d, is succes?: %p\n", (int)n, cdlist_search(list, n));
+    }
+    
+    printf("\nDeleting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        n = rand()%TEST_SIZE;
+        printf("deleteing %d, ", (int)n);
+        printf("is success?: %d\n", cdlist_delete(&list, n));
+    }
+    
+    printf("\n");
+    
+    return 0;
+}
+
 int init_type_table()
 {
     test_struct_t test_instance;
@@ -248,10 +288,7 @@ int init_type_table()
     
     btree_make_descriptor(&type_table[TYPE_BTREE_T]);
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
-    
-    type_table[TYPE_CDLIST_T].size = 0;
-    type_table[TYPE_CDLIST_T].number_of_references = 0;
-    type_table[TYPE_CDLIST_T].offsets = NULL;
+    cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);    
 }
 
 int free_type_table()

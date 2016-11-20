@@ -14,11 +14,8 @@ typedef struct {
     void *next;
 } clist_node_t, clist_t;
 
-extern type_info_t *clist_descriptor;
-
 /**
  * Makes and sets the cyclic list structure descriptor to the given descriptor pointer
- * Allso fills variable clist_descriptor necessary for algorithms
  * @par info pointer to the initialized descriptor structure
  * @return 1 if everything went well 0 otherwise
  */
