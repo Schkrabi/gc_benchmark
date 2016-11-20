@@ -10,7 +10,7 @@
 #include "garbage_collector.h"
 #include "gc_util.h"
 
-struct_info_t *btree_descriptor;
+type_info_t *btree_descriptor;
  
 /**
  * Makes and sets the binary tree structure descriptor to the given descriptor pointer
@@ -18,12 +18,12 @@ struct_info_t *btree_descriptor;
  * @par info pointer to the initialized descriptor structure
  * @return 1 if everything went well 0 otherwise
  */
-int btree_make_descriptor(struct_info_t *info)
+int btree_make_descriptor(type_info_t *info)
 {
     btree_node_t measure;
     
     btree_descriptor = info;
-    info->struct_size = sizeof(btree_node_t);
+    info->size = sizeof(btree_node_t);
     info->number_of_references = 2;
     info->offsets = (unsigned long*)malloc(2 * sizeof(unsigned long));
     info->offsets[0] = (unsigned long)((art_ptr_t)&measure.lchild - (art_ptr_t)&measure);
@@ -40,7 +40,7 @@ int btree_insert(btree_t **root, long value)
 {
   if(*root == NULL)
   {
-    *root = gc_malloc_struct(btree_descriptor);
+    *root = gc_malloc(btree_node_t);
     (*root)->value = value;
     (*root)->lchild = NULL;
     (*root)->rchild = NULL;

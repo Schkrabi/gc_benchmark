@@ -9,11 +9,8 @@
 
 #include "gc_shared.h"
 #include <stdio.h>
-
-/**
- * Size of the semispace in bytes
- */
-#define SEMISPACE_SIZE 1048576 
+#include "gc_types.h"
+#include "gc_constants.h"
 
 /**
  * from space heap (active heap)
@@ -60,34 +57,18 @@ void* semispace_end(void *semispace_ptr);
 block_t *alloc_block_of_size(size_t size);
 
 /**
- * Allocate memory block for singe atomic value
- * @par size size of the value in bytes
- * @par is_pointer indicates whetter allocated value is pointer
+ * Allocates memory for single (non-array) value
+ * @par type type number
  * @return pointer to allocated memory or NULL
  */
-void *gc_cheney_malloc_atom(size_t size, int is_pointer);
+void *gc_cheney_malloc(int type);
 
 /**
- * Allocate memory block for single struct value
- * @par type pointer to the sturct type descriptor
+ * Allocates memory for an array of values
+ * @par type type number
  * @return pointer to allocated memory or NULL
  */
-void *gc_cheney_malloc_struct(struct_info_t *type);
-
-/**
- * Allocates memory block for array of atomic values
- * @par number_of_elements number of elements in array
- * @par is_pointer flag that indicates whetter values in array are pointers
- * @return pointer to allocated memory or NULL
- */
-void *gc_cheney_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer);
-/**
- * Allocates memory block for array of structures
- * @par number_of_elements number of elements in array
- * @par type pointer to the struct type descriptor
- * @return pointer to allocated memory or NULL
- */
-void *gc_cheney_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type);
+void *gc_cheney_malloc_array(int type, size_t size);
 
 /**
  * Collects the memory
@@ -132,7 +113,7 @@ int gc_scan_chunk(void *start, void *end);
  * @par ptr pointer to the structure
  * @par info descriptor of the structure
  */
-int gc_scan_struct(void *ptr, struct_info_t *info);
+int gc_scan_struct(void *ptr, type_info_t *info);
 
 /**
  * Scans the (copied) block of memory and copies the references it points to to the to_space

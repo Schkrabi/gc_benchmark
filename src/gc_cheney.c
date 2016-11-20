@@ -44,10 +44,7 @@ size_t gc_roots_count;
  */
 int gc_cheney_init()
 {
-    void *chunk;
-#ifdef __gnu_linux__
-    extern char __bss_start; // Provided by the linker.
-#endif    
+    void *chunk;   
 
     chunk = get_memory_primitive(2*SEMISPACE_SIZE);
     if(chunk == NULL)
@@ -66,20 +63,6 @@ int gc_cheney_init()
     }
     remaining_block = from_space;
     gc_roots_count = 0;
-
-#ifdef __gnu_linux__        
-    BBSstart = (void*)&__bss_start;
-    
-    BBSend = sbrk(0);
-    if(BBSend == (void*)-1)
-    {
-        fprintf(stderr, "Unable to init BBSend\n");
-        return 4;
-    }
-#else
-    BBSstart = NULL;
-    BBSend = NULL;
-#endif    
     
     return 0;
 }
@@ -117,113 +100,53 @@ block_t *alloc_block_of_size(size_t size)
 }
 
 /**
- * Allocate memory bloc for singe atomic value
- * @par size size of the value in bytes
- * @par is_pointer indicates whetter allocated value is pointer
+ * Allocates memory for single (non-array) value
+ * @par type type number
+ * @return pointer to allocated memory or NULL
  */
-void *gc_cheney_malloc_atom(size_t size, int is_pointer)
+void *gc_cheney_malloc(int type)
 {
     block_t *block;
     
-    block = alloc_block_of_size(size);
+    block = alloc_block_of_size(type_table[type].size);
     
     if(block == NULL)
     {
         return block;
     }
     
-    block_set_type(block, MEM_TYPE_ATOM);
-    block_set_atom_is_ptr(block, is_pointer);
+    block_set_type(block, type);
+    block_set_element_type(block, type);
+    block_set_array_size(block, 0);
+    block_set_forward(block, NULL);
     
     return get_data_start(block);
 }
 
 /**
- * Allocate memory block for single struct value
- * @par type pointer to the sturct type descriptor
+ * Allocates memory for an array of values
+ * @par type type number
+ * @return pointer to allocated memory or NULL
  */
-void *gc_cheney_malloc_struct(struct_info_t *type)
+void *gc_cheney_malloc_array(int type, size_t size)
 {
     block_t *block;
     
-    if(type == NULL)
-    {
-        return NULL;
-    }
-    
-    block = alloc_block_of_size(type->struct_size);
+    block = alloc_block_of_size(type_table[type].size * size);
     
     if(block == NULL)
     {
         return block;
     }
     
-    block_set_type(block, MEM_TYPE_STRUCT);
-    block_set_info(block, type);
+    block_set_type(block, TYPE_ARRAY);
+    block_set_element_type(block, type);
+    block_set_array_size(block, size);
+    block_set_forward(block, NULL);
     
     return get_data_start(block);
 }
 
-/**
- * Allocates memory block for array of atomic values
- * @par number_of_elements number of elements in array
- * @par is_pointer flag that indicates whetter values in array are pointers
- * @return pointer to allocated memory or NULL
- */
-void *gc_cheney_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer)
-{
-    block_t *block;
-    size_t size;
-    
-    if(number_of_elements == 0 || atom_size == 0)
-    {
-        return NULL;
-    }
-    
-    size = number_of_elements * atom_size;
-    block = alloc_block_of_size(size);
-    
-    if(block == NULL)
-    {
-        return block;
-    }
-    
-    block_set_type(block, MEM_TYPE_ARRAY);
-    block_set_array_size(block, number_of_elements);
-    block_set_atom_is_ptr(block, is_pointer);
-    
-    return get_data_start(block); 
-}
-/**
- * Allocates memory block for array of structures
- * @par number_of_elements number of elements in array
- * @par type pointer to the struct type descriptor
- * @return pointer to allocated memory or NULL
- */
-void *gc_cheney_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type)
-{
-    block_t *block;
-    size_t size;
-    
-    if(number_of_elements == 0 || type == NULL)
-    {
-        return NULL;
-    }
-    
-    size = number_of_elements * type->struct_size;
-    block = alloc_block_of_size(size);
-    
-    if(block == NULL)
-    {
-        return block;
-    }
-    
-    block_set_type(block, MEM_TYPE_ARRAY);
-    block_set_array_size(block, number_of_elements);
-    block_set_info(block, type);
-    
-    return get_data_start(block);
-}
 
 /**
  * Return forwarding address for a given pointer
@@ -296,11 +219,11 @@ void *gc_scan_ptr(void *ptr)
             if(!block_has_forward(block))
             {
                 block_t *dst;
-                dst = split_block(&remaining_to_space, block->size);
+                dst = split_block(&remaining_to_space, block_get_size(block));
                 copy_block_metadata(block, dst);
                 
                 block_set_forward(block, dst);
-                memcpy(get_data_start(dst), get_data_start(block), block->size);
+                memcpy(get_data_start(dst), get_data_start(block), block_get_size(block));
                 
                 return dst;
             }
@@ -341,7 +264,7 @@ int gc_scan_chunk(void *start, void *end)
  * @par ptr pointer to the structure
  * @par info descriptor of the structure
  */
-int gc_scan_struct(void *ptr, struct_info_t *info)
+int gc_scan_struct(void *ptr, type_info_t *info)
 {
     int i;
     
@@ -369,12 +292,14 @@ int gc_walk_block(block_t *block)
 {
     switch(block_get_type(block))
     {
-        case MEM_TYPE_ATOM:
-            return gc_walk_atom(block);
-        case MEM_TYPE_STRUCT:
-            return gc_walk_struct(block);
-        case MEM_TYPE_ARRAY:
+        case TYPE_UNDEFINED:
+        case TYPE_INT:
+        case TYPE_DOUBLE:
+            return 0;
+        case TYPE_ARRAY:
             return gc_walk_array(block);
+        default:
+            return gc_walk_struct(block);
     }
 }
 
@@ -409,10 +334,10 @@ int gc_walk_array(block_t *block)
     if(block_is_struct_block(block))
     {
         void *ptr;
-        struct_info_t *info;
+        type_info_t *info;
         
         info = block_get_info(block);
-        for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += info->struct_size)
+        for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += info->size)
         {
             gc_scan_struct(ptr, info);
         }

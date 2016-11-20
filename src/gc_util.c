@@ -130,12 +130,15 @@ int dump_block(FILE *file, block_t *block)
 {
     switch(block_get_type(block))
     {
-        case MEM_TYPE_ATOM:
+        case TYPE_UNDEFINED:
+        case TYPE_INT:
+        case TYPE_PTR:
+        case TYPE_DOUBLE:
             return dump_block_atom(file, block);
-        case MEM_TYPE_STRUCT:
-            return dump_block_struct(file, block);
         case MEM_TYPE_ARRAY:
             return dump_block_array(file, block);
+        default:
+            dump_block_struct(file, block);
     }
 }
 
@@ -161,7 +164,7 @@ int dump_block_struct(FILE *file, block_t *block)
     char *buff;
     int rtrn;
     
-    struct_info_to_string(block_get_info(block), &buff);
+    type_info_to_string(block_get_info(block), &buff);
     rtrn = fprintf(file, "Block STRUCT %p, size %u, struct info: %s\n", block, (unsigned int)block_get_size(block), buff);
     
     free(buff);
@@ -189,7 +192,7 @@ int dump_block_array(FILE *file, block_t *block)
     else
     {
         char *buff;
-        struct_info_to_string(block->info, &buff);
+        type_info_to_string(block_get_info(block), &buff);
         
         rtrn = fprintf( file,
                         "Block ARRAY STRUCT %p, size %u, array size %u, struct info %s\n",
@@ -203,12 +206,12 @@ int dump_block_array(FILE *file, block_t *block)
 }
 
 /**
- * Creates a cstring containing readable information about struct_info_t structure
+ * Creates a cstring containing readable information about type_info_t structure
  * @par info descriptor structure
  * @par buf::out output parameter for the string
  * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
  */
-int struct_info_to_string(struct_info_t *info, char **buff)
+int type_info_to_string(type_info_t *info, char **buff)
 {
     char *aux, *tmp;
     int i, rtrn;

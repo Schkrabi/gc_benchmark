@@ -7,17 +7,20 @@
 #include "gc_shared.h"
 #include "gc_cheney.h"
 #include <stdlib.h>
+#include "gc_constants.h"
 
-/**
-* Macros definig used garbage collectors names
-*/
-#define NO_COLLECTOR 0
-#define CHENEY_GC 1
- 
  /**
  * Byte indicating which garbage collector is used
  */
 char used_gc;
+
+/**
+ * Xmacros for generating switches
+ */
+#define __XCOLLECTOR_INIT(collector, num) case num : return gc_ ## collector ## _init();
+#define __XCOLLECTOR_MALLOC(collector, num) case num : return gc_ ## collector ## _malloc(type);
+#define __XCOLLECTOR_MALLOC_ARRAY(collector, num) case num : return gc_ ## collector ## _malloc_array(type, size);
+#define __XCOLLECTOR_COLLECT(collector, num) case num : return gc_ ## collector ## _collect();
 
 /**
  * Initializes the Garbage Collector objects
@@ -27,8 +30,7 @@ int gc_init()
 {
   switch(used_gc)
   {
-    case CHENEY_GC:
-      return gc_cheney_init();
+    XCOLLECTOR_TABLE(__XCOLLECTOR_INIT)
     case NO_COLLECTOR:
     default:
       return 0;  
@@ -36,74 +38,35 @@ int gc_init()
 }
 
 /**
-* Allocate memory block for singe atomic value
-* @par size size of the value in bytes
-* @par is_pointer indicates whetter allocated value is pointer
-* @return pointer to allocated memory or NULL
-*/
-void *gc_malloc_atom(size_t size, int is_pointer)
+ * Allocates memory for single (non-array) value
+ * @par type type number
+ * @return pointer to allocated memory or NULL
+ */
+void *__gc_malloc(int type)
 {
-  switch(used_gc)
-  {
-    case CHENEY_GC:
-      return gc_cheney_malloc_atom(size, is_pointer);
-    case NO_COLLECTOR:
-    default:
-      return malloc(size);
-  }
+    switch(used_gc)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC)
+        case NO_COLLECTOR:
+        default:
+            return NULL;
+    }
 }
 
 /**
- * Allocate memory block for single struct value
- * @par type pointer to the sturct type descriptor
+ * Allocates memory for an array of values
+ * @par type type number
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_struct(struct_info_t *type)
+void *__gc_malloc_array(int type, size_t size)
 {
-  switch(used_gc)
-  {
-    case CHENEY_GC:
-      return gc_cheney_malloc_struct(type);
-    case NO_COLLECTOR:
-    default:
-      return malloc(type->struct_size);
-  }
-}
-
-/**
- * Allocates memory block for array of atomic values
- * @par number_of_elements number of elements in array
- * @par is_pointer flag that indicates whetter values in array are pointers
- * @return pointer to allocated memory or NULL
- */
-void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer)
-{
-  switch(used_gc)
-  {
-    case CHENEY_GC:
-      return gc_cheney_malloc_array_of_atoms(number_of_elements, atom_size, is_pointer);
-    case NO_COLLECTOR:
-    default:
-      return malloc(number_of_elements * atom_size);
-  }
-}
-
-/**
- * Allocates memory block for array of structures
- * @par number_of_elements number of elements in array
- * @par type pointer to the struct type descriptor
- * @return pointer to allocated memory or NULL
- */
-void *gc_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type)
-{
-  switch(used_gc)
-  {
-    case CHENEY_GC:
-      return gc_cheney_malloc_array_of_struct(number_of_elements, type);
-    case NO_COLLECTOR:
-    default:
-      return malloc(number_of_elements * type->struct_size);
-  }
+    switch(used_gc)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC_ARRAY)
+        case NO_COLLECTOR:
+        default:
+            return NULL;
+    }
 }
 
 /**
@@ -114,8 +77,7 @@ int gc_collect()
 {
   switch(used_gc)
   {
-    case CHENEY_GC:
-      return gc_cheney_collect();;
+    XCOLLECTOR_TABLE(__XCOLLECTOR_COLLECT)
     case NO_COLLECTOR:
     default:
       return 0;

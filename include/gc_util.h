@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "gc_shared.h"
 #include "gc_cheney.h"
+#include "gc_types.h"
 
 #ifdef __gnu_linux__
 typedef unsigned long long art_ptr_t;
@@ -76,10 +77,10 @@ int dump_block_struct(FILE *file, block_t *block);
  */
 int dump_block_array(FILE *file, block_t *block);
 /**
- * Creates a cstring containing readable information about struct_info_t structure
+ * Creates a cstring containing readable information about type_info_t structure
  * @par info descriptor structure
  * @par buf::out output parameter for the string
  * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
  */
-int struct_info_to_string(struct_info_t *info, char **buff);
+int type_info_to_string(type_info_t *info, char **buff);
 #endif

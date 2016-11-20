@@ -9,7 +9,7 @@
 #include "gc_util.h"
 #include <stdlib.h>
 
-struct_info_t *clist_descriptor;
+type_info_t *clist_descriptor;
 
 /**
  * Makes and sets the cyclic list structure descriptor to the given descriptor pointer
@@ -17,11 +17,11 @@ struct_info_t *clist_descriptor;
  * @par info pointer to the initialized descriptor structure
  * @return 1 if everything went well 0 otherwise
  */
-int clist_make_descriptor(struct_info_t *info)
+int clist_make_descriptor(type_info_t *info)
 {
     clist_node_t pattern;
     clist_descriptor = info;
-    info->struct_size = sizeof(clist_node_t);
+    info->size = sizeof(clist_node_t);
     info->number_of_references = 1;
     info->offsets = (unsigned long*)malloc(1*sizeof(unsigned long));
     info->offsets[0] = (unsigned long)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
@@ -37,7 +37,7 @@ int clist_insert(clist_t **list, long value)
 {
     clist_node_t *node;
     
-    node = gc_malloc_struct(clist_descriptor);
+    node = gc_malloc(clist_node_t);
     node->value = value;
     
     if(*list == NULL)

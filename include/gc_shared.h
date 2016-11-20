@@ -8,27 +8,9 @@
 #define GC_SHARED_H
 
 #include <stdlib.h>
+#include "gc_types.h"
 
 typedef char byte;
-
-/**
- * Structure for keeping info about structures
- */
-typedef struct
-{
-    /**
-     * Size of the structure in bytes
-     */
-    size_t struct_size;
-    /**
-    * Number of references in the structure
-    */
-    size_t number_of_references;
-    /**
-    * Offsets from the structure pointer to the references
-    */
-    unsigned long *offsets;
-} struct_info_t; 
 
 /**
  * Header for a logical memory block
@@ -37,39 +19,12 @@ typedef struct
  */
 typedef struct
 {
-    /**
-     * Size in bytes of allocated space
-     */
+    int type;
+    int element_type;
     size_t size;
-    /**
-     * Forwarding address for copying algorthm
-     */
+    
     void *forward;
-    /**
-     * Type of an object in memory Atom/Structure/Array
-     */
-    byte type;
-    /**
-     * If this is an array memory block contains a size of this array
-     */
-    size_t array_size;
-    /**
-     * Pointer to the info about allocated structure
-     * @remark for TYPE_ATOM memory is always NULL
-     */
-    struct_info_t *info;
-    /**
-     * Indicates whetter allocate atomic value is ptr
-     */
-    int atom_is_ptr;
 } block_t;
-
-/** 
- * Allocated memory types
- */
-#define MEM_TYPE_ATOM 0
-#define MEM_TYPE_STRUCT 1
-#define MEM_TYPE_ARRAY 2
 
 /**
  * Getters
@@ -79,8 +34,9 @@ size_t block_get_size(block_t *block);
 void *block_get_forward(block_t *block);
 byte block_get_type(block_t *block);
 size_t block_get_array_size(block_t *block);
-struct_info_t *block_get_info(block_t *block);
+type_info_t *block_get_info(block_t *block);
 int block_atom_is_ptr(block_t *block);
+int block_get_element_type(block_t *block);
 
 /**
  * Setters
@@ -90,8 +46,9 @@ int block_set_size(block_t *block, size_t size);
 int block_set_forward(block_t *block, void *forward);
 int block_set_type(block_t *block, byte type);
 int block_set_array_size(block_t *block, size_t size);
-int block_set_info(block_t *block, struct_info_t *info);
+int block_set_info(block_t *block, type_info_t *info);
 int block_set_atom_is_ptr(block_t *block, int is_ptr);
+int block_set_element_type(block_t *block, int type);
 
 /**
  * Predicates whetter the block has a forwarding addr set
@@ -137,14 +94,6 @@ void *get_memory_primitive(size_t size);
 int release_memory_primitive(void *ptr);
 
 /**
- * Initializes a block of given size from a larger chunk of raw memory
- * @par pointer to the original chunk
- * @par size size of a new block
- * @return new start ptr of remaining raw memory chunk
- */
-block_t *init_block_from_chunk(void *chunk, size_t size);
-
-/**
  * Returns allocated memory from a block
  * @par block initialized block of memory
  * @return ptr to the begining of user usable memory
@@ -159,16 +108,19 @@ void *get_data_start(block_t *block);
 void *get_data_end(block_t *block);
 
 /**
- * Size of a word in the system
- */
-#define WORD_SIZE sizeof(void*)
-
-/**
  * Alings integer to the nearest greater <TODO násobek> of the size
  * @par size original size to be aligned
  * @return aligned size
  */
 size_t align_size(size_t size);
+
+/**
+ * Initializes a block of given size from a larger chunk of raw memory
+ * @par chunk oroginal chunk of memory
+ * @par size of the memory chunk
+ * @return initialized block
+ */
+block_t *init_block_from_chunk(void *chunk, size_t size);
 
 /**
  * Splits the block of memory

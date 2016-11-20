@@ -13,10 +13,9 @@
 #include <time.h>
 #include "cyclic_list.h"
 #include "gc_util.h"
+#include "gc_constants.h"
 
-#define TEST_SIZE 20
-#define NO_COLLECTOR 0
-#define CHENEY_GC 1
+#define TEST_SIZE 3
 
 typedef struct 
 {
@@ -27,6 +26,9 @@ typedef struct
 int gc_test();
 int btree_test();
 int clist_test();
+int init_type_table();
+int free_type_table();
+int type_test();
 /**
  * Main executed function
  */
@@ -37,25 +39,24 @@ int sub_main(int argc, char *argv[]);
  */
 int main(int argc, char *argv[])
 {
-    int err_msg;
-    struct_info_t btree_info, clist_info;
-    
-    SET_STACK_BOTTOM
+    int err_msg, rtrn;
     used_gc = CHENEY_GC;
     
-    btree_make_descriptor(&btree_info);
-    clist_make_descriptor(&clist_info);
-    
+    init_type_table();
     err_msg = gc_init();
     
     srand(time(0));
     
     if(err_msg != 0)
     {
-            fprintf(stderr, "Initialization error, code %d\n", err_msg);
+        fprintf(stderr, "Initialization error, code %d\n", err_msg);
     }
     
-    return sub_main(argc, argv);
+    rtrn = sub_main(argc, argv);
+    
+    free_type_table();
+    
+    return rtrn;
 }
 
 /**
@@ -64,51 +65,59 @@ int main(int argc, char *argv[])
 int sub_main(int argc, char *argv[])
 {
     gc_test();
-    btree_test();
-    clist_test();
-    mem_dump(stdout);
+    //btree_test();
+    //clist_test();
+    //type_test();
+    //mem_dump(stdout);
+    
+    return 0;
+}
+
+int type_test()
+{
+    printf("\nTESTING TYPE SYSTEM:\n\n");
+    printf("%s\n", typenum_to_string(type_num(int)));
+    printf("%s\n", typenum_to_string(type_num(void*)));
+    printf("%s\n", typenum_to_string(type_num(double)));
+    printf("%s\n", typenum_to_string(type_num(test_struct_t)));
+    printf("%s\n", typenum_to_string(type_num(btree_t)));
+    printf("%s\n", typenum_to_string(type_num(clist_t)));
+    printf("\n");
+    
     return 0;
 }
 
 int gc_test()
 {
-    struct_info_t *struct_info;
+    type_info_t *struct_info;
     test_struct_t test_instance;
     void **ptr_src1, **ptr_src2;
     int *atom_test, *array_test;
     test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
     int i;
     
-    struct_info = (struct_info_t*)malloc(sizeof(struct_info_t));
-    
-    struct_info[0].number_of_references = 2;
-    struct_info[0].offsets = malloc(2*sizeof(unsigned long));
-    
-    struct_info[0].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
-    struct_info[0].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
-    struct_info[0].struct_size = sizeof(test_struct_t);
-    
+    printf("\nTESTING MEMORY ALLOCATION AND COLLECTION:\n\n");
     printf("Initial memory dump:\n");
     mem_dump(stdout);
     
-    atom_test = gc_malloc_atom(sizeof(int), 0);
-    struct_test = gc_malloc_struct(struct_info);
-    array_test = gc_malloc_array_of_atoms(TEST_SIZE, sizeof(int), 0);
-    struct_array_test = gc_malloc_array_of_struct(TEST_SIZE, struct_info);
+    atom_test = gc_malloc(int);
+    struct_test = gc_malloc(test_struct_t);
+    array_test = gc_malloc_array(int, TEST_SIZE);
+    struct_array_test = gc_malloc_array(test_struct_t, TEST_SIZE);
     
-    ptr_src1 = (void**)gc_malloc_atom(sizeof(void*), 1);
+    ptr_src1 = (void**)gc_malloc(void*);
     *ptr_src1 = atom_test;
     
-    ptr_src2 = (void**)gc_malloc_array_of_atoms(TEST_SIZE, sizeof(void*), 1);
+    ptr_src2 = (void**)gc_malloc_array(void*,TEST_SIZE);
     ptr_src2[0] = atom_test;
     ptr_src2[1] = struct_test;
     ptr_src2[2] = NULL;
     
-    ptr_src3 = (test_struct_t*)gc_malloc_struct(struct_info);
+    ptr_src3 = (test_struct_t*)gc_malloc(test_struct_t);
     ptr_src3->ptr1 = NULL;
     ptr_src3->ptr2 = struct_test;
     
-    ptr_src4 = (test_struct_t*)gc_malloc_array_of_struct(TEST_SIZE, struct_info);
+    ptr_src4 = (test_struct_t*)gc_malloc_array(test_struct_t, TEST_SIZE);
     ptr_src4[0].ptr1 = array_test;
     ptr_src4[0].ptr2 = atom_test;
     ptr_src4[1].ptr1 = NULL;
@@ -131,6 +140,10 @@ int gc_test()
     
     printf("\nMemory dump after collection:\n");
     mem_dump(stdout);
+    
+    printf("\n");
+    
+    return 0;
 }
 
 int btree_test()
@@ -141,6 +154,7 @@ int btree_test()
     
     btree = NULL;
     
+    printf("\nTESTING BINARY TREES:\n\n");
     printf("\nInserting:\n");
     for(i = 0; i < TEST_SIZE; i++)
     {
@@ -161,6 +175,8 @@ int btree_test()
         n = rand()%TEST_SIZE;
         printf("deleteing %d, is success?: %d\n", (int)n, btree_delete(&btree, n));
     }
+    
+    printf("\n");
 }
 
 int clist_test()
@@ -170,6 +186,8 @@ int clist_test()
     long n;
 
     clist = NULL;
+    
+    printf("\nTESTING CYCLIC LIST:\n\n");
     
     printf("\nInserting:\n");
     for(i = 0; i < TEST_SIZE; i++)
@@ -192,5 +210,54 @@ int clist_test()
         printf("deleteing %d, is success?: %d\n", (int)n, clist_delete(&clist, n));
     }
     
+    printf("\n");
+    
     return 0;
+}
+
+int init_type_table()
+{
+    test_struct_t test_instance;
+    
+    type_table[TYPE_INT].size = sizeof(int);
+    type_table[TYPE_INT].number_of_references = 0;
+    type_table[TYPE_INT].offsets = NULL;
+    
+    type_table[TYPE_ARRAY].size = 0;
+    type_table[TYPE_ARRAY].number_of_references = 0;
+    type_table[TYPE_ARRAY].offsets = NULL;
+    
+    type_table[TYPE_STRUCT].size = 0;
+    type_table[TYPE_STRUCT].number_of_references = 0;
+    type_table[TYPE_STRUCT].offsets = NULL;
+    
+    type_table[TYPE_PTR].size = sizeof(void*);
+    type_table[TYPE_PTR].number_of_references = 1;
+    type_table[TYPE_PTR].offsets = (unsigned long*)malloc(1*sizeof(unsigned long));
+    type_table[TYPE_PTR].offsets[0] = 0;
+    
+    type_table[TYPE_DOUBLE].size = sizeof(double);
+    type_table[TYPE_DOUBLE].number_of_references = 0;
+    type_table[TYPE_DOUBLE].offsets = NULL;
+    
+    type_table[TYPE_TEST_STRUCT_T].size = sizeof(test_struct_t);
+    type_table[TYPE_TEST_STRUCT_T].number_of_references = 2;
+    type_table[TYPE_TEST_STRUCT_T].offsets = malloc(2*sizeof(unsigned long));
+    type_table[TYPE_TEST_STRUCT_T].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
+    type_table[TYPE_TEST_STRUCT_T].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
+    
+    btree_make_descriptor(&type_table[TYPE_BTREE_T]);
+    clist_make_descriptor(&type_table[TYPE_CLIST_T]);
+    
+    type_table[TYPE_CDLIST_T].size = 0;
+    type_table[TYPE_CDLIST_T].number_of_references = 0;
+    type_table[TYPE_CDLIST_T].offsets = NULL;
+}
+
+int free_type_table()
+{
+    free(type_table[TYPE_PTR].offsets);
+    free(type_table[TYPE_TEST_STRUCT_T].offsets);
+    free(type_table[TYPE_BTREE_T].offsets);
+    free(type_table[TYPE_CLIST_T].offsets);
 }

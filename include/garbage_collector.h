@@ -7,6 +7,8 @@
 #ifndef GARBAGE_COLLECTOR_H
 #define GARBAGE_COLLECTOR_H
 
+#include "gc_types.h"
+
 /**
  * Byte indicating which garbage collector is used
  */
@@ -19,34 +21,32 @@ extern char used_gc;
 int gc_init();
 
 /**
-* Allocate memory block for singe atomic value
-* @par size size of the value in bytes
-* @par is_pointer indicates whetter allocated value is pointer
-* @return pointer to allocated memory or NULL
-*/
-void *gc_malloc_atom(size_t size, int is_pointer);
+ * Allocates memory for single (non-array) value
+ * @par type c type
+ * @return pointer to allocated memory or NULL
+ */
+#define gc_malloc(type) __gc_malloc(type_num(type))
 
 /**
- * Allocate memory block for single struct value
- * @par type pointer to the sturct type descriptor
+ * Allocates memory for single (non-array) value
+ * @par type type number
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_struct(struct_info_t *type);
+void *__gc_malloc(int type);
 
 /**
- * Allocates memory block for array of atomic values
- * @par number_of_elements number of elements in array
- * @par is_pointer flag that indicates whetter values in array are pointers
+ * Allocates memory for an array of values
+ * @par type c type
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_atoms(size_t number_of_elements, size_t atom_size, int is_pointer);
+#define gc_malloc_array(type, size) __gc_malloc_array(type_num(type), size)
+
 /**
- * Allocates memory block for array of structures
- * @par number_of_elements number of elements in array
- * @par type pointer to the struct type descriptor
+ * Allocates memory for an array of values
+ * @par type type number
  * @return pointer to allocated memory or NULL
  */
-void *gc_malloc_array_of_struct(size_t number_of_elements, struct_info_t *type);
+void *__gc_malloc_array(int type, size_t size);
 
 /**
  * Collects the memory

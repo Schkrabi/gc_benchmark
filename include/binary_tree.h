@@ -18,7 +18,7 @@
     void *lchild, *rchild;
  } btree_node_t, btree_t;
  
-extern struct_info_t *btree_descriptor;
+extern type_info_t *btree_descriptor;
  
 /**
  * Makes and sets the binary tree structure descriptor to the given descriptor pointer
@@ -26,7 +26,7 @@ extern struct_info_t *btree_descriptor;
  * @par info pointer to the initialized descriptor structure
  * @return 1 if everything went well 0 otherwise
  */
-int btree_make_descriptor(struct_info_t *info);
+int btree_make_descriptor(type_info_t *info);
  
  /**
   * Inserts value into the binary tree

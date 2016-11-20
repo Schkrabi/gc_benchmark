@@ -7,6 +7,7 @@
 #include "gc_util.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "gc_constants.h"
 
 void *stack_top;
 void *stack_bottom;
@@ -19,7 +20,24 @@ void *BBSend;
  */
 size_t block_get_size(block_t *block)
 {
-    return block->size;
+    type_info_t *descriptor;
+    int type;
+    
+    type = block_get_type(block);
+    
+    if(type == TYPE_UNDEFINED)
+    {
+        return block_get_array_size(block);
+    }
+    
+    descriptor = block_get_info(block);
+    
+    if(type == TYPE_ARRAY)
+    {
+        return align_size(block_get_array_size(block) * descriptor->size);
+    }
+    
+    return align_size(descriptor->size);
 }
 void *block_get_forward(block_t *block)
 {
@@ -31,15 +49,19 @@ byte block_get_type(block_t *block)
 }
 size_t block_get_array_size(block_t *block)
 {
-    return block->array_size;
+    return block->size;
 }
-struct_info_t *block_get_info(block_t *block)
+type_info_t *block_get_info(block_t *block)
 {
-    return block->info;
+    return &type_table[block_get_element_type(block)];
 }
 int block_atom_is_ptr(block_t *block)
 {
-    return block->atom_is_ptr;
+    return block_get_element_type(block) == TYPE_PTR;
+}
+int block_get_element_type(block_t *block)
+{
+    return block->element_type;
 }
 
 /**
@@ -54,7 +76,7 @@ int block_set_size(block_t *block, size_t size)
         return 0;
     }
     
-    block->size = size;
+    fprintf(stderr, "\n\nError: Obsolete method block_set_size called\n\n");
     return 0;
 }
 int block_set_forward(block_t *block, void *forward)
@@ -85,17 +107,19 @@ int block_set_array_size(block_t *block, size_t size)
         fprintf(stderr, "\nerror: Call block_set_array_size(NULL, %u)\n\n", (unsigned int)size);
         return 0;
     }
-    block->array_size = size;
+    block->size = size;
     return 0;
 }
-int block_set_info(block_t *block, struct_info_t *info)
+int block_set_info(block_t *block, type_info_t *info)
 {
     if(block == NULL)
     {
         fprintf(stderr, "\nerror: Call block_set_info(NULL, %p)\n\n", info);
         return 0;
     }
-    block->info = info;
+    
+    fprintf(stderr, "\n\nError: Obsolete function block_set_info used\n\n");
+    
     return 0;
 }
 int block_set_atom_is_ptr(block_t *block, int is_ptr)
@@ -105,7 +129,19 @@ int block_set_atom_is_ptr(block_t *block, int is_ptr)
         fprintf(stderr, "\nerror: Call block_set_atom_is_ptr(NULL, %d)\n\n", is_ptr);
         return 0;
     }
-    block->atom_is_ptr = is_ptr;
+    
+    fprintf(stderr, "\n\nError: Obsolete function block_set_atom_is_ptr used\n\n");
+    
+    return 0;
+}
+int block_set_element_type(block_t *block, int type)
+{
+    if(block == NULL)
+    {
+        fprintf(stderr, "\nerror: Call block_set_element_type(NULL, %d)\n\n", type);
+        return 0;
+    }
+    block->element_type = type;
     return 0;
 }
 
@@ -128,31 +164,8 @@ int block_has_forward(block_t *block)
 int copy_block_metadata(block_t *src, block_t *dst)
 {
     block_set_type(dst, block_get_type(src));
-    block_set_size(dst, block_get_size(src));
-    
-    switch(block_get_type(dst))
-    {
-        case MEM_TYPE_ATOM:
-            block_set_atom_is_ptr(dst, block_atom_is_ptr(src));
-            break;
-            
-        case MEM_TYPE_STRUCT:
-            block_set_info(dst, block_get_info(src));
-            break;
-            
-        case MEM_TYPE_ARRAY:
-            block_set_array_size(dst, block_get_array_size(src));
-            
-            if(!block_is_struct_block(src))
-            {
-                block_set_atom_is_ptr(dst, block_atom_is_ptr(src));
-            }
-            else
-            {
-                block_set_info(dst, block_get_info(src));
-            }
-            break;
-    }
+    block_set_array_size(dst, block_get_array_size(src));
+    block_set_element_type(dst, block_get_element_type(src));
 }
 
 /**
@@ -162,9 +175,12 @@ int copy_block_metadata(block_t *src, block_t *dst)
  */
 int block_is_struct_block(block_t *block)
 {
-    return block->info != NULL;
+    int type = block_get_element_type(block);
+    return      type != TYPE_UNDEFINED
+            &&  type != TYPE_INT
+            &&  type != TYPE_PTR
+            &&  type != TYPE_DOUBLE;
 }
-
 /**
  * Gets next block of memory
  * @par block - pointer to the memory block
@@ -176,7 +192,7 @@ block_t *next_block(block_t *block)
     
     ptr = block;
     
-    return (block_t*)(ptr + sizeof(block_t) + block->size);
+    return (block_t*)(ptr + sizeof(block_t) + block_get_size(block));
 }
 
 /**
@@ -204,21 +220,6 @@ int release_memory_primitive(void *ptr)
     //Same as get_memory_primitive, not important now
     free(ptr);
     return 0;
-}
-
-/**
- * Initializes a block of given size from a larger chunk of raw memory
- * @par chunk oroginal chunk of memory
- * @par size of the memory chunk
- * @return initialized block
- */
-block_t *init_block_from_chunk(void *chunk, size_t size)
-{
-    block_t *block;
-    
-    block = chunk;
-    block_set_size(block, size - sizeof(block_t));
-    return block;
 }
 
 /** Returns allocated memory from a block
@@ -261,6 +262,22 @@ size_t align_size(size_t size)
 }
 
 /**
+ * Initializes a block of given size from a larger chunk of raw memory
+ * @par chunk oroginal chunk of memory
+ * @par size of the memory chunk
+ * @return initialized block
+ */
+block_t *init_block_from_chunk(void *chunk, size_t size)
+{
+    block_t *block;
+    
+    block = chunk;
+    block_set_type(block, TYPE_UNDEFINED);
+    block_set_array_size(block, size - sizeof(block_t));
+    return block;
+}
+
+/**
  * Splits the block of memory
  * @par src original memory block (big) OUT: 
  * @par size size of new memory block
@@ -273,20 +290,28 @@ block_t *split_block(block_t **src, size_t size)
     size_t remaining, aligned_size;
     block_t *split;
     
+    if(block_get_type(*src) != TYPE_UNDEFINED)
+    {
+        fprintf(stderr, "\n\nerror: split_block called with non-raw block: split_block(%p, %u)\n\n", src, (unsigned)size);
+        return NULL;
+    }
+    
     aligned_size = align_size(size);
 
     if(src == NULL || *src == NULL || aligned_size >= (*src)->size)
     {
         return NULL;
     }
-    remaining = (*src)->size - aligned_size;
+    remaining = block_get_size(*src) - aligned_size;
 
     ptr = get_data_start(*src);
     ptr = ptr + aligned_size;
             
     split = *src;
     *src = init_block_from_chunk(ptr, (*src)->size - aligned_size);
-    block_set_size(split, aligned_size);
+    block_set_type(split, TYPE_UNDEFINED);
+    block_set_element_type(split, TYPE_UNDEFINED);
+    block_set_array_size(split, aligned_size);
     
     return split;	
 }
