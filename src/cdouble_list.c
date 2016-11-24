@@ -116,7 +116,7 @@ int cdlist_delete(cdlist_t **list, long value)
             {
                 cdlist_node_t *prev, *next;
                 
-                prev = node->next;
+                prev = node->prev;
                 next = node->next;
                 
                 prev->next = next;

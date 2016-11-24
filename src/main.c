@@ -246,7 +246,7 @@ int cdlist_test()
     for(i = 0; i < TEST_SIZE; i++)
     {
         n = rand()%TEST_SIZE;
-        printf("deleteing %d, ", (int)n);
+        printf("deleteing %d ", (int)n);
         printf("is success?: %d\n", cdlist_delete(&list, n));
     }
     
