@@ -267,10 +267,6 @@ int init_type_table()
     type_table[TYPE_ARRAY].number_of_references = 0;
     type_table[TYPE_ARRAY].offsets = NULL;
     
-    type_table[TYPE_STRUCT].size = 0;
-    type_table[TYPE_STRUCT].number_of_references = 0;
-    type_table[TYPE_STRUCT].offsets = NULL;
-    
     type_table[TYPE_PTR].size = sizeof(void*);
     type_table[TYPE_PTR].number_of_references = 1;
     type_table[TYPE_PTR].offsets = (unsigned long*)malloc(1*sizeof(unsigned long));

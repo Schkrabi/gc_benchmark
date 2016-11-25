@@ -39,7 +39,7 @@ void *__gc_malloc(int type);
  * @par type c type
  * @return pointer to allocated memory or NULL
  */
-#define gc_malloc_array(type, size) __gc_malloc_array(type_num(type), size)
+#define gc_malloc_array(type, size) (type*) __gc_malloc_array(type_num(type), size)
 
 /**
  * Allocates memory for an array of values

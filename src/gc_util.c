@@ -135,7 +135,7 @@ int dump_block(FILE *file, block_t *block)
         case TYPE_PTR:
         case TYPE_DOUBLE:
             return dump_block_atom(file, block);
-        case MEM_TYPE_ARRAY:
+        case TYPE_ARRAY:
             return dump_block_array(file, block);
         default:
             dump_block_struct(file, block);

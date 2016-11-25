@@ -52,13 +52,12 @@
 #define TYPE_UNDEFINED -1
 #define TYPE_INT 0
 #define TYPE_ARRAY 1
-#define TYPE_STRUCT 2
-#define TYPE_PTR 3
-#define TYPE_DOUBLE 4
-#define TYPE_TEST_STRUCT_T 5
-#define TYPE_BTREE_T 6
-#define TYPE_CLIST_T 7
-#define TYPE_CDLIST_T 8
+#define TYPE_PTR 2
+#define TYPE_DOUBLE 3
+#define TYPE_TEST_STRUCT_T 4
+#define TYPE_BTREE_T 5
+#define TYPE_CLIST_T 6
+#define TYPE_CDLIST_T 7
 
 /**
  * xmacro for mapping a real c types into a GC types
