@@ -19,7 +19,7 @@
 /**
  * Size of the semispace in bytes if applicable
  */
-#define SEMISPACE_SIZE 1048576 //1MB
+#define SEMISPACE_SIZE 8192//1048576 //1MB
 
 /******************************************************************************
  *                              GARBAGE COLLECTORS                            *
@@ -43,21 +43,22 @@
 /**
  * Overall number of types recognized by GC
  */
-#define TYPE_COUNT 9
+#define TYPE_COUNT 10
 
 /**
  * Type offsets into a type table
  * @see gc_types.h: type_table
  */
-#define TYPE_UNDEFINED -1
-#define TYPE_INT 0
-#define TYPE_ARRAY 1
-#define TYPE_PTR 2
-#define TYPE_DOUBLE 3
-#define TYPE_TEST_STRUCT_T 4
-#define TYPE_BTREE_T 5
-#define TYPE_CLIST_T 6
-#define TYPE_CDLIST_T 7
+#define TYPE_UNDEFINED 0
+#define TYPE_FORWARD 1
+#define TYPE_INT 2
+#define TYPE_ARRAY 3
+#define TYPE_PTR 4
+#define TYPE_DOUBLE 5
+#define TYPE_TEST_STRUCT_T 6
+#define TYPE_BTREE_T 7
+#define TYPE_CLIST_T 8
+#define TYPE_CDLIST_T 9
 
 /**
  * xmacro for mapping a real c types into a GC types

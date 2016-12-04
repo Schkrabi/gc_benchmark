@@ -8,9 +8,8 @@
 #define GC_SHARED_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "gc_types.h"
-
-typedef char byte;
 
 /**
  * Header for a logical memory block
@@ -19,11 +18,8 @@ typedef char byte;
  */
 typedef struct
 {
-    int type;
-    int element_type;
-    size_t size;
-    
-    void *forward;
+    uint64_t type;
+    uint64_t size;
 } block_t;
 
 /**
@@ -32,11 +28,10 @@ typedef struct
  */
 size_t block_get_size(block_t *block);
 void *block_get_forward(block_t *block);
-byte block_get_type(block_t *block);
+uint64_t block_get_type(block_t *block);
 size_t block_get_array_size(block_t *block);
 type_info_t *block_get_info(block_t *block);
-int block_atom_is_ptr(block_t *block);
-int block_get_element_type(block_t *block);
+int block_is_array(block_t *block);
 
 /**
  * Setters
@@ -44,11 +39,10 @@ int block_get_element_type(block_t *block);
  */
 int block_set_size(block_t *block, size_t size);
 int block_set_forward(block_t *block, void *forward);
-int block_set_type(block_t *block, byte type);
+int block_set_type(block_t *block, uint64_t type);
 int block_set_array_size(block_t *block, size_t size);
 int block_set_info(block_t *block, type_info_t *info);
-int block_set_atom_is_ptr(block_t *block, int is_ptr);
-int block_set_element_type(block_t *block, int type);
+int block_set_is_array(block_t *block, int is_array);
 
 /**
  * Predicates whetter the block has a forwarding addr set

@@ -14,6 +14,9 @@ void *stack_bottom;
 void *BBSstart;
 void *BBSend;
 
+#define ARRAY_BIT_MASK 0x8000000000000000
+#define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
+
 /**
  * Getters
  * Quite primitive right now but will raise in importance during optimization phase
@@ -23,45 +26,58 @@ size_t block_get_size(block_t *block)
     type_info_t *descriptor;
     int type;
     
-    type = block_get_type(block);
-    
-    if(type == TYPE_UNDEFINED)
+    if(block_has_forward(block))
     {
-        return block_get_array_size(block);
+        return block_get_size(block_get_forward(block));
     }
     
     descriptor = block_get_info(block);
     
-    if(type == TYPE_ARRAY)
+    if(block_is_array(block))
     {
-        return align_size(block_get_array_size(block) * descriptor->size);
+        return align_size(block_get_array_size(block) * descriptor->size) + sizeof(block_t);
     }
     
-    return align_size(descriptor->size);
+    return align_size(descriptor->size) + sizeof(uint64_t);
 }
 void *block_get_forward(block_t *block)
 {
-    return block->forward;
+    if(block_get_type(block) == TYPE_FORWARD)
+    {
+        return (void*)block->size;
+    }
+    return NULL;
 }
-byte block_get_type(block_t *block)
-{
-    return block->type;
+uint64_t block_get_type(block_t *block)
+{    
+    return block->type & ELEMENT_TYPE_BIT_MASK;
 }
 size_t block_get_array_size(block_t *block)
 {
+    if(block_has_forward(block))
+    {
+        return block_get_array_size(block_get_forward(block));
+    }
+    
     return block->size;
 }
 type_info_t *block_get_info(block_t *block)
 {
-    return &type_table[block_get_element_type(block)];
+    if(block_has_forward(block))
+    {
+        return block_get_info(block_get_forward(block));
+    }
+    
+    return &type_table[block_get_type(block)];
 }
-int block_atom_is_ptr(block_t *block)
+int block_is_array(block_t *block)
 {
-    return block_get_element_type(block) == TYPE_PTR;
-}
-int block_get_element_type(block_t *block)
-{
-    return block->element_type;
+    if(block_has_forward(block))
+    {
+        return block_is_array(block_get_forward(block));
+    }
+    
+    return (block->type & ARRAY_BIT_MASK) > 0;
 }
 
 /**
@@ -76,7 +92,7 @@ int block_set_size(block_t *block, size_t size)
         return 0;
     }
     
-    fprintf(stderr, "\n\nError: Obsolete method block_set_size called\n\n");
+    fprintf(stderr, "\n\nError: Obsolete function block_set_size called\n\n");
     return 0;
 }
 int block_set_forward(block_t *block, void *forward)
@@ -87,17 +103,22 @@ int block_set_forward(block_t *block, void *forward)
         return 0;
     }
     
-    block->forward = forward;
+    block->type = TYPE_FORWARD;
+    block->size = (uint64_t)forward;
+    
     return 0;
 }
-int block_set_type(block_t *block, byte type)
+int block_set_type(block_t *block, uint64_t type)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_type(NULL, %x)\n\n", type);
+        fprintf(stderr, "\nerror: Call block_set_type(NULL, %x)\n\n", (unsigned)type);
         return 0;
     }
-    block->type = type;
+
+    block->type &= ~ELEMENT_TYPE_BIT_MASK;
+    block->type |= (type & ELEMENT_TYPE_BIT_MASK);
+   
     return 0;    
 }
 int block_set_array_size(block_t *block, size_t size)
@@ -122,26 +143,23 @@ int block_set_info(block_t *block, type_info_t *info)
     
     return 0;
 }
-int block_set_atom_is_ptr(block_t *block, int is_ptr)
+int block_set_is_array(block_t *block, int is_array)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_atom_is_ptr(NULL, %d)\n\n", is_ptr);
+        fprintf(stderr, "\nerror: Call block_set_is_array(NULL, %d)\n\n", (int)is_array);
         return 0;
     }
     
-    fprintf(stderr, "\n\nError: Obsolete function block_set_atom_is_ptr used\n\n");
-    
-    return 0;
-}
-int block_set_element_type(block_t *block, int type)
-{
-    if(block == NULL)
+    if(is_array)
     {
-        fprintf(stderr, "\nerror: Call block_set_element_type(NULL, %d)\n\n", type);
-        return 0;
+        block->type |= ARRAY_BIT_MASK;
     }
-    block->element_type = type;
+    else
+    {
+        block->type &= ~ARRAY_BIT_MASK;
+    }
+    
     return 0;
 }
 
@@ -152,7 +170,7 @@ int block_set_element_type(block_t *block, int type)
  */
 int block_has_forward(block_t *block)
 {
-    return block->forward != NULL;
+    return block_get_type(block) == TYPE_FORWARD;
 }
 
 /**
@@ -164,8 +182,15 @@ int block_has_forward(block_t *block)
 int copy_block_metadata(block_t *src, block_t *dst)
 {
     block_set_type(dst, block_get_type(src));
-    block_set_array_size(dst, block_get_array_size(src));
-    block_set_element_type(dst, block_get_element_type(src));
+    if(block_is_array(src))
+    {
+        block_set_array_size(dst, block_get_array_size(src));
+        block_set_is_array(dst, 1);
+    }
+    else
+    {
+        block_set_is_array(dst, 0);
+    }
 }
 
 /**
@@ -175,7 +200,7 @@ int copy_block_metadata(block_t *src, block_t *dst)
  */
 int block_is_struct_block(block_t *block)
 {
-    int type = block_get_element_type(block);
+    int type = block_get_type(block);
     return      type != TYPE_UNDEFINED
             &&  type != TYPE_INT
             &&  type != TYPE_PTR
@@ -192,7 +217,16 @@ block_t *next_block(block_t *block)
     
     ptr = block;
     
-    return (block_t*)(ptr + sizeof(block_t) + block_get_size(block));
+    return (block_t*)(ptr + block_get_size(block));
+}
+
+block_t *next_nth_block(block_t *block, size_t n)
+{
+    if(n == 1 || n == 0)
+    {
+        return next_block(block);
+    }
+    return next_block(next_nth_block(block, n-1));
 }
 
 /**
@@ -229,7 +263,13 @@ int release_memory_primitive(void *ptr)
 void *get_data_start(block_t *block)
 {
     void *ptr = block;
-    return ptr + sizeof(block_t);
+    
+    if(block_is_array(block))
+    {    
+        return ptr + sizeof(block_t);
+    }
+    
+    return ptr + sizeof(uint64_t);
 }
 
 /**
@@ -272,8 +312,9 @@ block_t *init_block_from_chunk(void *chunk, size_t size)
     block_t *block;
     
     block = chunk;
+    block_set_is_array(block, 1);
     block_set_type(block, TYPE_UNDEFINED);
-    block_set_array_size(block, size - sizeof(block_t));
+    block_set_array_size(block, size);
     return block;
 }
 
@@ -298,19 +339,29 @@ block_t *split_block(block_t **src, size_t size)
     
     aligned_size = align_size(size);
 
-    if(src == NULL || *src == NULL || aligned_size >= (*src)->size)
+    if(src == NULL || *src == NULL)
     {
         return NULL;
     }
-    remaining = block_get_size(*src) - aligned_size;
+    
+    if(aligned_size + sizeof(block_t) >= block_get_size(*src) - sizeof(block_t))
+    {
+        return NULL;
+    }
+    
+    remaining = (block_get_size(*src) - sizeof(block_t)) - (aligned_size + sizeof(block_t));
 
-    ptr = get_data_start(*src);
-    ptr = ptr + aligned_size;
+    ptr = (void*)((uint64_t)*src + (uint64_t)sizeof(block_t) + (uint64_t)aligned_size);
             
     split = *src;
-    *src = init_block_from_chunk(ptr, (*src)->size - aligned_size);
+    *src = ptr;
+
+    block_set_is_array(ptr, 1);
+    block_set_type(ptr, TYPE_UNDEFINED);
+    block_set_array_size(ptr, remaining);
+    
+    block_set_is_array(split, 1);
     block_set_type(split, TYPE_UNDEFINED);
-    block_set_element_type(split, TYPE_UNDEFINED);
     block_set_array_size(split, aligned_size);
     
     return split;	

@@ -128,6 +128,10 @@ int mem_dump(FILE *file)
  */
 int dump_block(FILE *file, block_t *block)
 {
+    if(block_is_array(block))
+    {
+        return dump_block_array(file, block);
+    }
     switch(block_get_type(block))
     {
         case TYPE_UNDEFINED:
@@ -135,8 +139,6 @@ int dump_block(FILE *file, block_t *block)
         case TYPE_PTR:
         case TYPE_DOUBLE:
             return dump_block_atom(file, block);
-        case TYPE_ARRAY:
-            return dump_block_array(file, block);
         default:
             dump_block_struct(file, block);
     }
@@ -150,7 +152,7 @@ int dump_block(FILE *file, block_t *block)
  */
 int dump_block_atom(FILE *file, block_t *block)
 {
-    return fprintf(file, "Block ATOM %p, size %u, is pointer %d\n", block, (unsigned int)block_get_size(block), block_atom_is_ptr(block));
+    return fprintf(file, "Block ATOM %p, size %u, type %d\n", block, (unsigned int)block_get_size(block), (int)block_get_type(block));
 }
 
 /**
@@ -165,7 +167,12 @@ int dump_block_struct(FILE *file, block_t *block)
     int rtrn;
     
     type_info_to_string(block_get_info(block), &buff);
-    rtrn = fprintf(file, "Block STRUCT %p, size %u, struct info: %s\n", block, (unsigned int)block_get_size(block), buff);
+    rtrn = fprintf(file, 
+                   "Block STRUCT %p, size %u, type %d, struct info: %s\n", 
+                   block, 
+                   (unsigned int)block_get_size(block), 
+                   (int)block_get_type(block),  
+                   buff);
     
     free(buff);
     return rtrn;
@@ -183,11 +190,11 @@ int dump_block_array(FILE *file, block_t *block)
     if(!block_is_struct_block(block))
     {
         rtrn = fprintf( file, 
-                        "Block ARRAY ATOM %p, size %u, array size %u, is pointer %d\n", 
+                        "Block ARRAY ATOM %p, size %u, array size %u, type %d\n", 
                         block, 
                         (unsigned int)block_get_size(block), 
                         (unsigned int)block_get_array_size(block), 
-                        block_atom_is_ptr(block));
+                        (int)block_get_type(block));
     }
     else
     {
@@ -195,10 +202,11 @@ int dump_block_array(FILE *file, block_t *block)
         type_info_to_string(block_get_info(block), &buff);
         
         rtrn = fprintf( file,
-                        "Block ARRAY STRUCT %p, size %u, array size %u, struct info %s\n",
+                        "Block ARRAY STRUCT %p, size %u, array size %u, type %d, struct info %s\n",
                         block,
                         (unsigned int)block_get_size(block),
                         (unsigned int)block_get_array_size(block),
+                        (int)block_get_type(block),
                         buff);
         free(buff);
     }

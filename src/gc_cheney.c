@@ -51,7 +51,7 @@ int gc_cheney_init()
     {
         return 1;
     }
-    to_space = init_block_from_chunk(chunk, 2*SEMISPACE_SIZE);
+    to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
     if(to_space == NULL)
     {
         return 2;
@@ -108,17 +108,23 @@ void *gc_cheney_malloc(int type)
 {
     block_t *block;
     
-    block = alloc_block_of_size(type_table[type].size);
+    if(type_table[type].size <= sizeof(uint64_t))
+    {
+        block = alloc_block_of_size(0);
+    }
+    else
+    {
+        block = alloc_block_of_size(type_table[type].size - sizeof(uint64_t));
+    }
     
     if(block == NULL)
     {
         return block;
     }
     
+    block_set_is_array(block, 0);
     block_set_type(block, type);
-    block_set_element_type(block, type);
     block_set_array_size(block, 0);
-    block_set_forward(block, NULL);
     
     return get_data_start(block);
 }
@@ -139,10 +145,9 @@ void *gc_cheney_malloc_array(int type, size_t size)
         return block;
     }
     
-    block_set_type(block, TYPE_ARRAY);
-    block_set_element_type(block, type);
+    block_set_is_array(block, 1);
+    block_set_type(block, type);
     block_set_array_size(block, size);
-    block_set_forward(block, NULL);
     
     return get_data_start(block);
 }
@@ -204,9 +209,9 @@ int gc_collect_from_roots(void *roots[], size_t size)
 }
 
 /**
- * Scans the pointer if it points towards any memory and evacuates if if so
+ * Scans the pointer if it points towards any memory and evacuates if so
  * @par ptr scanned pointer
- * @return 0 if pointer do not points anywhere, forwarding address otherwise
+ * @return NULL if pointer do not points anywhere, forwarding address otherwise
  */
 void *gc_scan_ptr(void *ptr)
 {
@@ -219,11 +224,14 @@ void *gc_scan_ptr(void *ptr)
             if(!block_has_forward(block))
             {
                 block_t *dst;
-                dst = split_block(&remaining_to_space, block_get_size(block));
-                copy_block_metadata(block, dst);
+                dst = split_block(&remaining_to_space, block_get_size(block) - sizeof(block_t));
+                //copy_block_metadata(block, dst);
                 
+                //block_set_forward(block, dst);
+                //memcpy(get_data_start(dst), get_data_start(block), block_get_size(block));
+                
+                memcpy(dst, block, block_get_size(block));
                 block_set_forward(block, dst);
-                memcpy(get_data_start(dst), get_data_start(block), block_get_size(block));
                 
                 return dst;
             }
@@ -290,31 +298,21 @@ int gc_scan_struct(void *ptr, type_info_t *info)
  */
 int gc_walk_block(block_t *block)
 {
+    if(block_is_array(block))
+    {
+        return gc_walk_array(block);
+    }
     switch(block_get_type(block))
     {
         case TYPE_UNDEFINED:
         case TYPE_INT:
         case TYPE_DOUBLE:
             return 0;
-        case TYPE_ARRAY:
-            return gc_walk_array(block);
         default:
             return gc_walk_struct(block);
     }
 }
 
-/**
- * Scans the block of type MEM_TYPE_ATOM
- * @par block block of memory of type MEM_TYPE_ATOM
- * @return 0 if everything went well, error code otherwise
- */
-int gc_walk_atom(block_t *block)
-{
-    if(block_atom_is_ptr(block))
-    {
-        return gc_scan_chunk(get_data_start(block), get_data_end(block));
-    }
-}
 /**
  * Scans the block of type MEM_TYPE_STRUCT
  * @par block block of memory of type MEM_TYPE_STRUCT
@@ -342,10 +340,6 @@ int gc_walk_array(block_t *block)
             gc_scan_struct(ptr, info);
         }
     }
-    else if(block_atom_is_ptr(block))
-    {
-        gc_scan_chunk(get_data_start(block), get_data_end(block));
-    }
 }
 
 /**
@@ -355,10 +349,16 @@ int gc_walk_array(block_t *block)
 int gc_swich_semispaces()
 {
     block_t *tmp;
+    
     tmp = to_space;
     to_space = from_space;
     from_space = tmp;
     remaining_block = remaining_to_space;
     remaining_to_space = to_space;
+    
+    block_set_type(to_space, TYPE_UNDEFINED);
+    block_set_is_array(to_space, 1);
+    block_set_array_size(to_space, SEMISPACE_SIZE - sizeof(block_t));
+    
     return 0;
 }

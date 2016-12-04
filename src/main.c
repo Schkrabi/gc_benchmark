@@ -15,6 +15,7 @@
 #include "gc_util.h"
 #include "gc_constants.h"
 #include "cdouble_list.h"
+#include <limits.h>
 
 #define TEST_SIZE 20
 
@@ -35,6 +36,31 @@ int cdlist_test();
  * Main executed function
  */
 int sub_main(int argc, char *argv[]);
+
+int test_short_lived(size_t test_size, size_t list_size)
+{
+    size_t i;
+    
+    gc_roots_count = 1;
+    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
+    
+    for(i = 0; i < test_size; i++)
+    {
+        clist_t *list;
+        size_t j;
+        
+        list = NULL;
+        clist_insert(&list, rand()%UINT_MAX);
+        
+        gc_roots[0] = list;
+        for(j = 1; j < list_size; j++) //First element already in list
+        {
+            clist_insert(&list, rand()%UINT_MAX);
+        }
+    }
+    
+    return 1;
+}
 
 /**
  * Main entrypoint Garbage collector initial setup
@@ -66,11 +92,13 @@ int main(int argc, char *argv[])
  */
 int sub_main(int argc, char *argv[])
 {
-    gc_test();
-    btree_test();
-    clist_test();
-    type_test();
-    cdlist_test();
+//     gc_test();
+//     btree_test();
+//     clist_test();
+//     type_test();
+//     cdlist_test();
+    
+    test_short_lived(1000000, 250);
     mem_dump(stdout);
     
     return 0;
@@ -258,6 +286,10 @@ int cdlist_test()
 int init_type_table()
 {
     test_struct_t test_instance;
+    
+    type_table[TYPE_UNDEFINED].size = 1;
+    type_table[TYPE_UNDEFINED].number_of_references = 0;
+    type_table[TYPE_UNDEFINED].offsets = NULL;
     
     type_table[TYPE_INT].size = sizeof(int);
     type_table[TYPE_INT].number_of_references = 0;
