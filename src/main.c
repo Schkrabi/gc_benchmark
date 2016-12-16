@@ -16,313 +16,240 @@
 #include "gc_constants.h"
 #include "cdouble_list.h"
 #include <limits.h>
+#include <syslog.h>
+#include "gc_types.h"
+#include "benchmark.h"
+#include <unistd.h>
+#include "test.h"
 
-#define TEST_SIZE 20
+#define TEST_SUBSYSTEM 0
+#define TEST_SHORD_LIVED 1
+#define TEST_LONG_LIVED 2
 
-typedef struct 
-{
-  int value;
-  void *ptr1, *ptr2;
-} test_struct_t;
+#define GC_CLEANUP_ERR 0x1
+#define TYPE_CLEANUP_ERR 0x2
+#define LOG_CLEANUP_ERR 0x4
 
-int gc_test();
-int btree_test();
-int clist_test();
-int init_type_table();
-int free_type_table();
-int type_test();
-int cdlist_test();
+/**
+ * Initializes subsystems
+ * @par rand_seed seed used for random generation
+ * @returns 0 if initializaion went Ok, otherwise error code
+ */
+int init(unsigned rand_seed);
+/**
+ * Clenas up and frees subsystems
+ * @returns 0 if cleanup went ok, error code otherwise
+ */
+int cleanup();
+/**
+ * Parses arguments of the program
+ * @par argc argument count of the main
+ * @par argv arguments of the main
+ * @par seed output argument, passes random seed
+ * @par test_num output argument passes the used test
+ * @par gc output argument passes the garbage collector used for the run
+ * @returns  if everything went well, error code otherwise
+ */
+int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char *gc);
+
 /**
  * Main executed function
+ * @par test_num test to be executed
+ * @return protgram return code
  */
-int sub_main(int argc, char *argv[]);
-
-int test_short_lived(size_t test_size, size_t list_size)
-{
-    size_t i;
-    
-    gc_roots_count = 1;
-    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
-    
-    for(i = 0; i < test_size; i++)
-    {
-        clist_t *list;
-        size_t j;
-        
-        list = NULL;
-        clist_insert(&list, rand()%UINT_MAX);
-        
-        gc_roots[0] = list;
-        for(j = 1; j < list_size; j++) //First element already in list
-        {
-            clist_insert(&list, rand()%UINT_MAX);
-        }
-    }
-    
-    return 1;
-}
+int sub_main(unsigned test_num, unsigned seed);
 
 /**
  * Main entrypoint Garbage collector initial setup
  */
 int main(int argc, char *argv[])
 {
-    int err_msg, rtrn;
+    int rtrn, 
+        err_msg;
+    unsigned    seed,
+                test_num;
+    
+    //Default
+    seed = time(0);
+    test_num = TEST_LONG_LIVED; //TODO
     used_gc = CHENEY_GC;
     
-    init_type_table();
-    err_msg = gc_init();
-    
-    srand(time(0));
-    
+    //Set by arguments
+    err_msg = parse_args(argc, argv, &seed, &test_num, &used_gc);
     if(err_msg != 0)
     {
-        fprintf(stderr, "Initialization error, code %d\n", err_msg);
+        return err_msg;
+    }
+        
+    err_msg = init(seed);
+    if(err_msg != 0)
+    {
+        return err_msg;
     }
     
-    rtrn = sub_main(argc, argv);
+    rtrn = sub_main(test_num, seed);
     
-    free_type_table();
+    err_msg = cleanup();
+    if(err_msg != 0)
+    {
+        return err_msg;
+    }
     
     return rtrn;
 }
 
 /**
- * Main executed function
+ * Initializes subsystems
+ * @par rand_seed seed used for random generation
+ * @returns 0 if initializaion went Ok, otherwise error code
  */
-int sub_main(int argc, char *argv[])
+int init(unsigned rand_seed)
 {
-//     gc_test();
-//     btree_test();
-//     clist_test();
-//     type_test();
-//     cdlist_test();
+    int err_msg;
     
-    test_short_lived(1000000, 250);
-    mem_dump(stdout);
+    err_msg = init_logger();
+    
+    if(err_msg != 0)
+    {
+        //Logger not initialuzed
+        fprintf(stderr, "Logger initialization error %x", err_msg);
+        return err_msg;
+    }
+    
+    err_msg = init_type_table();
+    if(err_msg != 0)
+    {
+        gc_log(LOG_ERR, "Type table init error %x", err_msg);
+        return err_msg;
+    }
+    
+    err_msg = gc_init();
+    if(err_msg != 0)
+    {
+        gc_log(LOG_ERR, "Garbage collector init error %x", err_msg);
+        return err_msg;
+    }
+    
+    srand(rand_seed);
     
     return 0;
 }
 
-int type_test()
+/**
+ * Clenas up and frees subsystems
+ * @returns 0 if cleanup went ok, error code otherwise
+ */
+int cleanup()
 {
-    printf("\nTESTING TYPE SYSTEM:\n\n");
-    printf("%s\n", typenum_to_string(type_num(int)));
-    printf("%s\n", typenum_to_string(type_num(void*)));
-    printf("%s\n", typenum_to_string(type_num(double)));
-    printf("%s\n", typenum_to_string(type_num(test_struct_t)));
-    printf("%s\n", typenum_to_string(type_num(btree_t)));
-    printf("%s\n", typenum_to_string(type_num(clist_t)));
-    printf("\n");
+    int err_msg;
+    char err_map = 0x0;
     
+    err_msg = gc_cleanup();
+    if(err_msg != 0)
+    {
+        gc_log(LOG_ERR, "Garbage collector cleanup error %x", err_msg);
+        err_map = err_map | GC_CLEANUP_ERR;
+    }
+    
+    err_msg = cleanup_type_table();
+    if(err_msg != 0)
+    {
+        gc_log(LOG_ERR, "Type table cleanup error %x", err_msg);
+        err_map = err_map | TYPE_CLEANUP_ERR;
+    }
+    
+    err_msg = cleanup_session_ident();
+    if(err_msg != 0)
+    {
+        //Logger error
+        fprintf(stderr, "Logger cleanup error %x", err_msg);
+        err_map = err_map | LOG_CLEANUP_ERR;
+    }
+    
+    return (int)err_map;
+}
+
+/**
+ * Parses arguments of the program
+ * @par argc argument count of the main
+ * @par argv arguments of the main
+ * @par seed output argument, passes random seed
+ * @par test_num output argument passes the used test
+ * @par gc output argument passes the garbage collector used for the run
+ * @returns  if everything went well, error code otherwise
+ */
+int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char *gc)
+{
+    char *cvalue = NULL;
+    int index;
+    int c;
+    
+    opterr = 0;
+
+    while ((c = getopt (argc, argv, "s:t:g:h")) != -1)
+    {
+        switch (c)
+        {
+        case 's':
+            *seed = atoi(optarg);
+            break;
+        case 't':
+            //TODO
+            break;
+        case 'g':
+            //TODO
+            break;
+        case 'h':
+            //TODO
+            break;
+        case '?':
+          /*  if (optopt == 's')
+                fprintf (stderr, "Option -%s requires an argument.\n", optopt);
+            else if (optopt == 't')
+                fprintf (stderr, "Option -%t requires an argument.\n", optopt);
+            else if (optopt == 'g')
+                fprintf (stderr, "Option -%g requires an argument.\n", optopt);            
+            else if (isprint (optopt))
+                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+            else
+                fprintf (stderr,
+                        "Unknown option character `\\x%x'.\n",
+                        optopt);*/
+            return 1;
+        default:
+            abort ();
+        }
+    }
     return 0;
 }
 
-int gc_test()
+/**
+ * Main executed function
+ * @par test_num test to be executed
+ * @return protgram return code
+ */
+int sub_main(unsigned test_num, unsigned seed)
 {
-    type_info_t *struct_info;
-    test_struct_t test_instance;
-    void **ptr_src1, **ptr_src2;
-    int *atom_test, *array_test;
-    test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
-    int i;
+    switch(test_num)
+    {
+        case TEST_SUBSYSTEM:
+            gc_test();
+            btree_test();
+            clist_test();
+            type_test();
+            cdlist_test();
+            mem_dump(stdout);
+            break;
+        case TEST_SHORD_LIVED:
+            test_short_lived(10000, 100);
+            break;
+        case TEST_LONG_LIVED:
+            test_long_lived(10000, 100, 250, 0.01);
+            break;
+    }
     
-    printf("\nTESTING MEMORY ALLOCATION AND COLLECTION:\n\n");
-    printf("Initial memory dump:\n");
-    mem_dump(stdout);
-    
-    atom_test = gc_malloc(int);
-    struct_test = gc_malloc(test_struct_t);
-    array_test = gc_malloc_array(int, TEST_SIZE);
-    struct_array_test = gc_malloc_array(test_struct_t, TEST_SIZE);
-    
-    ptr_src1 = (void**)gc_malloc(void*);
-    *ptr_src1 = atom_test;
-    
-    ptr_src2 = (void**)gc_malloc_array(void*,TEST_SIZE);
-    ptr_src2[0] = atom_test;
-    ptr_src2[1] = struct_test;
-    ptr_src2[2] = NULL;
-    
-    ptr_src3 = (test_struct_t*)gc_malloc(test_struct_t);
-    ptr_src3->ptr1 = NULL;
-    ptr_src3->ptr2 = struct_test;
-    
-    ptr_src4 = (test_struct_t*)gc_malloc_array(test_struct_t, TEST_SIZE);
-    ptr_src4[0].ptr1 = array_test;
-    ptr_src4[0].ptr2 = atom_test;
-    ptr_src4[1].ptr1 = NULL;
-    ptr_src4[1].ptr2 = atom_test;
-    ptr_src4[2].ptr1 = struct_test;
-    ptr_src4[2].ptr2 = NULL;
-    
-    printf("\nMemory dump after allocation:\n");
-    mem_dump(stdout);
-    
-    gc_roots_count = 4;
-    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
-    
-    gc_roots[0] = ptr_src1;
-    gc_roots[1] = ptr_src2;
-    gc_roots[2] = ptr_src3;
-    gc_roots[3] = ptr_src4;
-    
-    gc_collect();
-    
-    printf("\nMemory dump after collection:\n");
-    mem_dump(stdout);
-    
-    printf("\n");
+    printf("Log signature:\n\n%s\n", get_session_ident());
+    gc_log(LOG_INFO, "r: %d", seed);
     
     return 0;
-}
-
-int btree_test()
-{
-    btree_t *btree;
-    int i;
-    long n;
-    
-    btree = NULL;
-    
-    printf("\nTESTING BINARY TREES:\n\n");
-    printf("\nInserting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("inserting %d, is_succes?: %d\n", (int)n, btree_insert(&btree, n));
-    }    
-    
-    printf("\nSearching:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("searchig for %d, is succes?: %p\n", (int)n, btree_search(btree, n));
-    }
-    
-    printf("\nDeleting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("deleteing %d, is success?: %d\n", (int)n, btree_delete(&btree, n));
-    }
-    
-    printf("\n");
-}
-
-int clist_test()
-{
-    clist_t *clist;
-    int i;
-    long n;
-
-    clist = NULL;
-    
-    printf("\nTESTING CYCLIC LIST:\n\n");
-    
-    printf("\nInserting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("inserting %d, is_succes?: %d\n", (int)n, clist_insert(&clist, n));
-    }    
-    
-    printf("\nSearching:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("searchig for %d, is succes?: %p\n", (int)n, clist_search(clist, n));
-    }
-    
-    printf("\nDeleting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("deleteing %d, is success?: %d\n", (int)n, clist_delete(&clist, n));
-    }
-    
-    printf("\n");
-    
-    return 0;
-}
-
-int cdlist_test()
-{
-    cdlist_t *list;
-    int i;
-    long n;
-
-    list = NULL;
-    
-    printf("\nTESTING CYCLIC DOUBLE LINKED LIST:\n\n");
-    
-    printf("\nInserting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("inserting %d, is_succes?: %d\n", (int)n, cdlist_insert(&list, n));
-    }    
-    
-    printf("\nSearching:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("searchig for %d, is succes?: %p\n", (int)n, cdlist_search(list, n));
-    }
-    
-    printf("\nDeleting:\n");
-    for(i = 0; i < TEST_SIZE; i++)
-    {
-        n = rand()%TEST_SIZE;
-        printf("deleteing %d ", (int)n);
-        printf("is success?: %d\n", cdlist_delete(&list, n));
-    }
-    
-    printf("\n");
-    
-    return 0;
-}
-
-int init_type_table()
-{
-    test_struct_t test_instance;
-    
-    type_table[TYPE_UNDEFINED].size = 1;
-    type_table[TYPE_UNDEFINED].number_of_references = 0;
-    type_table[TYPE_UNDEFINED].offsets = NULL;
-    
-    type_table[TYPE_INT].size = sizeof(int);
-    type_table[TYPE_INT].number_of_references = 0;
-    type_table[TYPE_INT].offsets = NULL;
-    
-    type_table[TYPE_ARRAY].size = 0;
-    type_table[TYPE_ARRAY].number_of_references = 0;
-    type_table[TYPE_ARRAY].offsets = NULL;
-    
-    type_table[TYPE_PTR].size = sizeof(void*);
-    type_table[TYPE_PTR].number_of_references = 1;
-    type_table[TYPE_PTR].offsets = (unsigned long*)malloc(1*sizeof(unsigned long));
-    type_table[TYPE_PTR].offsets[0] = 0;
-    
-    type_table[TYPE_DOUBLE].size = sizeof(double);
-    type_table[TYPE_DOUBLE].number_of_references = 0;
-    type_table[TYPE_DOUBLE].offsets = NULL;
-    
-    type_table[TYPE_TEST_STRUCT_T].size = sizeof(test_struct_t);
-    type_table[TYPE_TEST_STRUCT_T].number_of_references = 2;
-    type_table[TYPE_TEST_STRUCT_T].offsets = malloc(2*sizeof(unsigned long));
-    type_table[TYPE_TEST_STRUCT_T].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
-    type_table[TYPE_TEST_STRUCT_T].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
-    
-    btree_make_descriptor(&type_table[TYPE_BTREE_T]);
-    clist_make_descriptor(&type_table[TYPE_CLIST_T]);
-    cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);    
-}
-
-int free_type_table()
-{
-    free(type_table[TYPE_PTR].offsets);
-    free(type_table[TYPE_TEST_STRUCT_T].offsets);
-    free(type_table[TYPE_BTREE_T].offsets);
-    free(type_table[TYPE_CLIST_T].offsets);
 }

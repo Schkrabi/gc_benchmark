@@ -6,6 +6,81 @@
  
 #include "gc_util.h"
 #include <string.h>
+#include <time.h>
+#include <syslog.h>
+#include <stdarg.h>
+#include "gc_types.h"
+
+char *session_ident = NULL;
+
+int init_session_ident()
+{
+    time_t t;
+    char *tstr, *buff;
+    const char *name = "gc_benchmark ";
+    
+    t = time(&t);
+    tstr = asctime(gmtime(&t));
+    
+    buff = (char*)malloc((strlen(name) + strlen(tstr) + 1) * sizeof(char));
+    
+    strcpy(buff, name);
+    strcat(buff, tstr);
+    
+    session_ident = buff;
+    
+    return 0;
+}
+const char* get_session_ident()
+{
+    if(session_ident == NULL)
+    {
+        init_session_ident();
+    }
+    
+    return session_ident;
+}
+int cleanup_session_ident()
+{
+    if(session_ident != NULL)
+    {
+        free(session_ident);
+    }
+}
+
+/**
+ * Inits the sysloger
+ * @returns always 0
+ */
+int init_logger()
+{
+    openlog(get_session_ident(), LOG_CONS | LOG_NDELAY, LOG_USER);
+}
+
+/**
+ * Logging interface
+ * @par priority priotrity of the message
+ * @par format format string for the message
+ * @par ... arguments for the format string
+ * @return always 0
+ */
+int gc_log(int priority, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vsyslog(priority, format, args);
+    return 0;
+}
+
+/**
+ * Cleans up the logger subsystems
+ * @returns 0 if everything went well, errno otherwise
+ */
+int cleanup_logger()
+{
+    cleanup_session_ident();
+    return 0;
+}
  
  /**
  * Reads one line from opened file
@@ -152,7 +227,7 @@ int dump_block(FILE *file, block_t *block)
  */
 int dump_block_atom(FILE *file, block_t *block)
 {
-    return fprintf(file, "Block ATOM %p, size %u, type %d\n", block, (unsigned int)block_get_size(block), (int)block_get_type(block));
+    return fprintf(file, "Block ATOM %p, size %u, type %s\n", block, (unsigned int)block_get_size(block), typenum_to_string((int)block_get_type(block)));
 }
 
 /**
@@ -168,10 +243,10 @@ int dump_block_struct(FILE *file, block_t *block)
     
     type_info_to_string(block_get_info(block), &buff);
     rtrn = fprintf(file, 
-                   "Block STRUCT %p, size %u, type %d, struct info: %s\n", 
+                   "Block STRUCT %p, size %u, type %s, struct info: %s\n", 
                    block, 
                    (unsigned int)block_get_size(block), 
-                   (int)block_get_type(block),  
+                   typenum_to_string((int)block_get_type(block)),  
                    buff);
     
     free(buff);
@@ -190,11 +265,11 @@ int dump_block_array(FILE *file, block_t *block)
     if(!block_is_struct_block(block))
     {
         rtrn = fprintf( file, 
-                        "Block ARRAY ATOM %p, size %u, array size %u, type %d\n", 
+                        "Block ARRAY ATOM %p, size %u, array size %u, type %s\n", 
                         block, 
                         (unsigned int)block_get_size(block), 
                         (unsigned int)block_get_array_size(block), 
-                        (int)block_get_type(block));
+                        typenum_to_string((int)block_get_type(block)));
     }
     else
     {
@@ -202,11 +277,11 @@ int dump_block_array(FILE *file, block_t *block)
         type_info_to_string(block_get_info(block), &buff);
         
         rtrn = fprintf( file,
-                        "Block ARRAY STRUCT %p, size %u, array size %u, type %d, struct info %s\n",
+                        "Block ARRAY STRUCT %p, size %u, array size %u, type %s, struct info %s\n",
                         block,
                         (unsigned int)block_get_size(block),
                         (unsigned int)block_get_array_size(block),
-                        (int)block_get_type(block),
+                        typenum_to_string((int)block_get_type(block)),
                         buff);
         free(buff);
     }

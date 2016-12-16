@@ -21,6 +21,12 @@ extern char used_gc;
 int gc_init();
 
 /**
+ * Cleans up the garbage collector objext
+ * @return If everything went well 0, otherwise error code
+ */
+int gc_cleanup();
+
+/**
  * Allocates memory for single (non-array) value
  * @par type c type
  * @return pointer to allocated memory or NULL

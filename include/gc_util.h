@@ -19,6 +19,46 @@ typedef unsigned long long art_ptr_t;
 typedef unsigned long art_ptr_t;
 #endif 
 
+extern char *session_ident;
+
+/**
+ * Initializes unique session identifier for the logger
+ * @returns always 0
+ * @reamrk Will probably need rework
+ */
+int init_session_ident();
+/**
+ * Frees the session indentifier pointer
+ * @returns always 0
+ */
+int cleanup_session_ident();
+/**
+ * Gets the unique session identifier
+ * @returns ptr to the session identifier string
+ */
+const char* get_session_ident();
+
+/**
+ * Inits the sysloger
+ * @returns always 0
+ */
+int init_logger();
+
+/**
+ * Logging interface
+ * @par priority priotrity of the message
+ * @par format format string for the message
+ * @par ... arguments for the format string
+ * @return always 0
+ */
+int gc_log(int priority, const char* format, ...);
+
+/**
+ * Cleans up the logger subsystems
+ * @returns 0 if everything went well, errno otherwise
+ */
+int cleanup_logger();
+
 /**
  * Reads one line from opened file
  * @param file read file

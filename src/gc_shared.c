@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gc_constants.h"
+#include <syslog.h>
 
 void *stack_top;
 void *stack_bottom;
@@ -88,18 +89,18 @@ int block_set_size(block_t *block, size_t size)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_size(NULL, %u)\n\n", (unsigned int)size);
+        gc_log(LOG_ERR, "error: Call block_set_size(NULL, %u)", (unsigned int)size);
         return 0;
     }
     
-    fprintf(stderr, "\n\nError: Obsolete function block_set_size called\n\n");
+    gc_log(LOG_ERR, "Error: Obsolete function block_set_size called");
     return 0;
 }
 int block_set_forward(block_t *block, void *forward)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_forward(NULL, %p)\n\n", forward);
+        gc_log(LOG_ERR, "error: Call block_set_forward(NULL, %p)", forward);
         return 0;
     }
     
@@ -112,7 +113,7 @@ int block_set_type(block_t *block, uint64_t type)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_type(NULL, %x)\n\n", (unsigned)type);
+        gc_log(LOG_ERR, "error: Call block_set_type(NULL, %x)", (unsigned)type);
         return 0;
     }
 
@@ -125,7 +126,7 @@ int block_set_array_size(block_t *block, size_t size)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_array_size(NULL, %u)\n\n", (unsigned int)size);
+        gc_log(LOG_ERR, "error: Call block_set_array_size(NULL, %u)", (unsigned int)size);
         return 0;
     }
     block->size = size;
@@ -135,19 +136,18 @@ int block_set_info(block_t *block, type_info_t *info)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_info(NULL, %p)\n\n", info);
+        gc_log(LOG_ERR, "error: Call block_set_info(NULL, %p)", info);
         return 0;
     }
     
-    fprintf(stderr, "\n\nError: Obsolete function block_set_info used\n\n");
-    
+    gc_log(LOG_ERR, "Error: Obsolete function block_set_info used");    
     return 0;
 }
 int block_set_is_array(block_t *block, int is_array)
 {
     if(block == NULL)
     {
-        fprintf(stderr, "\nerror: Call block_set_is_array(NULL, %d)\n\n", (int)is_array);
+        gc_log(LOG_ERR, "error: Call block_set_is_array(NULL, %d)", (int)is_array);
         return 0;
     }
     
@@ -333,7 +333,7 @@ block_t *split_block(block_t **src, size_t size)
     
     if(block_get_type(*src) != TYPE_UNDEFINED)
     {
-        fprintf(stderr, "\n\nerror: split_block called with non-raw block: split_block(%p, %u)\n\n", src, (unsigned)size);
+        gc_log(LOG_ERR, "error: split_block called with non-raw block: split_block(%p, %u)", src, (unsigned)size);
         return NULL;
     }
     

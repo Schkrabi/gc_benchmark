@@ -8,11 +8,16 @@
 #include "gc_cheney.h"
 #include <stdlib.h>
 #include "gc_constants.h"
+#include <time.h>
+#include "gc_util.h"
+#include <syslog.h>
 
  /**
  * Byte indicating which garbage collector is used
  */
 char used_gc;
+
+size_t collection_no = 0;
 
 /**
  * Xmacros for generating switches
@@ -20,7 +25,8 @@ char used_gc;
 #define __XCOLLECTOR_INIT(collector, num) case num : return gc_ ## collector ## _init();
 #define __XCOLLECTOR_MALLOC(collector, num) case num : return gc_ ## collector ## _malloc(type);
 #define __XCOLLECTOR_MALLOC_ARRAY(collector, num) case num : return gc_ ## collector ## _malloc_array(type, size);
-#define __XCOLLECTOR_COLLECT(collector, num) case num : return gc_ ## collector ## _collect();
+#define __XCOLLECTOR_COLLECT(collector, num) case num : rtrno = gc_ ## collector ## _collect();
+#define __XCOLLECTOR_CLEANUP(collector, num) case num : return gc_ ## collector ## _cleanup();
 
 /**
  * Initializes the Garbage Collector objects
@@ -38,12 +44,28 @@ int gc_init()
 }
 
 /**
+ * Cleans up the garbage collector objext
+ * @return If everything went well 0, otherwise error code
+ */
+int gc_cleanup()
+{
+    switch(used_gc)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_CLEANUP)
+        case NO_COLLECTOR:
+        default:
+            return 0;
+    }
+}
+
+/**
  * Allocates memory for single (non-array) value
  * @par type type number
  * @return pointer to allocated memory or NULL
  */
 void *__gc_malloc(int type)
 {
+    gc_log(LOG_INFO, "A AT %d", type);
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC)
@@ -60,6 +82,7 @@ void *__gc_malloc(int type)
  */
 void *__gc_malloc_array(int type, size_t size)
 {
+    gc_log(LOG_INFO, "A AR %d, %u", type, (unsigned)size);
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC_ARRAY)
@@ -75,11 +98,19 @@ void *__gc_malloc_array(int type, size_t size)
  */
 int gc_collect()
 {
-  switch(used_gc)
-  {
-    XCOLLECTOR_TABLE(__XCOLLECTOR_COLLECT)
-    case NO_COLLECTOR:
-    default:
-      return 0;
-  }
+    int rtrno;
+    
+    //Logging start of the collection, collection id, tick time, available free memory, 
+    gc_log(LOG_INFO, "CS %u, %u, %u", (unsigned)collection_no, (unsigned)clock(), (unsigned)block_get_size(remaining_block)); 
+    switch(used_gc)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_COLLECT)
+        case NO_COLLECTOR:
+        default:
+        rtrno = 0;
+    }
+    //Logging end of the collection, collection id, tick time, available free memory, 
+    gc_log(LOG_INFO, "CE %u, %u, %u", (unsigned) collection_no, (unsigned)clock(), (unsigned)block_get_size(remaining_block));
+    collection_no++;
+    return rtrno;
 }

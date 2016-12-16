@@ -43,6 +43,12 @@ extern size_t gc_roots_count;
 int gc_cheney_init();
 
 /**
+ * Cleans up the garbage collectors objext
+ * @return If everything went well 0, otherwise error code
+ */
+int gc_cheney_cleanup();
+
+/**
  * Returns pointer right after the end of semispace
  * @par semispace_ptr pointer to the start of a semispace
  * @return pointer right after end of semispace

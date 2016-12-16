@@ -9,6 +9,13 @@
 
 #include <stdlib.h>
 
+//Obsolete, TODO remove
+typedef struct 
+{
+  int value;
+  void *ptr1, *ptr2;
+} test_struct_t;
+
 /**
  * Structure for keeping info about structures
  */
@@ -32,19 +39,6 @@ typedef struct
  * Type table used by garbage collector
  */
 extern type_info_t type_table[];
-
-/**
- * Xmacro to create a type to int function
- */
-#define __XTYPE_COMPARATOR(TYPE, NUM) if(strcmp(arg, #TYPE) == 0) return NUM;
-/**
- * Xmacro to create a int to type string function
- */
-#define __XTYPE_STRING(TYPE, NUM) if(arg == NUM) return #TYPE;
-/**
- * Xmacro to get size of type represented by typenum
- */
-//#define __XTYPE_SIZE(TYPE, NUM) if(arg == NUM) return sizeof(TYPE);
 
 /**
  * Type to int macro
@@ -74,5 +68,16 @@ const char* typenum_to_string(int arg);
  * @return size of coresponding c type in bytes
  */
 //size_t typenum_size(int arg);
+
+/**
+ * Initializes type table for the garbage collector
+ * @return 0 if everything went well, errno otherwise
+ */
+int init_type_table();
+/**
+ * Cleans-up type table for the garbage collector
+ * @return 0 if everything went well, errno otherwise
+ */
+int cleanup_type_table();
 
 #endif
