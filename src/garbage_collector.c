@@ -11,6 +11,7 @@
 #include <time.h>
 #include "gc_util.h"
 #include <syslog.h>
+#include <string.h>
 
  /**
  * Byte indicating which garbage collector is used
@@ -27,6 +28,18 @@ size_t collection_no = 0;
 #define __XCOLLECTOR_MALLOC_ARRAY(collector, num) case num : return gc_ ## collector ## _malloc_array(type, size);
 #define __XCOLLECTOR_COLLECT(collector, num) case num : rtrno = gc_ ## collector ## _collect();
 #define __XCOLLECTOR_CLEANUP(collector, num) case num : return gc_ ## collector ## _cleanup();
+#define __XCOLLECTOR_PARSE_ARG(collector, num) if(strcmp(arg, #collector) == 0) return num;
+
+/**
+ * Parses argument given by -g in command line
+ * @par arg -g argument
+ * @return garbage collector number or INVALID_GC
+ */
+int parse_gc_arg(const char *arg)
+{
+    XCOLLECTOR_TABLE(__XCOLLECTOR_PARSE_ARG)
+    return INVALID_GC;
+}
 
 /**
  * Initializes the Garbage Collector objects

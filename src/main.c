@@ -22,10 +22,6 @@
 #include <unistd.h>
 #include "test.h"
 
-#define TEST_SUBSYSTEM 0
-#define TEST_SHORD_LIVED 1
-#define TEST_LONG_LIVED 2
-
 #define GC_CLEANUP_ERR 0x1
 #define TYPE_CLEANUP_ERR 0x2
 #define LOG_CLEANUP_ERR 0x4
@@ -53,6 +49,12 @@ int cleanup();
 int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char *gc);
 
 /**
+ * Prints help string to stdout
+ * @returns Number of characters printed
+ */
+int print_help_str();
+
+/**
  * Main executed function
  * @par test_num test to be executed
  * @return protgram return code
@@ -71,7 +73,7 @@ int main(int argc, char *argv[])
     
     //Default
     seed = time(0);
-    test_num = TEST_LONG_LIVED; //TODO
+    test_num = TEST_SHORT_LIVED; //TODO
     used_gc = CHENEY_GC;
     
     //Set by arguments
@@ -183,38 +185,57 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     char *cvalue = NULL;
     int index;
     int c;
+    char *arg, *err_ptr;
     
     opterr = 0;
 
     while ((c = getopt (argc, argv, "s:t:g:h")) != -1)
     {
+        arg = NULL;
+        err_ptr = NULL;
+        
         switch (c)
         {
         case 's':
-            *seed = atoi(optarg);
+            arg = optarg;
+            *seed = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -s requires a integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
             break;
         case 't':
-            //TODO
+            *test_num = parse_test_arg(optarg);
+            if(*test_num == TEST_INVALID)
+            {
+                fprintf(stderr, "Argument for option -t was not recognized\n");
+                return 1;
+            }
             break;
         case 'g':
-            //TODO
+            *gc = parse_gc_arg(optarg);
+            if(*gc == INVALID_GC)
+            {
+                fprintf(stderr, "Argument for option -g was not recognized\n");
+                return 1;
+            }
             break;
         case 'h':
-            //TODO
+            print_help_str();
+            return 1;
             break;
         case '?':
-          /*  if (optopt == 's')
-                fprintf (stderr, "Option -%s requires an argument.\n", optopt);
-            else if (optopt == 't')
-                fprintf (stderr, "Option -%t requires an argument.\n", optopt);
-            else if (optopt == 'g')
-                fprintf (stderr, "Option -%g requires an argument.\n", optopt);            
-            else if (isprint (optopt))
-                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+            if (    optopt == 's'
+                ||  optopt == 't'
+                ||  optopt == 'g')
+            {
+                fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+            }
             else
-                fprintf (stderr,
-                        "Unknown option character `\\x%x'.\n",
-                        optopt);*/
+            {
+                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+            }
             return 1;
         default:
             abort ();
@@ -222,6 +243,9 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     }
     return 0;
 }
+
+#define NUMINTS  (1000)
+#define FILESIZE (NUMINTS * sizeof(int))
 
 /**
  * Main executed function
@@ -240,7 +264,7 @@ int sub_main(unsigned test_num, unsigned seed)
             cdlist_test();
             mem_dump(stdout);
             break;
-        case TEST_SHORD_LIVED:
+        case TEST_SHORT_LIVED:
             test_short_lived(10000, 100);
             break;
         case TEST_LONG_LIVED:
@@ -252,4 +276,20 @@ int sub_main(unsigned test_num, unsigned seed)
     gc_log(LOG_INFO, "r: %d", seed);
     
     return 0;
+}
+
+#define __XAGG_CONCAT(name, value) #name " "
+#define __XCONCAT_OPTIONS(xmacro) xmacro(__XAGG_CONCAT)
+
+/**
+ * Prints help string to stdout
+ * @returns Number of characters printed
+ */
+int print_help_str()
+{
+    //printf("Usage: gc_benchmark [options]\nOptions:\n\t-s <number>\tSets the <number> as random number generator seed\n\t-t <name>\tSets the test to run. Available options are subsystem, short_lived, long_lived\n\t-g <name>\tSets used garbage collector. Available options are cheney\n");
+    printf("Usage: gc_benchmark [options]\nOptions:\n");
+    printf("\t-s <number>\tSets the <number> as random number generator seed\n");
+    printf("\t-t <name>\tSets the test to run. Available options are: " __XCONCAT_OPTIONS(XTEST_TABLE) "\n");
+    printf("\t-g <name>\tSets used garbage collector. Available options are: %s\n", __XCONCAT_OPTIONS(XCOLLECTOR_TABLE));
 }

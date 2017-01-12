@@ -10,8 +10,32 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include "gc_types.h"
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
+#define LOG_DIR "/home/schkrabi/Dokumenty/data/"
+#define LOG_BUFF_SIZE 40485760 //1 MB
+#define FILESIZE (LOG_BUFF_SIZE * sizeof(char))
+
+/**
+ * Info about memory mapped logging file
+ */
+struct stat sb;
+/**
+ * memory mapped logging file
+ */
+char *log_file_mapping;
+/**
+ * Session identification string for logging
+ */
 char *session_ident = NULL;
+/**
+ * Position of write in memory mapped logging file
+ */
+uint64_t log_pos = 0;
 
 int init_session_ident()
 {
@@ -54,7 +78,136 @@ int cleanup_session_ident()
  */
 int init_logger()
 {
-    openlog(get_session_ident(), LOG_CONS | LOG_NDELAY, LOG_USER);
+    int fd,
+        result;
+    char *filename;
+    
+    filename = (char*)malloc(1000*sizeof(char));
+    filename[0] = '\0';
+    strcpy(filename, LOG_DIR);
+    strcat(filename, get_session_ident());
+    
+    fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+    free(filename);
+    
+    if(fd == -1)
+    {
+        perror("open");
+        return 1;
+    }
+    
+    //Stretch the file size to the size of the (mmapped) array of ints
+    result = lseek(fd, FILESIZE-1, SEEK_SET);
+    if (result == -1) {
+	close(fd);
+	perror("Error calling lseek() to 'stretch' the file");
+	exit(EXIT_FAILURE);
+    }
+    
+    /* Something needs to be written at the end of the file to
+     * have the file actually have the new size.
+     */
+    result = write(fd, "", 1);
+    if (result != 1) {
+	close(fd);
+	perror("Error writing last byte of the file");
+	exit(EXIT_FAILURE);
+    }
+    
+    if(fstat(fd, &sb) == -1)
+    {
+        close(fd);
+        perror("fstat");
+        return 1;
+    }
+    if(!S_ISREG(sb.st_mode))
+    {
+        close(fd);
+        fprintf(stderr, "Not a file\n");
+        return 1;
+    }
+    
+    log_file_mapping = mmap(0, sb.st_size, PROT_WRITE, MAP_SHARED, fd, 0);
+    
+    if(log_file_mapping== MAP_FAILED)
+    {
+        close(fd);
+        perror("mmap");
+        return 1;
+    }
+    
+    close(fd);
+    
+    return 0;
+}
+
+/**
+ * Reverses the string in place
+ * @par str reversed string
+ * @par len length of the string
+ * @return length of the reversed string
+ */
+size_t strrev(char *str, size_t len)
+{
+    size_t  b = 0,
+            e = len - 1;
+    char tmp;
+    
+    while(b < e)
+    {
+        tmp = str[b];
+        str[b] = str[e];
+        str[e] = tmp;
+        b++;
+        e--;
+    }
+    
+    return len;
+}
+
+/**
+ * Converts the unsigned number into a string
+ * @par num converted number
+ * @par radix radix by which the number is converted
+ * @par output dst allocated buffer to which the string is saved
+ * @return length of the string
+ */
+size_t utoa(uint64_t num, uint64_t radix, char *dst)
+{
+    unsigned i = 0;
+    uint64_t n = num;
+    
+    do
+    {
+        dst[i] = '0' + (n % radix);
+        n /= radix;
+        i++;
+    }while(n > 0);
+    dst[i] = '\0';
+    
+    return strrev(dst, i);;
+}
+
+/**
+ * Converts the unsigned number into a decimal string
+ * @par num converted number
+ * @par dst allocated buffer to which the string is saved
+ * @return length of the string
+ */
+size_t utoa10(uint64_t num, char *dst)
+{
+    return utoa(num, 10, dst);
+}
+
+/**
+ * Converts the unsigned number into a hexadecimal string
+ * @par num converted number
+ * @par dst allocated buffer to which the string is saved
+ * @return length of the string
+ */
+size_t utoa16(uint64_t num, char *dst)
+{
+    return utoa(num, 16, dst);
 }
 
 /**
@@ -67,8 +220,38 @@ int init_logger()
 int gc_log(int priority, const char* format, ...)
 {
     va_list args;
+    char *buff;
+    unsigned len;
+    struct timespec time;
+    
+    //TODO
+    // itoa, utoa
+    // clock
+    
     va_start(args, format);
-    vsyslog(priority, format, args);
+    buff = (char*)malloc(1000*sizeof(char));
+    clock_gettime(CLOCK_MONOTONIC, &time);
+    
+    len = utoa10((uint64_t)time.tv_sec, buff);
+    strcpy(&log_file_mapping[log_pos], buff);
+    log_file_mapping[len] = ' ';
+    log_pos += len + 1;
+    
+    len = utoa10((uint64_t)time.tv_nsec, buff);
+    strcpy(&log_file_mapping[log_pos], buff);
+    log_file_mapping[len] = ' ';
+    log_pos += len + 1;
+    
+    buff[0] = '\0';
+    
+    len = vsprintf(buff, format, args);
+    
+    strcpy(&log_file_mapping[log_pos], buff);
+    log_pos += len;
+    log_file_mapping[log_pos] = '\n';
+    log_pos++;
+    
+    free(buff);
     return 0;
 }
 
@@ -78,7 +261,17 @@ int gc_log(int priority, const char* format, ...)
  */
 int cleanup_logger()
 {
-    cleanup_session_ident();
+    if(msync(log_file_mapping, strlen("Some random message\n") + 1, MS_ASYNC) == -1)
+    {
+        perror("msync");
+    }
+    
+    if(munmap(log_file_mapping, sb.st_size) == -1) 
+    {
+        perror("munmap");
+        return 1;
+    }      
+    
     return 0;
 }
  

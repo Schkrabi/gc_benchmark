@@ -15,6 +15,13 @@
 extern char used_gc;
 
 /**
+ * Parses argument given by -g in command line
+ * @par arg -g argument
+ * @return garbage collector number or INVALID_INVALID
+ */
+int parse_gc_arg(const char *arg);
+
+/**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
  */

@@ -7,6 +7,13 @@
 #include <stdlib.h>
 
 /**
+  * Parses argument specified from the command line
+  * @par arg argument string specified from command line
+  * @return Test number or TEST_INVALID if test number was not recognized
+  */
+int parse_test_arg(const char *arg);
+
+/**
  * Tests the behaviour of garbage collector with large amount of short lived objects that are imidiately discarted
  * @par test_size overall number of object created in the test
  * @par max_list_len maximal magnitude to which the one object can grow before discarted 

@@ -9,6 +9,22 @@
 #include "binary_tree.h"
 #include <limits.h>
 #include "gc_cheney.h"
+#include <string.h>
+#include "gc_constants.h"
+
+#define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
+
+ /**
+  * Parses argument specified from the command line
+  * @par arg argument string specified from command line
+  * @return Test number or TEST_INVALID if test number was not recognized
+  */
+int parse_test_arg(const char *arg)
+{
+    XTEST_TABLE(XTEST_COMPARE)
+    
+    return TEST_INVALID;
+}
 
 /**
  * Tests the behaviour of garbage collector with large amount of short lived objects that are imidiately discarted

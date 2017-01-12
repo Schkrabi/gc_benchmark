@@ -25,6 +25,10 @@
  *                              GARBAGE COLLECTORS                            *
  ******************************************************************************/
 /**
+ * Error value for argument parsing
+ */
+#define INVALID_GC -1
+/**
  * Coinstant for garbage collector deactivation
  * @see gabage_collector.h: used_gc
  */
@@ -88,8 +92,20 @@
  * @remark OBSOLETE
  * TODO Remove
  */
-#define MEM_TYPE_ATOM 0
-#define MEM_TYPE_STRUCT 1
-#define MEM_TYPE_ARRAY 2
+//#define MEM_TYPE_ATOM 0
+//#define MEM_TYPE_STRUCT 1
+//#define MEM_TYPE_ARRAY 2
+
+/******************************************************************************
+ *                                  TESTS                                     *
+ ******************************************************************************/
+#define TEST_INVALID -1
+#define TEST_SUBSYSTEM 0
+#define TEST_SHORT_LIVED 1
+#define TEST_LONG_LIVED 2
+
+#define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
+                        x(short_lived, TEST_SHORT_LIVED) \
+                        x(long_lived, TEST_LONG_LIVED)
 
 #endif
