@@ -12,6 +12,7 @@
 #include "binary_tree.h"
 #include "cyclic_list.h"
 #include "cdouble_list.h"
+#include "gc_cheney_base.h"
 
 #define TEST_SIZE 20
 
@@ -59,13 +60,13 @@ int gc_test()
     printf("\nMemory dump after allocation:\n");
     mem_dump(stdout);
     
-    gc_roots_count = 4;
-    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
+    gc_cheney_base_roots_count = 4;
+    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
     
-    gc_roots[0] = ptr_src1;
-    gc_roots[1] = ptr_src2;
-    gc_roots[2] = ptr_src3;
-    gc_roots[3] = ptr_src4;
+    gc_cheney_base_roots[0] = ptr_src1;
+    gc_cheney_base_roots[1] = ptr_src2;
+    gc_cheney_base_roots[2] = ptr_src3;
+    gc_cheney_base_roots[3] = ptr_src4;
     
     gc_collect();
     

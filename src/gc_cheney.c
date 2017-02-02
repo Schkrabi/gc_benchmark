@@ -10,36 +10,37 @@
 #include <string.h>
 #include "gc_util.h"
 #include <syslog.h>
+#include "gc_cheney_base.h"
 
 /**
  * from space heap (active heap)
  */
-block_t *from_space;
+// block_t *from_space;
 
 /**
  * to space heap (copy heap)
  */
-block_t *to_space;
+// block_t *to_space;
 
 /**
  * Block containing remaining memory in active semispace
  */
-block_t *remaining_block;
+// block_t *remaining_block;
 
 /**
  * Ptr to the remaining portion fo to space during copy phase
  */
-block_t *remaining_to_space;
+// block_t *remaining_to_space;
 
 /**
  * Roots used for automatic garbage collection
  */
-void **gc_roots;
+// void **gc_roots;
 
 /**
  * Number of roots in gc_roots
  */
-size_t gc_roots_count;
+// size_t gc_roots_count;
 
 /**
  * Initializes the Garbage Collector objects
@@ -54,18 +55,18 @@ int gc_cheney_init()
     {
         return 1;
     }
-    to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
-    if(to_space == NULL)
+    gc_cheney_base_to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
+    if(gc_cheney_base_to_space == NULL)
     {
         return 2;
     }
-    from_space = split_block(&to_space, SEMISPACE_SIZE - sizeof(block_t));
-    if(from_space == NULL)
+    gc_cheney_base_from_space = split_block(&gc_cheney_base_to_space, SEMISPACE_SIZE - sizeof(block_t));
+    if(gc_cheney_base_from_space == NULL)
     {
         return 3;
     }
-    remaining_block = from_space;
-    gc_roots_count = 0;
+    gc_cheney_base_remaining_block = gc_cheney_base_from_space;
+    gc_cheney_base_roots_count = 0;
     
     return 0;
 }
@@ -76,41 +77,43 @@ int gc_cheney_init()
  */
 int gc_cheney_cleanup()
 {
-    void *ptr = from_space > to_space ? to_space : from_space;
+    void *ptr = gc_cheney_base_from_space > gc_cheney_base_to_space ? gc_cheney_base_to_space : gc_cheney_base_from_space;
     release_memory_primitive(ptr);
 }
 
+//TODO remove
 /**
  * Returns pointer right after the end of semispace
  * @par semispace_ptr pointer to the start of a semispace
  * @return pointer right after end of semispace
  */
-void* semispace_end(void *semispace_ptr)
-{
-    return semispace_ptr + SEMISPACE_SIZE;
-}
+// void* semispace_end(void *semispace_ptr)
+// {
+//     return semispace_ptr + SEMISPACE_SIZE;
+// }
 
+//TODO remove
 /**
  * Allocates a block of given size
  * @par size size of the new block
  * @return pointer to the memory block
  */
-block_t *alloc_block_of_size(size_t size)
-{
-    block_t *block;
-    
-    block = split_block(&remaining_block, size);
-    if(block == NULL)
-    {
-        gc_collect();
-        block = split_block(&remaining_block, size);
-        if(block == NULL)
-        {
-            gc_log(LOG_ERR, "Memory depleted");
-        }
-    }
-    return block;
-}
+// block_t *alloc_block_of_size(size_t size)
+// {
+//     block_t *block;
+//     
+//     block = split_block(&remaining_block, size);
+//     if(block == NULL)
+//     {
+//         gc_collect();
+//         block = split_block(&remaining_block, size);
+//         if(block == NULL)
+//         {
+//             gc_log(LOG_ERR, "Memory depleted");
+//         }
+//     }
+//     return block;
+// }
 
 /**
  * Allocates memory for single (non-array) value
@@ -123,11 +126,11 @@ void *gc_cheney_malloc(int type)
     
     if(type_table[type].size <= sizeof(uint64_t))
     {
-        block = alloc_block_of_size(0);
+        block = gc_cheney_base_alloc_block_of_size(0);
     }
     else
     {
-        block = alloc_block_of_size(type_table[type].size - sizeof(uint64_t));
+        block = gc_cheney_base_alloc_block_of_size(type_table[type].size - sizeof(uint64_t));
     }
     
     if(block == NULL)
@@ -151,7 +154,7 @@ void *gc_cheney_malloc_array(int type, size_t size)
 {
     block_t *block;
     
-    block = alloc_block_of_size(type_table[type].size * size);
+    block = gc_cheney_base_alloc_block_of_size(type_table[type].size * size);
     
     if(block == NULL)
     {
@@ -166,6 +169,7 @@ void *gc_cheney_malloc_array(int type, size_t size)
 }
 
 
+//TODO remove
 /**
  * Return forwarding address for a given pointer
  * @par ptr original pointer
@@ -173,15 +177,15 @@ void *gc_cheney_malloc_array(int type, size_t size)
  * @par dst block to which ptr should be forwared
  * @return forwarding pointer for a ptr
  */
-void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
-{
-    long unsigned int ptr_ul, src_ul, dst_ul;
-    ptr_ul = (long unsigned int) ptr;
-    src_ul = (long unsigned int) src;
-    dst_ul = (long unsigned int) dst;
-    
-    return (void*)(dst_ul + (ptr_ul - src_ul));
-}
+// void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
+// {
+//     long unsigned int ptr_ul, src_ul, dst_ul;
+//     ptr_ul = (long unsigned int) ptr;
+//     src_ul = (long unsigned int) src;
+//     dst_ul = (long unsigned int) dst;
+//     
+//     return (void*)(dst_ul + (ptr_ul - src_ul));
+// }
 
 /**
  * Carries out the "sweep" part of the algorithm
@@ -189,7 +193,7 @@ void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
  */
 int gc_cheney_collect()
 {
-   return gc_collect_from_roots(gc_roots, gc_roots_count);
+   return gc_cheney_collect_from_roots(gc_cheney_base_roots, gc_cheney_base_roots_count);
 }
 
 /**
@@ -198,26 +202,26 @@ int gc_cheney_collect()
  * @par size size of a roots arraay
  * @return 0 if everything went well, error code otherwise
  */
-int gc_collect_from_roots(void *roots[], size_t size)
+int gc_cheney_collect_from_roots(void *roots[], size_t size)
 {
     block_t *todo_ptr;
     int i;
     
-    remaining_to_space = to_space;
-    todo_ptr = to_space;
+    gc_cheney_base_remaining_to_space = gc_cheney_base_to_space;
+    todo_ptr = gc_cheney_base_to_space;
     
     for(i = 0; i < size; i++)
     {
-      gc_scan_ptr(roots[i]);
+      gc_cheney_scan_ptr(roots[i]);
     }                                                                   
     
-    while(todo_ptr < remaining_to_space)
+    while(todo_ptr < gc_cheney_base_remaining_to_space)
     {
-      gc_walk_block(todo_ptr);
+      gc_cheney_walk_block(todo_ptr);
       todo_ptr = next_block(todo_ptr);
     }
     
-    gc_swich_semispaces();
+    gc_cheney_base_swich_semispaces();
     return 0;
 }
 
@@ -226,18 +230,18 @@ int gc_collect_from_roots(void *roots[], size_t size)
  * @par ptr scanned pointer
  * @return NULL if pointer do not points anywhere, forwarding address otherwise
  */
-void *gc_scan_ptr(void *ptr)
+void *gc_cheney_scan_ptr(void *ptr)
 {
     block_t *block;
     
-    for(block = from_space; block < (block_t*)semispace_end((void*)from_space); block = next_block(block))
+    for(block = gc_cheney_base_from_space; block < (block_t*)gc_cheney_base_semispace_end((void*)gc_cheney_base_from_space); block = next_block(block))
     {
         if(is_pointer_to(block, ptr))
         {
             if(!block_has_forward(block))
             {
                 block_t *dst;
-                dst = split_block(&remaining_to_space, block_get_size(block) - sizeof(block_t));
+                dst = split_block(&gc_cheney_base_remaining_to_space, block_get_size(block) - sizeof(block_t));
                 //copy_block_metadata(block, dst);
                 
                 //block_set_forward(block, dst);
@@ -250,42 +254,43 @@ void *gc_scan_ptr(void *ptr)
             }
             else
             {
-                return get_forwarding_addr(ptr, block, block_get_forward(block));
+                return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
             }
         }
     }
     return NULL;
 }
 
+//TODO remove
 /**
  * Scans the chunk of memory containign pointers
  * @par start pointer to the start of memory chunk
  * @par end pointer behind the end of memory chunk
  * @return 0 if everything went well, error code otherwise
  */
-int gc_scan_chunk(void *start, void *end)
-{
-    void **i;
-    
-    for(i = start; i < (void**)end; i++)
-    {
-        void *fwd;
-        fwd = gc_scan_ptr(*i);
-        
-        if(fwd != NULL)
-        {
-            *i = fwd;
-        }
-    }
-    return 0;
-}
+// int gc_cheney_scan_chunk(void *start, void *end)
+// {
+//     void **i;
+//     
+//     for(i = start; i < (void**)end; i++)
+//     {
+//         void *fwd;
+//         fwd = gc_cheney_scan_ptr(*i);
+//         
+//         if(fwd != NULL)
+//         {
+//             *i = fwd;
+//         }
+//     }
+//     return 0;
+// }
 
 /**
  * Scans the structure in memory
  * @par ptr pointer to the structure
  * @par info descriptor of the structure
  */
-int gc_scan_struct(void *ptr, type_info_t *info)
+int gc_cheney_scan_struct(void *ptr, type_info_t *info)
 {
     int i;
     
@@ -294,7 +299,7 @@ int gc_scan_struct(void *ptr, type_info_t *info)
         void **slot_ptr, *fwd;
         slot_ptr = (void**)(ptr + info->offsets[i]);
         
-        fwd = gc_scan_ptr(*slot_ptr);
+        fwd = gc_cheney_scan_ptr(*slot_ptr);
         
         if(fwd != NULL)
         {
@@ -309,11 +314,11 @@ int gc_scan_struct(void *ptr, type_info_t *info)
  * @par block memory block to be scanned
  * @return if everything went well 0 otherwise error code
  */
-int gc_walk_block(block_t *block)
+int gc_cheney_walk_block(block_t *block)
 {
     if(block_is_array(block))
     {
-        return gc_walk_array(block);
+        return gc_cheney_walk_array(block);
     }
     switch(block_get_type(block))
     {
@@ -322,7 +327,7 @@ int gc_walk_block(block_t *block)
         case TYPE_DOUBLE:
             return 0;
         default:
-            return gc_walk_struct(block);
+            return gc_cheney_walk_struct(block);
     }
 }
 
@@ -331,16 +336,16 @@ int gc_walk_block(block_t *block)
  * @par block block of memory of type MEM_TYPE_STRUCT
  * @return 0 if everything went well, error code otherwise
  */
-int gc_walk_struct(block_t *block)
+int gc_cheney_walk_struct(block_t *block)
 {
-    gc_scan_struct(get_data_start(block), block_get_info(block));
+    gc_cheney_scan_struct(get_data_start(block), block_get_info(block));
 }
 /**
  * Scans the block of type MEM_TYPE_ARRAY
  * @par block block of memory of type MEM_TYPE_ARRAY
  * @return 0 if everything went well, error code otherwise
  */
-int gc_walk_array(block_t *block)
+int gc_cheney_walk_array(block_t *block)
 {
     if(block_is_struct_block(block))
     {
@@ -350,28 +355,38 @@ int gc_walk_array(block_t *block)
         info = block_get_info(block);
         for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += info->size)
         {
-            gc_scan_struct(ptr, info);
+            gc_cheney_scan_struct(ptr, info);
         }
     }
 }
 
+//TODO remove
 /**
  * Swiches semispaces
  * @return always 0
  */
-int gc_swich_semispaces()
+// int gc_swich_semispaces()
+// {
+//     block_t *tmp;
+//     
+//     tmp = to_space;
+//     to_space = from_space;
+//     from_space = tmp;
+//     remaining_block = remaining_to_space;
+//     remaining_to_space = to_space;
+//     
+//     block_set_type(to_space, TYPE_UNDEFINED);
+//     block_set_is_array(to_space, 1);
+//     block_set_array_size(to_space, SEMISPACE_SIZE - sizeof(block_t));
+//     
+//     return 0;
+// }
+
+/**
+ * Returns the remaining space in bytes that collector has available
+ * @return space in bytes or -1 if collector is limmited only by system
+ */
+int64_t gc_cheney_remaining_space()
 {
-    block_t *tmp;
-    
-    tmp = to_space;
-    to_space = from_space;
-    from_space = tmp;
-    remaining_block = remaining_to_space;
-    remaining_to_space = to_space;
-    
-    block_set_type(to_space, TYPE_UNDEFINED);
-    block_set_is_array(to_space, 1);
-    block_set_array_size(to_space, SEMISPACE_SIZE - sizeof(block_t));
-    
-    return 0;
+    return gc_cheney_base_remaining_space();
 }

@@ -67,4 +67,17 @@ void *__gc_malloc_array(int type, size_t size);
  */
 int gc_collect();
 
+/**
+ * Returns the remaining space in bytes that collector has available
+ * @return space in bytes or -1 if collector is limmited only by system
+ */
+int64_t gc_remaining_space();
+
+/**
+ * Takes collector constant and returns constant strig with collector name
+ * @par gc_num number of the garbage collector
+ * @return constant string with the collector name or empty string
+ */
+const char* gc_to_str(int gc_num);
+
 #endif

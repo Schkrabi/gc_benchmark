@@ -11,8 +11,12 @@
 #include "gc_cheney.h"
 #include <string.h>
 #include "gc_constants.h"
+#include "gc_cheney_base.h"
+#include "gc_util.h"
+#include <syslog.h>
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
+#define XTEST_TOSTR(name, num) case num: return #name;
 
  /**
   * Parses argument specified from the command line
@@ -24,6 +28,22 @@ int parse_test_arg(const char *arg)
     XTEST_TABLE(XTEST_COMPARE)
     
     return TEST_INVALID;
+}
+
+/**
+ * Returns name of the test for given test_num
+ * @par test_num test number
+ * @return constant string containing test name
+ */
+const char* testnum_to_str(int test_num)
+{
+    switch(test_num)
+    {
+        XTEST_TABLE(XTEST_TOSTR)
+        default:
+            gc_log(LOG_ERR, "Invalid test number %d", test_num);
+            return "";
+    }
 }
 
 /**
@@ -66,8 +86,8 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
 {
     size_t i;
     
-    gc_roots_count = old_pool;
-    gc_roots = (void**)malloc(gc_roots_count*sizeof(void*));
+    gc_cheney_base_roots_count = old_pool;
+    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
     
     for(i = 0; i < test_size; i++)
     {
@@ -91,13 +111,13 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
         
         if(i < old_pool)
         {
-            gc_roots[i] = btree;
+            gc_cheney_base_roots[i] = btree;
         }
         else
         {
             if(rand()%100 < chance_to_replace*100)
             {
-                gc_roots[rand()%old_pool] = btree;
+                gc_cheney_base_roots[rand()%old_pool] = btree;
             }
         }
     }

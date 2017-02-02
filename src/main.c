@@ -29,9 +29,12 @@
 /**
  * Initializes subsystems
  * @par rand_seed seed used for random generation
+ * @par test_num number of test to be carried out
+ * @par gc_num garbage collector id 
  * @returns 0 if initializaion went Ok, otherwise error code
  */
-int init(unsigned rand_seed);
+int init(unsigned rand_seed, int test_num, int gc_num);
+
 /**
  * Clenas up and frees subsystems
  * @returns 0 if cleanup went ok, error code otherwise
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
     
     //Default
     seed = time(0);
-    test_num = TEST_SHORT_LIVED; //TODO
+    test_num = TEST_SHORT_LIVED;
     used_gc = CHENEY_GC;
     
     //Set by arguments
@@ -83,11 +86,14 @@ int main(int argc, char *argv[])
         return err_msg;
     }
         
-    err_msg = init(seed);
+    err_msg = init(seed, test_num, used_gc);
     if(err_msg != 0)
     {
         return err_msg;
     }
+    
+    printf("%s\n", get_session_ident());
+    gc_log(LOG_INFO, "seed %u", test_num); 
     
     rtrn = sub_main(test_num, seed);
     
@@ -103,13 +109,15 @@ int main(int argc, char *argv[])
 /**
  * Initializes subsystems
  * @par rand_seed seed used for random generation
+ * @par test_num number of test to be carried out
+ * @par gc_num garbage collector id 
  * @returns 0 if initializaion went Ok, otherwise error code
  */
-int init(unsigned rand_seed)
+int init(unsigned rand_seed, int test_num, int gc_num)
 {
     int err_msg;
     
-    err_msg = init_logger();
+    err_msg = init_logger(test_num, gc_num);
     
     if(err_msg != 0)
     {
@@ -160,7 +168,7 @@ int cleanup()
         err_map = err_map | TYPE_CLEANUP_ERR;
     }
     
-    err_msg = cleanup_session_ident();
+    err_msg = cleanup_logger();
     if(err_msg != 0)
     {
         //Logger error
@@ -271,9 +279,6 @@ int sub_main(unsigned test_num, unsigned seed)
             test_long_lived(10000, 100, 250, 0.01);
             break;
     }
-    
-    printf("Log signature:\n\n%s\n", get_session_ident());
-    gc_log(LOG_INFO, "r: %d", seed);
     
     return 0;
 }

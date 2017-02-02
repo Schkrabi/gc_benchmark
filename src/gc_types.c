@@ -113,4 +113,6 @@ int cleanup_type_table()
     free(type_table[TYPE_BTREE_T].offsets);
     free(type_table[TYPE_CLIST_T].offsets);
     free(type_table[TYPE_CDLIST_T].offsets);
+    
+    return 0;
 }

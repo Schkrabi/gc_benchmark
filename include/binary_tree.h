@@ -18,6 +18,7 @@
     void *lchild, *rchild;
  } btree_node_t, btree_t;
  
+//TODO obsolete remove
 extern type_info_t *btree_descriptor;
  
 /**

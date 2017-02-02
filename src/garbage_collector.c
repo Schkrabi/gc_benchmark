@@ -4,8 +4,10 @@
  * This file contains implementation for unified API of benchmarked garbage collectors
  */
 
+#include "garbage_collector.h"
 #include "gc_shared.h"
 #include "gc_cheney.h"
+#include "gc_custom.h"
 #include <stdlib.h>
 #include "gc_constants.h"
 #include <time.h>
@@ -13,12 +15,20 @@
 #include <syslog.h>
 #include <string.h>
 
+/**
+ * Logging macros uncomment to log specific functionality
+ */
+//#define LOG_ALLOCATION
+#define LOG_COLLECTION
+
  /**
  * Byte indicating which garbage collector is used
  */
 char used_gc;
 
+#ifdef LOG_COLLECTION
 size_t collection_no = 0;
+#endif
 
 /**
  * Xmacros for generating switches
@@ -29,6 +39,8 @@ size_t collection_no = 0;
 #define __XCOLLECTOR_COLLECT(collector, num) case num : rtrno = gc_ ## collector ## _collect();
 #define __XCOLLECTOR_CLEANUP(collector, num) case num : return gc_ ## collector ## _cleanup();
 #define __XCOLLECTOR_PARSE_ARG(collector, num) if(strcmp(arg, #collector) == 0) return num;
+#define __XCOLLECTOR_REMAINING_SPACE(collector, num) case num: return gc_ ## collector ## _remaining_space();
+#define __XCOLLECTOR_NUM_TO_STR(collector, num) case num: return #collector;
 
 /**
  * Parses argument given by -g in command line
@@ -78,7 +90,9 @@ int gc_cleanup()
  */
 void *__gc_malloc(int type)
 {
+#ifdef LOG_ALLOCATION
     gc_log(LOG_INFO, "A AT %d", type);
+#endif
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC)
@@ -95,7 +109,9 @@ void *__gc_malloc(int type)
  */
 void *__gc_malloc_array(int type, size_t size)
 {
+#ifdef LOG_ALLOCATION
     gc_log(LOG_INFO, "A AR %d, %u", type, (unsigned)size);
+#endif
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_MALLOC_ARRAY)
@@ -113,8 +129,10 @@ int gc_collect()
 {
     int rtrno;
     
+#ifdef LOG_COLLECTION
     //Logging start of the collection, collection id, tick time, available free memory, 
-    gc_log(LOG_INFO, "CS %u, %u, %u", (unsigned)collection_no, (unsigned)clock(), (unsigned)block_get_size(remaining_block)); 
+    gc_log(LOG_INFO, "CS %u %u %u", (unsigned)collection_no, (unsigned)clock(), (unsigned)gc_remaining_space()); 
+#endif
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_COLLECT)
@@ -122,8 +140,41 @@ int gc_collect()
         default:
         rtrno = 0;
     }
+#ifdef LOG_COLLECTION
     //Logging end of the collection, collection id, tick time, available free memory, 
-    gc_log(LOG_INFO, "CE %u, %u, %u", (unsigned) collection_no, (unsigned)clock(), (unsigned)block_get_size(remaining_block));
+    gc_log(LOG_INFO, "CE %u %u %u", (unsigned) collection_no, (unsigned)clock(), (unsigned)gc_remaining_space());
     collection_no++;
+#endif
     return rtrno;
+}
+
+/**
+ * Returns the remaining space in bytes that collector has available
+ * @return space in bytes or -1 if collector is limmited only by system
+ */
+int64_t gc_remaining_space()
+{
+    switch(used_gc)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_REMAINING_SPACE)
+        case NO_COLLECTOR:
+        default:
+            return -1;
+    }
+}
+
+/**
+ * Takes collector constant and returns constant strig with collector name
+ * @par gc_num number of the garbage collector
+ * @return constant string with the collector name or empty string
+ */
+const char* gc_to_str(int gc_num)
+{
+    switch(gc_num)
+    {
+        XCOLLECTOR_TABLE(__XCOLLECTOR_NUM_TO_STR)
+        default:
+            gc_log(LOG_ERR, "Invalid collector number %d", gc_num);
+            return "";
+    }
 }

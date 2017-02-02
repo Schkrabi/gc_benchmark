@@ -23,10 +23,11 @@ extern char *session_ident;
 
 /**
  * Initializes unique session identifier for the logger
+ * @par test_num nuber of test carried out by the main
+ * @par gc_num number of used garbage collector
  * @returns always 0
- * @reamrk Will probably need rework
  */
-int init_session_ident();
+int init_session_ident(int test_num, int gc_num);
 /**
  * Frees the session indentifier pointer
  * @returns always 0
@@ -39,10 +40,32 @@ int cleanup_session_ident();
 const char* get_session_ident();
 
 /**
+ * Returns filepath to log file
+ * @par buff buffer for filepath
+ * @return Alwasy 0
+ */
+int get_logger_file_path(char *buff);
+
+/**
  * Inits the sysloger
+ * @par test_num nuber of test carried out by the main
+ * @par gc_num number of used garbage collector
  * @returns always 0
  */
-int init_logger();
+int init_logger(int test_num, int gc_num);
+
+/**
+ * Appends log buffer to log file
+ * @return reseted position to log buffer
+ */
+int dump_log();
+
+/**
+ * Vrites timestamp into the buffer
+ * @par dst destination buffer
+ * @return length of the timestamp string
+ */
+size_t timestamp(char *dst);
 
 /**
  * Logging interface
@@ -123,4 +146,19 @@ int dump_block_array(FILE *file, block_t *block);
  * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
  */
 int type_info_to_string(type_info_t *info, char **buff);
+
+/**
+ * Removes spaces from string and replaces them with underscore '_'
+ * @par str out mutated string
+ * @return always 0
+ */
+int str_remove_spaces(char *str);
+/**
+ * Removes char from string and replaces them 
+ * @par str out mutated string
+ * @par c replaced char
+ * @par replace replacing chars
+ * @return always 0
+ */
+int str_replace_char(char *str, char c, char replace);
 #endif

@@ -14,6 +14,13 @@
 int parse_test_arg(const char *arg);
 
 /**
+ * Returns name of the test for given test_num
+ * @par test_num test number
+ * @return constant string containing test name
+ */
+const char* testnum_to_str(int test_num);
+
+/**
  * Tests the behaviour of garbage collector with large amount of short lived objects that are imidiately discarted
  * @par test_size overall number of object created in the test
  * @par max_list_len maximal magnitude to which the one object can grow before discarted 
