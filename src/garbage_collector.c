@@ -36,7 +36,7 @@ size_t collection_no = 0;
 #define __XCOLLECTOR_INIT(collector, num) case num : return gc_ ## collector ## _init();
 #define __XCOLLECTOR_MALLOC(collector, num) case num : return gc_ ## collector ## _malloc(type);
 #define __XCOLLECTOR_MALLOC_ARRAY(collector, num) case num : return gc_ ## collector ## _malloc_array(type, size);
-#define __XCOLLECTOR_COLLECT(collector, num) case num : rtrno = gc_ ## collector ## _collect();
+#define __XCOLLECTOR_COLLECT(collector, num) case num : rtrno = gc_ ## collector ## _collect(); break;
 #define __XCOLLECTOR_CLEANUP(collector, num) case num : return gc_ ## collector ## _cleanup();
 #define __XCOLLECTOR_PARSE_ARG(collector, num) if(strcmp(arg, #collector) == 0) return num;
 #define __XCOLLECTOR_REMAINING_SPACE(collector, num) case num: return gc_ ## collector ## _remaining_space();

@@ -161,4 +161,10 @@ int str_remove_spaces(char *str);
  * @return always 0
  */
 int str_replace_char(char *str, char c, char replace);
+
+/**
+ * Fast time measurement
+ * @return time mesuring integer
+ */
+static inline unsigned long long int rdtsc();
 #endif

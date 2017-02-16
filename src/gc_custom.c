@@ -174,25 +174,6 @@ int gc_custom_walk_struct(block_t *block)
 {
     gc_custom_scan_struct(get_data_start(block), block_get_type(block));
 }
-/**
- * Scans the block of type MEM_TYPE_ARRAY
- * @par block block of memory of type MEM_TYPE_ARRAY
- * @return 0 if everything went well, error code otherwise
- */
-int gc_custom_walk_array(block_t *block)
-{
-    if(block_is_struct_block(block))
-    {
-        void *ptr;
-        type_info_t *info;
-        
-        info = block_get_info(block);
-        for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += info->size)
-        {
-            gc_custom_scan_struct(ptr, block_get_type(block));
-        }
-    }
-}
 
 /**
  * Returns the remaining space in bytes that collector has available
@@ -210,68 +191,116 @@ void *gc_custom_scan_ptr(void *ptr)
 	{
 		if(is_pointer_to(block, ptr))
 		{
-			block_t *dst;
-			size_t byte_size;
-			switch(block_get_type(block))
+			if(!block_has_forward(block))
 			{
-			case 4:
-				if(block_is_array(block))
+				block_t *dst;
+				size_t byte_size;
+				switch(block_get_type(block))
 				{
-					byte_size = block_get_array_size(block) * 8;
-					dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
-					memcpy(dst, block, byte_size);
-				}
-				else
+				case 4:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 8;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 0);
+						memcpy(dst, block, 16);
+					}
+					break;
+				case 7:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 24;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 16);
+						memcpy(dst, block, 32);
+					}
+					break;
+				case 8:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 16;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 8);
+						memcpy(dst, block, 24);
+					}
+					break;
+				case 9:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 24;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 16);
+						memcpy(dst, block, 32);
+					}
+					break;
+				case 5:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 8;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 0);
+						memcpy(dst, block, 16);
+					}
+					break;
+				case 2:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 4;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 0);
+						memcpy(dst, block, 16);
+					}
+					break;
+				case 6:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 24;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 16);
+						memcpy(dst, block, 32);
+					}
+					break;
+				default:
 				{
-					dst = split_block(&gc_cheney_base_remaining_to_space, 8);
-					memcpy(dst, block, 8);
+					size_t block_size = block_get_size(block);
+					dst = split_block(&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
+					memcpy(dst, block, block_size);
 				}
-				break;
-			case 7:
-				if(block_is_array(block))
-				{
-					byte_size = block_get_array_size(block) * 24;
-					dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
-					memcpy(dst, block, byte_size);
 				}
-				else
-				{
-					dst = split_block(&gc_cheney_base_remaining_to_space, 24);
-					memcpy(dst, block, 24);
-				}
-				break;
-			case 8:
-				if(block_is_array(block))
-				{
-					byte_size = block_get_array_size(block) * 16;
-					dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
-					memcpy(dst, block, byte_size);
-				}
-				else
-				{
-					dst = split_block(&gc_cheney_base_remaining_to_space, 16);
-					memcpy(dst, block, 16);
-				}
-				break;
-			case 9:
-				if(block_is_array(block))
-				{
-					byte_size = block_get_array_size(block) * 24;
-					dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
-					memcpy(dst, block, byte_size);
-				}
-				else
-				{
-					dst = split_block(&gc_cheney_base_remaining_to_space, 24);
-					memcpy(dst, block, 24);
-				}
-				break;
+				block_set_forward(block, dst);
+				return dst;
 			}
-			block_set_forward(block, dst);
-			return dst;
+			else
+				return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
 		}
-		else
-			return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
 	}
 	return NULL;
 }
@@ -294,6 +323,43 @@ int gc_custom_scan_struct(void *ptr, int type)
 		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
 		*(void**)(ptr + 16) = gc_custom_scan_ptr(ptr + 16);
 		break;
+	case 6:
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(ptr + 16);
+		break;
 	}
 	return 0;
+}
+
+int gc_custom_walk_array(block_t *block)
+{
+	if(block_is_struct_block(block))
+	{
+		void *ptr;
+		uint64_t type;
+		type = block_get_type(block);
+		switch(type)
+		{
+		case 4:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 8)
+				gc_custom_scan_struct(ptr, 4);
+			break;
+		case 7:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
+				gc_custom_scan_struct(ptr, 7);
+			break;
+		case 8:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
+				gc_custom_scan_struct(ptr, 8);
+			break;
+		case 9:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
+				gc_custom_scan_struct(ptr, 9);
+			break;
+		case 6:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
+				gc_custom_scan_struct(ptr, 6);
+			break;
+		}
+	}
 }

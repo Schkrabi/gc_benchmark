@@ -8,12 +8,15 @@ if (length(args)==0) {
 data = read.csv(args[1], header=TRUE)
 
 #Compute diffs
-data[,"NSEC_DIFF"] <- (1e9 * data[,"SEC_START"] + data[,"NSEC_END"]) - (1e9 * data[,"SEC_START"] + data[,"NSEC_START"])
+data[,"UNIT_DIFF"] <- data[,"UNIT_END"] - data[,"UNIT_START"]
+# data[,"NSEC_DIFF"] <- (1e9 * data[,"SEC_START"] + data[,"NSEC_END"]) - (1e9 * data[,"SEC_START"] + data[,"NSEC_START"])
 data[,"CLOCK_DIFF"] <- data[,"CLOCK_END"] - data[,"CLOCK_START"]
 
-nmean = mean(data[,"NSEC_DIFF"])
-nmedian = median(data[,"NSEC_DIFF"])
+# nmean = mean(data[,"NSEC_DIFF"])
+# nmedian = median(data[,"NSEC_DIFF"])
+umean = mean(data[,"UNIT_DIFF"])
+umedian = mean(data[,"UNIT_DIFF"])
 cmean = mean(data[,"CLOCK_DIFF"])
 cmedian = median(data[,"CLOCK_DIFF"])
 
-write(c(nmean, nmedian, cmean, cmedian), args[2]);
+write(c(umean, umedian, cmean, cmedian), args[2]);

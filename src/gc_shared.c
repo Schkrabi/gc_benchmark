@@ -22,7 +22,7 @@ void *BBSend;
  * Getters
  * Quite primitive right now but will raise in importance during optimization phase
  */
-size_t block_get_size(block_t *block)
+inline size_t block_get_size(block_t *block)
 {
     type_info_t *descriptor;
     int type;
@@ -41,19 +41,20 @@ size_t block_get_size(block_t *block)
     
     return align_size(descriptor->size) + sizeof(uint64_t);
 }
-void *block_get_forward(block_t *block)
+inline void *block_get_forward(block_t *block)
 {
-    if(block_get_type(block) == TYPE_FORWARD)
+//     if(block_get_type(block) == TYPE_FORWARD)
+    if(block_has_forward(block))
     {
         return (void*)block->size;
     }
     return NULL;
 }
-uint64_t block_get_type(block_t *block)
+inline uint64_t block_get_type(block_t *block)
 {    
     return block->type & ELEMENT_TYPE_BIT_MASK;
 }
-size_t block_get_array_size(block_t *block)
+inline size_t block_get_array_size(block_t *block)
 {
     if(block_has_forward(block))
     {
@@ -62,7 +63,7 @@ size_t block_get_array_size(block_t *block)
     
     return block->size;
 }
-type_info_t *block_get_info(block_t *block)
+inline type_info_t *block_get_info(block_t *block)
 {
     if(block_has_forward(block))
     {
@@ -71,14 +72,14 @@ type_info_t *block_get_info(block_t *block)
     
     return &type_table[block_get_type(block)];
 }
-int block_is_array(block_t *block)
+inline int block_is_array(block_t *block)
 {
     if(block_has_forward(block))
     {
         return block_is_array(block_get_forward(block));
     }
     
-    return (block->type & ARRAY_BIT_MASK) > 0;
+    return (block->type & ARRAY_BIT_MASK) != 0;
 }
 
 /**
@@ -168,7 +169,7 @@ int block_set_is_array(block_t *block, int is_array)
  * @par block a memory block
  * @return 1 if the address is set, 0 otherwise
  */
-int block_has_forward(block_t *block)
+inline int block_has_forward(block_t *block)
 {
     return block_get_type(block) == TYPE_FORWARD;
 }
@@ -211,13 +212,9 @@ int block_is_struct_block(block_t *block)
  * @par block - pointer to the memory block
  * @return pointer to the next memory block
  */
-block_t *next_block(block_t *block)
+inline block_t *next_block(block_t *block)
 {
-    void *ptr;
-    
-    ptr = block;
-    
-    return (block_t*)(ptr + block_get_size(block));
+    return (block_t*)(((void*)block) + block_get_size(block));
 }
 
 block_t *next_nth_block(block_t *block, size_t n)
@@ -287,7 +284,7 @@ void *get_data_end(block_t *block)
  * @par size original size to be aligned
  * @return aligned size
  */
-size_t align_size(size_t size)
+inline size_t align_size(size_t size)
 {
     size_t mult;
 
@@ -321,7 +318,7 @@ block_t *init_block_from_chunk(void *chunk, size_t size)
 /**
  * Splits the block of memory
  * @par src original memory block (big) OUT: 
- * @par size size of new memory block
+ * @par size size of new memory block WITHOUT THE HEADER!!!
  * @return new memory block of given size or NULL if failed
  * @remark changes the address of src argument
  */

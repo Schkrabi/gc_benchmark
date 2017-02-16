@@ -277,22 +277,23 @@ int dump_log()
  */
 size_t timestamp(char *dst)
 {
-    size_t len, pos = 0;
-    struct timespec time;
-    char buff[1000];
+//     size_t len, pos = 0;
+//     struct timespec time;
+//     char buff[1000];
+//     
+//     clock_gettime(CLOCK_MONOTONIC, &time);
+//     
+//     len = utoa10((uint64_t)time.tv_sec, &dst[pos]);
+//     pos += len;    
+//     dst[pos] = ' ';
+//     pos++;
+//     
+//     len = utoa10((uint64_t)time.tv_nsec, &dst[pos]);
+//     pos += len;
+//     dst[pos] = '\0';
+//     return pos;
     
-    clock_gettime(CLOCK_MONOTONIC, &time);
-    
-    len = utoa10((uint64_t)time.tv_sec, &dst[pos]);
-    pos += len;    
-    dst[pos] = ' ';
-    pos++;
-    
-    len = utoa10((uint64_t)time.tv_nsec, &dst[pos]);
-    pos += len;
-    dst[pos] = '\0';
-    
-    return pos;
+    return sprintf(dst, "%u", (unsigned)rdtsc());    
 }
 
 /**
@@ -629,3 +630,14 @@ int str_replace_char(char *str, char c, char replace)
     
     return 0;
 }
+
+/**
+ * Fast time measurement
+ * @return time mesuring integer
+ */
+static inline unsigned long long int rdtsc()
+{
+        unsigned long long int x;
+        __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+        return x;
+} 

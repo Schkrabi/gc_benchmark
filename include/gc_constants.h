@@ -58,7 +58,7 @@
 #define TYPE_UNDEFINED 0
 #define TYPE_FORWARD 1
 #define TYPE_INT 2
-#define TYPE_ARRAY 3
+#define TYPE_ARRAY 3 //TODO Obsolete remove
 #define TYPE_PTR 4
 #define TYPE_DOUBLE 5
 #define TYPE_TEST_STRUCT_T 6
@@ -106,8 +106,17 @@
 #define TEST_SHORT_LIVED 1
 #define TEST_LONG_LIVED 2
 
+#define TEST_DIFF1 3
+#define TEST_DIFF2 4
+#define TEST_DIFF3 5
+#define TEST_DIFF4 6
+
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
                         x(short_lived, TEST_SHORT_LIVED) \
-                        x(long_lived, TEST_LONG_LIVED)
+                        x(long_lived, TEST_LONG_LIVED)  \
+                        x(diff1, TEST_DIFF1)    \
+                        x(diff2, TEST_DIFF2)    \
+                        x(diff3, TEST_DIFF3)    \
+                        x(diff4, TEST_DIFF4)
 
 #endif

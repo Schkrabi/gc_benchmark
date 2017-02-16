@@ -278,6 +278,18 @@ int sub_main(unsigned test_num, unsigned seed)
         case TEST_LONG_LIVED:
             test_long_lived(10000, 100, 250, 0.01);
             break;
+        case TEST_DIFF1:
+            test_diff1();
+            break;
+        case TEST_DIFF2:
+            test_diff2();
+            break;
+        case TEST_DIFF3:
+            test_diff3();
+            break;
+        case TEST_DIFF4:
+            test_diff4();
+            break;
     }
     
     return 0;

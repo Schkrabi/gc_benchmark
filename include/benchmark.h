@@ -37,3 +37,8 @@ int test_short_lived(size_t test_size, size_t max_list_len);
  * @warning If max_tree_size is set too large it might lead to the overall memory depletion!
  */
 int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace);
+
+int test_diff1();
+int test_diff2();
+int test_diff3();
+int test_diff4();

@@ -13,36 +13,6 @@
 #include "gc_cheney_base.h"
 
 /**
- * from space heap (active heap)
- */
-// block_t *from_space;
-
-/**
- * to space heap (copy heap)
- */
-// block_t *to_space;
-
-/**
- * Block containing remaining memory in active semispace
- */
-// block_t *remaining_block;
-
-/**
- * Ptr to the remaining portion fo to space during copy phase
- */
-// block_t *remaining_to_space;
-
-/**
- * Roots used for automatic garbage collection
- */
-// void **gc_roots;
-
-/**
- * Number of roots in gc_roots
- */
-// size_t gc_roots_count;
-
-/**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
  */
@@ -80,40 +50,6 @@ int gc_cheney_cleanup()
     void *ptr = gc_cheney_base_from_space > gc_cheney_base_to_space ? gc_cheney_base_to_space : gc_cheney_base_from_space;
     release_memory_primitive(ptr);
 }
-
-//TODO remove
-/**
- * Returns pointer right after the end of semispace
- * @par semispace_ptr pointer to the start of a semispace
- * @return pointer right after end of semispace
- */
-// void* semispace_end(void *semispace_ptr)
-// {
-//     return semispace_ptr + SEMISPACE_SIZE;
-// }
-
-//TODO remove
-/**
- * Allocates a block of given size
- * @par size size of the new block
- * @return pointer to the memory block
- */
-// block_t *alloc_block_of_size(size_t size)
-// {
-//     block_t *block;
-//     
-//     block = split_block(&remaining_block, size);
-//     if(block == NULL)
-//     {
-//         gc_collect();
-//         block = split_block(&remaining_block, size);
-//         if(block == NULL)
-//         {
-//             gc_log(LOG_ERR, "Memory depleted");
-//         }
-//     }
-//     return block;
-// }
 
 /**
  * Allocates memory for single (non-array) value
@@ -167,25 +103,6 @@ void *gc_cheney_malloc_array(int type, size_t size)
     
     return get_data_start(block);
 }
-
-
-//TODO remove
-/**
- * Return forwarding address for a given pointer
- * @par ptr original pointer
- * @par src memory block to which the ptr points to
- * @par dst block to which ptr should be forwared
- * @return forwarding pointer for a ptr
- */
-// void *get_forwarding_addr(void *ptr, block_t* src, block_t *dst)
-// {
-//     long unsigned int ptr_ul, src_ul, dst_ul;
-//     ptr_ul = (long unsigned int) ptr;
-//     src_ul = (long unsigned int) src;
-//     dst_ul = (long unsigned int) dst;
-//     
-//     return (void*)(dst_ul + (ptr_ul - src_ul));
-// }
 
 /**
  * Carries out the "sweep" part of the algorithm
@@ -241,13 +158,10 @@ void *gc_cheney_scan_ptr(void *ptr)
             if(!block_has_forward(block))
             {
                 block_t *dst;
-                dst = split_block(&gc_cheney_base_remaining_to_space, block_get_size(block) - sizeof(block_t));
-                //copy_block_metadata(block, dst);
+                size_t block_size = block_get_size(block);
+                dst = split_block(&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
                 
-                //block_set_forward(block, dst);
-                //memcpy(get_data_start(dst), get_data_start(block), block_get_size(block));
-                
-                memcpy(dst, block, block_get_size(block));
+                memcpy(dst, block, block_size);
                 block_set_forward(block, dst);
                 
                 return dst;
@@ -260,30 +174,6 @@ void *gc_cheney_scan_ptr(void *ptr)
     }
     return NULL;
 }
-
-//TODO remove
-/**
- * Scans the chunk of memory containign pointers
- * @par start pointer to the start of memory chunk
- * @par end pointer behind the end of memory chunk
- * @return 0 if everything went well, error code otherwise
- */
-// int gc_cheney_scan_chunk(void *start, void *end)
-// {
-//     void **i;
-//     
-//     for(i = start; i < (void**)end; i++)
-//     {
-//         void *fwd;
-//         fwd = gc_cheney_scan_ptr(*i);
-//         
-//         if(fwd != NULL)
-//         {
-//             *i = fwd;
-//         }
-//     }
-//     return 0;
-// }
 
 /**
  * Scans the structure in memory
@@ -359,28 +249,6 @@ int gc_cheney_walk_array(block_t *block)
         }
     }
 }
-
-//TODO remove
-/**
- * Swiches semispaces
- * @return always 0
- */
-// int gc_swich_semispaces()
-// {
-//     block_t *tmp;
-//     
-//     tmp = to_space;
-//     to_space = from_space;
-//     from_space = tmp;
-//     remaining_block = remaining_to_space;
-//     remaining_to_space = to_space;
-//     
-//     block_set_type(to_space, TYPE_UNDEFINED);
-//     block_set_is_array(to_space, 1);
-//     block_set_array_size(to_space, SEMISPACE_SIZE - sizeof(block_t));
-//     
-//     return 0;
-// }
 
 /**
  * Returns the remaining space in bytes that collector has available
