@@ -26,12 +26,15 @@ int gc_custom_init()
     {
         return 1;
     }
-    gc_cheney_base_to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
+//     gc_cheney_base_to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
+    gc_cheney_base_to_space = (block_t*)((uint64_t)chunk + SEMISPACE_SIZE);
     if(gc_cheney_base_to_space == NULL)
     {
         return 2;
     }
-    gc_cheney_base_from_space = split_block(&gc_cheney_base_to_space, SEMISPACE_SIZE - sizeof(block_t));
+//     gc_cheney_base_from_space = gc_cheney_base_get_mem((void*)&gc_cheney_base_to_space, SEMISPACE_SIZE - sizeof(block_t));
+    gc_cheney_base_from_space = chunk;
+    gc_cheney_base_semispace_middle = gc_cheney_base_to_space;
     if(gc_cheney_base_from_space == NULL)
     {
         return 3;
@@ -187,7 +190,7 @@ int64_t gc_custom_remaining_space()
 void *gc_custom_scan_ptr(void *ptr)
 {
 	block_t *block;
-	for(block = gc_cheney_base_from_space; block < (block_t*)gc_cheney_base_semispace_end((void*)gc_cheney_base_from_space); block = next_block(block))
+	for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
 	{
 		if(is_pointer_to(block, ptr))
 		{
@@ -288,6 +291,19 @@ void *gc_custom_scan_ptr(void *ptr)
 						memcpy(dst, block, 32);
 					}
 					break;
+				case 10:
+					if(block_is_array(block))
+					{
+						byte_size = block_get_array_size(block) * 240;
+						dst = split_block(&gc_cheney_base_remaining_to_space, byte_size);
+						memcpy(dst, block, byte_size + 16);
+					}
+					else
+					{
+						dst = split_block(&gc_cheney_base_remaining_to_space, 232);
+						memcpy(dst, block, 248);
+					}
+					break;
 				default:
 				{
 					size_t block_size = block_get_size(block);
@@ -310,22 +326,44 @@ int gc_custom_scan_struct(void *ptr, int type)
 	switch(type)
 	{
 	case 4:
-		*(void**)(ptr + 0) = gc_custom_scan_ptr(ptr + 0);
+		*(void**)(ptr + 0) = gc_custom_scan_ptr(*(void**)(ptr + 0));
 		break;
 	case 7:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(ptr + 16);
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
 		break;
 	case 8:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
 		break;
 	case 9:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(ptr + 16);
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
 		break;
 	case 6:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(ptr + 8);
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(ptr + 16);
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
+		break;
+	case 10:
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
+		*(void**)(ptr + 24) = gc_custom_scan_ptr(*(void**)(ptr + 24));
+		*(void**)(ptr + 40) = gc_custom_scan_ptr(*(void**)(ptr + 40));
+		*(void**)(ptr + 56) = gc_custom_scan_ptr(*(void**)(ptr + 56));
+		*(void**)(ptr + 64) = gc_custom_scan_ptr(*(void**)(ptr + 64));
+		*(void**)(ptr + 72) = gc_custom_scan_ptr(*(void**)(ptr + 72));
+		*(void**)(ptr + 80) = gc_custom_scan_ptr(*(void**)(ptr + 80));
+		*(void**)(ptr + 88) = gc_custom_scan_ptr(*(void**)(ptr + 88));
+		*(void**)(ptr + 120) = gc_custom_scan_ptr(*(void**)(ptr + 120));
+		*(void**)(ptr + 128) = gc_custom_scan_ptr(*(void**)(ptr + 128));
+		*(void**)(ptr + 136) = gc_custom_scan_ptr(*(void**)(ptr + 136));
+		*(void**)(ptr + 152) = gc_custom_scan_ptr(*(void**)(ptr + 152));
+		*(void**)(ptr + 168) = gc_custom_scan_ptr(*(void**)(ptr + 168));
+		*(void**)(ptr + 184) = gc_custom_scan_ptr(*(void**)(ptr + 184));
+		*(void**)(ptr + 192) = gc_custom_scan_ptr(*(void**)(ptr + 192));
+		*(void**)(ptr + 200) = gc_custom_scan_ptr(*(void**)(ptr + 200));
+		*(void**)(ptr + 216) = gc_custom_scan_ptr(*(void**)(ptr + 216));
+		*(void**)(ptr + 224) = gc_custom_scan_ptr(*(void**)(ptr + 224));
+		*(void**)(ptr + 232) = gc_custom_scan_ptr(*(void**)(ptr + 232));
 		break;
 	}
 	return 0;
@@ -359,6 +397,10 @@ int gc_custom_walk_array(block_t *block)
 		case 6:
 			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
 				gc_custom_scan_struct(ptr, 6);
+			break;
+		case 10:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 240)
+				gc_custom_scan_struct(ptr, 10);
 			break;
 		}
 	}

@@ -15,72 +15,75 @@ void *stack_bottom;
 void *BBSstart;
 void *BBSend;
 
-#define ARRAY_BIT_MASK 0x8000000000000000
-#define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
-
 /**
  * Getters
  * Quite primitive right now but will raise in importance during optimization phase
  */
-inline size_t block_get_size(block_t *block)
-{
-    type_info_t *descriptor;
-    int type;
-    
-    if(block_has_forward(block))
-    {
-        return block_get_size(block_get_forward(block));
-    }
-    
-    descriptor = block_get_info(block);
-    
-    if(block_is_array(block))
-    {
-        return align_size(block_get_array_size(block) * descriptor->size) + sizeof(block_t);
-    }
-    
-    return align_size(descriptor->size) + sizeof(uint64_t);
-}
-inline void *block_get_forward(block_t *block)
-{
-//     if(block_get_type(block) == TYPE_FORWARD)
-    if(block_has_forward(block))
-    {
-        return (void*)block->size;
-    }
-    return NULL;
-}
-inline uint64_t block_get_type(block_t *block)
-{    
-    return block->type & ELEMENT_TYPE_BIT_MASK;
-}
-inline size_t block_get_array_size(block_t *block)
-{
-    if(block_has_forward(block))
-    {
-        return block_get_array_size(block_get_forward(block));
-    }
-    
-    return block->size;
-}
-inline type_info_t *block_get_info(block_t *block)
-{
-    if(block_has_forward(block))
-    {
-        return block_get_info(block_get_forward(block));
-    }
-    
-    return &type_table[block_get_type(block)];
-}
-inline int block_is_array(block_t *block)
-{
-    if(block_has_forward(block))
-    {
-        return block_is_array(block_get_forward(block));
-    }
-    
-    return (block->type & ARRAY_BIT_MASK) != 0;
-}
+// inline size_t block_get_size(block_t *block)
+// {
+//     type_info_t *descriptor;
+//     int type;
+//     
+//     if(block_has_forward(block))
+//     {
+//         return block_get_size(block_get_forward(block));
+//     }
+//     
+//     descriptor = block_get_info(block);
+//     
+//     if(block_is_array(block))
+//     {
+//         return align_size(block_get_array_size(block) * descriptor->size) + sizeof(block_t);
+//     }
+//     
+//     return align_size(descriptor->size) + sizeof(uint64_t);
+// }
+
+
+// inline void *block_get_forward(block_t *block)
+// {
+// //     if(block_get_type(block) == TYPE_FORWARD)
+//     if(block_has_forward(block))
+//     {
+//         return (void*)block->size;
+//     }
+//     return NULL;
+// }
+
+// inline uint64_t block_get_type(block_t *block)
+// {    
+//     return block->type & ELEMENT_TYPE_BIT_MASK;
+// }
+
+// inline size_t block_get_array_size(block_t *block)
+// {
+//     if(block_has_forward(block))
+//     {
+//         return block_get_array_size(block_get_forward(block));
+//     }
+//     
+//     return block->size;
+// }
+
+// inline type_info_t *block_get_info(block_t *block)
+// {
+//     if(block_has_forward(block))
+//     {
+//         return block_get_info(block_get_forward(block));
+//     }
+//     
+//     return &type_table[block_get_type(block)];
+// }
+
+// inline int block_is_array(block_t *block)
+// {
+//     if(block_has_forward(block))
+//     {
+//         return block_is_array(block_get_forward(block));
+//     }
+//     
+//     return (block->type & ARRAY_BIT_MASK) != 0;
+// }
 
 /**
  * Setters
@@ -169,16 +172,17 @@ int block_set_is_array(block_t *block, int is_array)
  * @par block a memory block
  * @return 1 if the address is set, 0 otherwise
  */
-inline int block_has_forward(block_t *block)
-{
-    return block_get_type(block) == TYPE_FORWARD;
-}
+// inline int block_has_forward(block_t *block)
+// {
+//     return block_get_type(block) == TYPE_FORWARD;
+// }
 
 /**
  * Copies the metadata of a block to other block
  * @par src source memory block
  * @par dst destination memory block
  * @return always 0
+ * @remark Obsolete
  */
 int copy_block_metadata(block_t *src, block_t *dst)
 {
@@ -212,10 +216,10 @@ int block_is_struct_block(block_t *block)
  * @par block - pointer to the memory block
  * @return pointer to the next memory block
  */
-inline block_t *next_block(block_t *block)
-{
-    return (block_t*)(((void*)block) + block_get_size(block));
-}
+// inline block_t *next_block(block_t *block)
+// {
+//     return (block_t*)(((void*)block) + block_get_size(block));
+// }
 
 block_t *next_nth_block(block_t *block, size_t n)
 {
@@ -257,45 +261,47 @@ int release_memory_primitive(void *ptr)
  * @par block initialized block of memory
  * @return ptr to the begining of user usable memory
  */
-void *get_data_start(block_t *block)
-{
-    void *ptr = block;
-    
-    if(block_is_array(block))
-    {    
-        return ptr + sizeof(block_t);
-    }
-    
-    return ptr + sizeof(uint64_t);
-}
+// void *get_data_start(block_t *block)
+// {
+//     void *ptr = block;
+//     
+//     if(block_is_array(block))
+//     {    
+//         return ptr + sizeof(block_t);
+//     }
+//     
+//     return ptr + sizeof(uint64_t);
+// }
 
 /**
  * Returns pointer just after the allocated memory of a block
  * @par block block of a memory
  * @return pointer after the allocated memory block
  */
-void *get_data_end(block_t *block)
-{
-    return (void*)next_block(block);
-}
+// void *get_data_end(block_t *block)
+// {
+//     return (void*)next_block(block);
+// }
 
 /**
- * Alings integer to the nearest greater <TODO násobek> of the size
+ * Alings integer to the nearest greater multiple of the 8
  * @par size original size to be aligned
  * @return aligned size
  */
 inline size_t align_size(size_t size)
 {
-    size_t mult;
-
-    if(size % WORD_SIZE == 0)
-    {
-        return size;
-    }
-    
-    mult = size / WORD_SIZE;
-    
-    return (mult + 1) * WORD_SIZE;
+//     size_t mult;
+// 
+//     if(size % WORD_SIZE == 0)
+//     {
+//         return size;
+//     }
+//     
+//     mult = size / WORD_SIZE;
+//     
+//     return (mult + 1) * WORD_SIZE;
+    size_t t = size & 0x7; //TODO Magic const
+    return t == 0 ? size : size + (WORD_SIZE - (size & 0x7));
 }
 
 /**
@@ -303,6 +309,7 @@ inline size_t align_size(size_t size)
  * @par chunk oroginal chunk of memory
  * @par size of the memory chunk
  * @return initialized block
+ * @remark obsolete
  */
 block_t *init_block_from_chunk(void *chunk, size_t size)
 {
@@ -334,21 +341,21 @@ block_t *split_block(block_t **src, size_t size)
         return NULL;
     }
     
-    aligned_size = align_size(size);
+    aligned_size = align_size(size);    //Alings the required memory to multiple of 8
 
     if(src == NULL || *src == NULL)
     {
         return NULL;
     }
     
-    if(aligned_size + sizeof(block_t) >= block_get_size(*src) - sizeof(block_t))
+    if(aligned_size + sizeof(block_t) >= block_get_size(*src) - sizeof(block_t)) //Checks if semispace was exceeded
     {
         return NULL;
     }
     
-    remaining = (block_get_size(*src) - sizeof(block_t)) - (aligned_size + sizeof(block_t));
+    remaining = (block_get_size(*src) - sizeof(block_t)) - (aligned_size + sizeof(block_t)); //Computes the remaining space in src block
 
-    ptr = (void*)((uint64_t)*src + (uint64_t)sizeof(block_t) + (uint64_t)aligned_size);
+    ptr = (void*)((uint64_t)*src + (uint64_t)sizeof(block_t) + (uint64_t)aligned_size); //Computes new start of the src block
             
     split = *src;
     *src = ptr;

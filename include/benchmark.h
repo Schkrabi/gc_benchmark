@@ -38,7 +38,4 @@ int test_short_lived(size_t test_size, size_t max_list_len);
  */
 int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace);
 
-int test_diff1();
-int test_diff2();
-int test_diff3();
-int test_diff4();
+int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace);

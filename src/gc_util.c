@@ -460,7 +460,7 @@ int mem_dump(FILE *file)
     int sum, tmp;
     
     fprintf(file, "Dumping all active memory blocks\n");
-    for(block = gc_cheney_base_from_space; block < (block_t*)gc_cheney_base_semispace_end((void*)gc_cheney_base_from_space); block = next_block(block))
+    for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
     {
         tmp = dump_block(file, block);
         if(tmp < 0)
@@ -469,6 +469,9 @@ int mem_dump(FILE *file)
         }
         sum += tmp;
     }
+    
+    sum += fprintf(file, "Free space: %u bytes\n", (unsigned)gc_cheney_base_remaining_space());
+    
     return sum;
 }
 

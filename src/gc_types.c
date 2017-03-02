@@ -10,6 +10,7 @@
 #include "binary_tree.h"
 #include "cyclic_list.h"
 #include "cdouble_list.h"
+#include "entanglement.h"
 
 type_info_t type_table[TYPE_COUNT];
 
@@ -97,7 +98,8 @@ int init_type_table()
     
     btree_make_descriptor(&type_table[TYPE_BTREE_T]);
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
-    cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);    
+    cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);  
+    entanglement_make_descriptor(&type_table[TYPE_ENTANGLEMENT_T]);
     
     return 0;
 }
@@ -113,6 +115,7 @@ int cleanup_type_table()
     free(type_table[TYPE_BTREE_T].offsets);
     free(type_table[TYPE_CLIST_T].offsets);
     free(type_table[TYPE_CDLIST_T].offsets);
+    free(type_table[TYPE_ENTANGLEMENT_T].offsets);
     
     return 0;
 }

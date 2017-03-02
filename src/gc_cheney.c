@@ -25,12 +25,15 @@ int gc_cheney_init()
     {
         return 1;
     }
-    gc_cheney_base_to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
+//     gc_cheney_base_to_space = init_block_from_chunk(chunk, (2*SEMISPACE_SIZE) - sizeof(block_t));
+    gc_cheney_base_to_space = (block_t*)((uint64_t)chunk + SEMISPACE_SIZE);
     if(gc_cheney_base_to_space == NULL)
     {
         return 2;
     }
-    gc_cheney_base_from_space = split_block(&gc_cheney_base_to_space, SEMISPACE_SIZE - sizeof(block_t));
+    gc_cheney_base_from_space = chunk;
+//     gc_cheney_base_from_space = split_block(&gc_cheney_base_to_space, SEMISPACE_SIZE - sizeof(block_t));
+    gc_cheney_base_semispace_middle = gc_cheney_base_to_space;
     if(gc_cheney_base_from_space == NULL)
     {
         return 3;
@@ -151,7 +154,7 @@ void *gc_cheney_scan_ptr(void *ptr)
 {
     block_t *block;
     
-    for(block = gc_cheney_base_from_space; block < (block_t*)gc_cheney_base_semispace_end((void*)gc_cheney_base_from_space); block = next_block(block))
+    for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
     {
         if(is_pointer_to(block, ptr))
         {
@@ -159,7 +162,7 @@ void *gc_cheney_scan_ptr(void *ptr)
             {
                 block_t *dst;
                 size_t block_size = block_get_size(block);
-                dst = split_block(&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
+                dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
                 
                 memcpy(dst, block, block_size);
                 block_set_forward(block, dst);

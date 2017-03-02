@@ -15,6 +15,8 @@
 #include "gc_util.h"
 #include <syslog.h>
 #include <cdouble_list.h>
+#include "entanglement.h"
+#include "garbage_collector.h"
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
 #define XTEST_TOSTR(name, num) case num: return #name;
@@ -124,169 +126,33 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
     }
 }
 
-//double list
-int test_diff1()
+int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace)
 {
-    size_t test_size = 10;
-    size_t max_tree_size = 100;
-    size_t old_pool = 250;
-    double chance_to_replace = 0.01;
     size_t i;
     
     gc_cheney_base_roots_count = old_pool;
-    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
+    gc_cheney_base_roots = (void**)malloc((1 + gc_cheney_base_roots_count) * sizeof(void*));
     
     for(i = 0; i < test_size; i++)
     {
-        cdlist_t *cdlist;
-        size_t size, j;
+        entanglement_t *e;
         
-        cdlist = NULL;
-        
-        cdlist_insert(&cdlist, rand()%UINT_MAX);
-        
-        size = rand()%max_tree_size;
-        j = 0; 
-        while(j < size)
-        {
-            if(cdlist_insert(&cdlist, rand()%UINT_MAX) == 0)
-            {
-                continue;
-            }
-            j++;
-        }
+        e = (entanglement_t*)gc_malloc(entanglement_t);
+        gc_cheney_base_roots[old_pool] = e;
+        entanglement_init(e);
         
         if(i < old_pool)
         {
-            gc_cheney_base_roots[i] = cdlist;
+            gc_cheney_base_roots[i] = e;
         }
         else
         {
             if(rand()%100 < chance_to_replace*100)
             {
-                gc_cheney_base_roots[rand()%old_pool] = cdlist;
+                gc_cheney_base_roots[rand()%old_pool] = e;
             }
         }
-    }
-}
-
-//list
-int test_diff2()
-{
-    size_t test_size = 10;
-    size_t max_tree_size = 100;
-    size_t old_pool = 250;
-    double chance_to_replace = 0.01;
-    size_t i;
-    
-    gc_cheney_base_roots_count = old_pool;
-    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
-    
-    for(i = 0; i < test_size; i++)
-    {
-        clist_t *clist;
-        size_t size, j;
         
-        clist = NULL;
-        
-        clist_insert(&clist, rand()%UINT_MAX);
-        
-        size = rand()%max_tree_size;
-        j = 0; 
-        while(j < size)
-        {
-            if(clist_insert(&clist, rand()%UINT_MAX) == 0)
-            {
-                continue;
-            }
-            j++;
-        }
-        
-        if(i < old_pool)
-        {
-            gc_cheney_base_roots[i] = clist;
-        }
-        else
-        {
-            if(rand()%100 < chance_to_replace*100)
-            {
-                gc_cheney_base_roots[rand()%old_pool] = clist;
-            }
-        }
-    }
-}
-
-//No living pool
-int test_diff3()
-{
-    size_t test_size = 10;
-    size_t max_tree_size = 100;
-    size_t old_pool = 250;
-    double chance_to_replace = 0.01;
-    size_t i;
-    
-    gc_cheney_base_roots_count = 1;
-    gc_cheney_base_roots = (void**)malloc(sizeof(void*));
-    
-    for(i = 0; i < test_size; i++)
-    {
-        btree_t *btree;
-        size_t size, j;
-        
-        btree = NULL;
-        
-        btree_insert(&btree, rand()%UINT_MAX);
-        gc_cheney_base_roots[0] = btree;
-        
-        size = rand()%max_tree_size;
-        j = 0; 
-        while(j < size)
-        {
-            if(btree_insert(&btree, rand()%UINT_MAX) == 0)
-            {
-                continue;
-            }
-            j++;
-        }
-    }
-}
-
-//static pool
-int test_diff4()
-{
-    size_t test_size = 10;
-    size_t max_tree_size = 100;
-    size_t old_pool = 250;
-    double chance_to_replace = 0.01;
-    
-    size_t i;
-    
-    gc_cheney_base_roots_count = old_pool;
-    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
-    
-    for(i = 0; i < test_size; i++)
-    {
-        btree_t *btree;
-        size_t size, j;
-        
-        btree = NULL;
-        
-        btree_insert(&btree, rand()%UINT_MAX);
-        
-        size = rand()%max_tree_size;
-        j = 0; 
-        while(j < size)
-        {
-            if(btree_insert(&btree, rand()%UINT_MAX) == 0)
-            {
-                continue;
-            }
-            j++;
-        }
-        
-        if(i < old_pool)
-        {
-            gc_cheney_base_roots[i] = btree;
-        }
+        gc_cheney_base_roots[old_pool] = NULL;
     }
 }

@@ -49,7 +49,7 @@
 /**
  * Overall number of types recognized by GC
  */
-#define TYPE_COUNT 10
+#define TYPE_COUNT 11
 
 /**
  * Type offsets into a type table
@@ -65,6 +65,7 @@
 #define TYPE_BTREE_T 7
 #define TYPE_CLIST_T 8
 #define TYPE_CDLIST_T 9
+#define TYPE_ENTANGLEMENT_T 10
 
 /**
  * xmacro for mapping a real c types into a GC types
@@ -87,7 +88,9 @@
                         x(cdlist_t, TYPE_CDLIST_T) \
                         x(cdlist_node_t, TYPE_CDLIST_T) \
                         x(cdlist_t*, TYPE_PTR) \
-                        x(cdlist_node_t*, TYPE_PTR)
+                        x(cdlist_node_t*, TYPE_PTR) \
+                        x(entanglement_t, TYPE_ENTANGLEMENT_T) \
+                        x(entanglement_t*, TYPE_PTR)
                         
 /** 
  * Allocated memory types
@@ -105,18 +108,11 @@
 #define TEST_SUBSYSTEM 0
 #define TEST_SHORT_LIVED 1
 #define TEST_LONG_LIVED 2
-
-#define TEST_DIFF1 3
-#define TEST_DIFF2 4
-#define TEST_DIFF3 5
-#define TEST_DIFF4 6
+#define TEST_LARGE_STRUCTURE 3
 
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
                         x(short_lived, TEST_SHORT_LIVED) \
                         x(long_lived, TEST_LONG_LIVED)  \
-                        x(diff1, TEST_DIFF1)    \
-                        x(diff2, TEST_DIFF2)    \
-                        x(diff3, TEST_DIFF3)    \
-                        x(diff4, TEST_DIFF4)
+                        x(large_structure, TEST_LARGE_STRUCTURE)
 
 #endif

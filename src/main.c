@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
     err_msg = init(seed, test_num, used_gc);
     if(err_msg != 0)
     {
+        cleanup();
         return err_msg;
     }
     
@@ -278,17 +279,8 @@ int sub_main(unsigned test_num, unsigned seed)
         case TEST_LONG_LIVED:
             test_long_lived(10000, 100, 250, 0.01);
             break;
-        case TEST_DIFF1:
-            test_diff1();
-            break;
-        case TEST_DIFF2:
-            test_diff2();
-            break;
-        case TEST_DIFF3:
-            test_diff3();
-            break;
-        case TEST_DIFF4:
-            test_diff4();
+        case TEST_LARGE_STRUCTURE:
+            test_large_structure(10000, 5, 0.01);
             break;
     }
     

@@ -19,6 +19,12 @@ extern block_t *gc_cheney_base_from_space;
 extern block_t *gc_cheney_base_to_space;
 
 /**
+ * Pointer towards middle of the semispaces
+ * Used in determining end of semispace
+ */
+extern void *gc_cheney_base_semispace_middle;
+
+/**
  * Block containing remaining memory in active semispace
  */
 extern block_t *gc_cheney_base_remaining_block;
@@ -44,6 +50,13 @@ extern size_t gc_cheney_base_roots_count;
  * @return pointer right after end of semispace
  */
 void* gc_cheney_base_semispace_end(void *semispace_ptr);
+
+/**
+ * Returns pointer right after end of semispace
+ * @par arbitary pointer from semispace
+ * @return pointer right after end of semispace
+ */
+#define gc_cheney_base_semispace_limit(ptr) ((uint64_t)ptr < (uint64_t)gc_cheney_base_semispace_middle ? gc_cheney_base_semispace_middle : (void*)((uint64_t)gc_cheney_base_semispace_middle + SEMISPACE_SIZE))
 
 /**
  * Allocates a block of given size
@@ -72,3 +85,12 @@ int gc_cheney_base_swich_semispaces();
  * @return space in bytes or -1 if collector is limmited only by system
  */
 int64_t gc_cheney_base_remaining_space();
+
+/**
+ * Splits the block of memory
+ * @par src original memory block (big) OUT: 
+ * @par size size of new memory block WITHOUT THE HEADER!!!
+ * @return new memory block of given size or NULL if failed
+ * @remark changes the address of src argument
+ */
+void* gc_cheney_base_get_mem(void **ptr, size_t size);

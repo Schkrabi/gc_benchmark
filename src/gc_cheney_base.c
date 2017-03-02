@@ -20,6 +20,12 @@ block_t *gc_cheney_base_from_space;
 block_t *gc_cheney_base_to_space;
 
 /**
+ * Pointer towards middle of the semispaces
+ * Used in determining end of semispace
+ */
+void *gc_cheney_base_semispace_middle;
+
+/**
  * Block containing remaining memory in active semispace
  */
 block_t *gc_cheney_base_remaining_block;
@@ -58,16 +64,20 @@ block_t *gc_cheney_base_alloc_block_of_size(size_t size)
 {
     block_t *block;
     
-    block = split_block(&gc_cheney_base_remaining_block, size);
+//     printf("Allocating on %p, size %u", gc_cheney_base_remaining_block, (unsigned)size + 16);
+    
+    block = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_block, size);
     if(block == NULL)
     {
         gc_collect();
-        block = split_block(&gc_cheney_base_remaining_block, size);
+        block = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_block, size);
         if(block == NULL)
         {
+//             printf("OUT OF MEMORY\n");
             gc_log(LOG_ERR, "Memory depleted");
         }
     }
+//     printf(", Remaining block %p, semispace end %p\n", gc_cheney_base_remaining_block, gc_cheney_base_semispace_end(gc_cheney_base_from_space)); 
     return block;
 }
 
@@ -115,5 +125,29 @@ int gc_cheney_base_swich_semispaces()
  */
 int64_t gc_cheney_base_remaining_space()
 {
-    return block_get_size(gc_cheney_base_remaining_block);
+    return (uint64_t)gc_cheney_base_semispace_limit((void*)gc_cheney_base_remaining_block) - (uint64_t)gc_cheney_base_remaining_block;
+}
+
+/**
+ * Splits the block of memory
+ * @par src original memory block (big) OUT: 
+ * @par size size of new memory block WITHOUT THE HEADER!!!
+ * @return new memory block of given size or NULL if failed
+ * @remark changes the address of src argument
+ */
+void* gc_cheney_base_get_mem(void **ptr, size_t size)
+{
+    void *tmp, *ret;
+    
+    tmp = (void*)((uint64_t)*ptr + align_size(size) + sizeof(block_t));
+    
+    if((uint64_t)tmp >= (uint64_t)gc_cheney_base_semispace_limit(*ptr))
+    {
+        return NULL;
+    }
+    
+    ret = *ptr;
+    *ptr = tmp;
+    
+    return ret;
 }

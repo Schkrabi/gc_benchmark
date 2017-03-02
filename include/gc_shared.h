@@ -22,16 +22,31 @@ typedef struct
     uint64_t size;
 } block_t;
 
+#define ARRAY_BIT_MASK 0x8000000000000000
+#define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
+#define block_active(block) (block_has_forward(block) ? block_get_forward(block) : block)
+
 /**
  * Getters
  * Quite primitive right now but will raise in importance during optimization phase
  */
-size_t block_get_size(block_t *block);
-void *block_get_forward(block_t *block);
-uint64_t block_get_type(block_t *block);
-size_t block_get_array_size(block_t *block);
-type_info_t *block_get_info(block_t *block);
-int block_is_array(block_t *block);
+// size_t block_get_size(block_t *block);
+#define block_get_size_aux(block) (block_is_array(block) ? align_size(block_get_array_size(block) * block_get_info(block)->size) + 16 :                                  align_size(block_get_info(block)->size) + 8)
+#define block_get_size(block) block_get_size_aux(block_active(block))
+
+#define block_get_forward(block) ((void*)((block_t*)block)->size)
+// void *block_get_forward(block_t *block);
+#define block_get_type(block) (((block_t*)block)->type & ELEMENT_TYPE_BIT_MASK)
+// uint64_t block_get_type(block_t *block);
+#define BLOCK_GET_ARRAY_SIZE_AUX(block) (((block_t*)block)->size)
+#define block_get_array_size(block) (BLOCK_GET_ARRAY_SIZE_AUX(block_active(block)))
+// size_t block_get_array_size(block_t *block);
+#define BLOCK_GET_INFO_AUX(block) (&type_table[block_get_type(block)])
+#define block_get_info(block) (BLOCK_GET_INFO_AUX(block_active(block))) 
+// type_info_t *block_get_info(block_t *block);
+#define BLOCK_IS_ARRAY_AUX(block) ((((block_t*)block)->type & ARRAY_BIT_MASK) != 0)
+#define block_is_array(block) (BLOCK_IS_ARRAY_AUX(block_active(block)))
+// int block_is_array(block_t *block);
 
 /**
  * Setters
@@ -49,13 +64,15 @@ int block_set_is_array(block_t *block, int is_array);
  * @par block a memory block
  * @return 1 if the address is set, 0 otherwise
  */
-int block_has_forward(block_t *block);
+#define block_has_forward(block) (block_get_type(block) == TYPE_FORWARD)
+// int block_has_forward(block_t *block);
 
 /**
  * Copies the metadata of a block to other block
  * @par src source memory block
  * @par dst destination memory block
  * @return always 0
+ * @remark Obsolete
  */
 int copy_block_metadata(block_t *src, block_t *dst);
 
@@ -71,7 +88,8 @@ int block_is_struct_block(block_t *block);
  * @par block - pointer to the memory block
  * @return pointer to the next memory block
  */
-block_t *next_block(block_t *block);
+#define next_block(block) (block_t*)((uint64_t)block + block_get_size(block))
+// block_t *next_block(block_t *block);
 
 /**
  * Call to system for get raw memory
@@ -92,20 +110,23 @@ int release_memory_primitive(void *ptr);
  * @par block initialized block of memory
  * @return ptr to the begining of user usable memory
  */
-void *get_data_start(block_t *block);
+#define get_data_start(block) (block_is_array(block) ? (void*)((uint64_t)block + 16) : (void*)((uint64_t)block + 8))
+// void *get_data_start(block_t *block);
 
 /**
  * Returns pointer just after the allocated memory of a block
  * @par block block of a memory
  * @return pointer after the allocated memory block
  */
-void *get_data_end(block_t *block);
+#define get_data_end(block) ((void*)next_block(block))
+// void *get_data_end(block_t *block);
 
 /**
  * Alings integer to the nearest greater <TODO násobek> of the size
  * @par size original size to be aligned
  * @return aligned size
  */
+// #define align_size(size) (size + (WORD_SIZE - (size & 0x7)))
 size_t align_size(size_t size);
 
 /**
