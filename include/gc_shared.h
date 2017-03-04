@@ -152,7 +152,8 @@ block_t *split_block(block_t **src, size_t size);
  * @par ptr pointer
  * @return 1 if ptr points into block, 0 otherwise
  */
-int is_pointer_to(block_t *block, void *ptr);
+#define is_pointer_to(block, ptr) ((uint64_t)ptr >= (uint64_t)get_data_start(block) && (uint64_t)ptr < (uint64_t)get_data_end(block))
+// int is_pointer_to(block_t *block, void *ptr);
 
 /**
  * Bottom of a stack

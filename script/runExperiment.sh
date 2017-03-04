@@ -7,6 +7,7 @@ tests=(short_lived long_lived)
 it=0
 while [ "$it" -ne ${1-"1"} ]; do
     seed=$RANDOM
+    echo $seed
     for test in ${tests[@]}; do
         for gc in ${gcs[@]}; do
             ../bin/gc_benchmark -s $seed -t $test -g $gc 

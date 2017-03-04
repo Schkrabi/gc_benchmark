@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     }
     
     printf("%s\n", get_session_ident());
-    gc_log(LOG_INFO, "seed %u", test_num); 
+    gc_log(LOG_INFO, "seed %u", seed); 
     
     rtrn = sub_main(test_num, seed);
     
@@ -263,6 +263,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
  */
 int sub_main(unsigned test_num, unsigned seed)
 {
+    gc_log(LOG_INFO, "test start %u", (unsigned)clock());
     switch(test_num)
     {
         case TEST_SUBSYSTEM:
@@ -283,6 +284,7 @@ int sub_main(unsigned test_num, unsigned seed)
             test_large_structure(10000, 5, 0.01);
             break;
     }
+    gc_log(LOG_INFO, "test end %u", (unsigned)clock());
     
     return 0;
 }

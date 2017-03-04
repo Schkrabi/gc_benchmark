@@ -377,7 +377,7 @@ block_t *split_block(block_t **src, size_t size)
  * @par ptr pointer
  * @return 1 if ptr points into block, 0 otherwise
  */
-int is_pointer_to(block_t *block, void *ptr)
+/*int is_pointer_to(block_t *block, void *ptr)
 {
     void *start, *end;
 
@@ -385,7 +385,7 @@ int is_pointer_to(block_t *block, void *ptr)
     end = get_data_end(block);
     
     return ptr >= start && ptr < end;
-}                                                
+}*/                                                
 
 /**
  * Returns ptr to the value of a structure slot givven by an offset
