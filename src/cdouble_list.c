@@ -8,6 +8,7 @@
 #include "cdouble_list.h"
 #include "garbage_collector.h"
 #include "gc_util.h"
+#include "gc_constants.h"
 
 /**
  * Makes and sets the cyclic double linked list descriptor to the given descriptor structure pointer
@@ -20,9 +21,11 @@ int cdlist_make_descriptor(type_info_t *info)
     
     info->size = sizeof(pattern);
     info->number_of_references = 2;
-    info->offsets = (unsigned long*)malloc(2*sizeof(unsigned long));
-    info->offsets[0] = (unsigned long)((art_ptr_t)&pattern.prev - (art_ptr_t)&pattern);
-    info->offsets[1] = (unsigned long)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
+    info->references = (ptr_info_t*)malloc(2*sizeof(ptr_info_t));
+    info->references[0].offset = (uint64_t)((art_ptr_t)&pattern.prev - (art_ptr_t)&pattern);
+    info->references[0].type = TYPE_CDLIST_T;
+    info->references[1].offset = (uint64_t)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
+    info->references[1].type = TYPE_CDLIST_T;
 }
 
 /**

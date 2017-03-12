@@ -106,7 +106,7 @@ int gc_cheney_collect_from_roots(void *roots[], size_t size);
  * @par ptr scanned pointer
  * @return 0 if pointer do not points anywhere, forwarding address otherwise
  */
-void *gc_cheney_scan_ptr(void *ptr);
+void *gc_cheney_scan_ptr(void *ptr, uint64_t type);
 
 //TODO remove
 /**

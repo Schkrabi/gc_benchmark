@@ -71,30 +71,33 @@ int init_type_table()
     
     type_table[TYPE_UNDEFINED].size = 1;
     type_table[TYPE_UNDEFINED].number_of_references = 0;
-    type_table[TYPE_UNDEFINED].offsets = NULL;
+    type_table[TYPE_UNDEFINED].references = NULL;
     
     type_table[TYPE_INT].size = sizeof(int);
     type_table[TYPE_INT].number_of_references = 0;
-    type_table[TYPE_INT].offsets = NULL;
+    type_table[TYPE_INT].references = NULL;
     
     type_table[TYPE_ARRAY].size = 0;
     type_table[TYPE_ARRAY].number_of_references = 0;
-    type_table[TYPE_ARRAY].offsets = NULL;
+    type_table[TYPE_ARRAY].references = NULL;
     
     type_table[TYPE_PTR].size = sizeof(void*);
     type_table[TYPE_PTR].number_of_references = 1;
-    type_table[TYPE_PTR].offsets = (unsigned long*)malloc(1*sizeof(unsigned long));
-    type_table[TYPE_PTR].offsets[0] = 0;
+    type_table[TYPE_PTR].references = (ptr_info_t*)malloc(1*sizeof(ptr_info_t));
+    type_table[TYPE_PTR].references[0].offset = 0;
+    type_table[TYPE_PTR].references[0].type = TYPE_PTR;
     
     type_table[TYPE_DOUBLE].size = sizeof(double);
     type_table[TYPE_DOUBLE].number_of_references = 0;
-    type_table[TYPE_DOUBLE].offsets = NULL;
+    type_table[TYPE_DOUBLE].references = NULL;
     
     type_table[TYPE_TEST_STRUCT_T].size = sizeof(test_struct_t);
     type_table[TYPE_TEST_STRUCT_T].number_of_references = 2;
-    type_table[TYPE_TEST_STRUCT_T].offsets = malloc(2*sizeof(unsigned long));
-    type_table[TYPE_TEST_STRUCT_T].offsets[0] = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
-    type_table[TYPE_TEST_STRUCT_T].offsets[1] = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
+    type_table[TYPE_TEST_STRUCT_T].references = malloc(2*sizeof(ptr_info_t));
+    type_table[TYPE_TEST_STRUCT_T].references[0].offset = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
+    type_table[TYPE_TEST_STRUCT_T].references[0].type = TYPE_PTR;
+    type_table[TYPE_TEST_STRUCT_T].references[1].offset = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
+    type_table[TYPE_TEST_STRUCT_T].references[1].type = TYPE_PTR;
     
     btree_make_descriptor(&type_table[TYPE_BTREE_T]);
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
@@ -110,12 +113,12 @@ int init_type_table()
  */
 int cleanup_type_table()
 {
-    free(type_table[TYPE_PTR].offsets);
-    free(type_table[TYPE_TEST_STRUCT_T].offsets);
-    free(type_table[TYPE_BTREE_T].offsets);
-    free(type_table[TYPE_CLIST_T].offsets);
-    free(type_table[TYPE_CDLIST_T].offsets);
-    free(type_table[TYPE_ENTANGLEMENT_T].offsets);
+    free(type_table[TYPE_PTR].references);
+    free(type_table[TYPE_TEST_STRUCT_T].references);
+    free(type_table[TYPE_BTREE_T].references);
+    free(type_table[TYPE_CLIST_T].references);
+    free(type_table[TYPE_CDLIST_T].references);
+    free(type_table[TYPE_ENTANGLEMENT_T].references);
     
     return 0;
 }

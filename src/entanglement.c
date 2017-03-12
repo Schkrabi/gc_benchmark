@@ -18,13 +18,16 @@
  */
 int entanglement_make_descriptor(type_info_t *info)
 {
+    //TODO Obsolete
     entanglement_t measure;
     
     info->size = sizeof(entanglement_t);
-    info->number_of_references = 20;
-    info->offsets = (unsigned long*)malloc(20 * sizeof(unsigned long));
-    
-    ENT_PTR_NUMS(ENT_MAKE_DESC)
+    info->number_of_references = 0;
+    info->references = NULL;
+//     info->number_of_references = 20;
+//     info->offsets = (unsigned long*)malloc(20 * sizeof(unsigned long));
+//     
+//     ENT_PTR_NUMS(ENT_MAKE_DESC)
 }
 
 #define ENT_FILL_REFS(num) e->ref ## num = rand_ptr();

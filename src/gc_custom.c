@@ -133,7 +133,7 @@ int gc_custom_collect_from_roots(void *roots[], size_t size)
     
     for(i = 0; i < size; i++)
     {
-      gc_custom_scan_ptr(roots[i]);
+      gc_custom_scan_ptr(roots[i], TYPE_PTR); //TODO hotfix
     }                                                                   
     
     while(todo_ptr < gc_cheney_base_remaining_to_space)
@@ -187,118 +187,121 @@ int64_t gc_custom_remaining_space()
     return gc_cheney_base_remaining_space();
 }
 
-void *gc_custom_scan_ptr(void *ptr)
+void *gc_custom_scan_ptr(void *ptr, uint64_t type)
 {
 	block_t *block;
 	for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
 	{
-		if(is_pointer_to(block, ptr))
+		if(block_get_type(block) == type || type == TYPE_PTR)
 		{
-			if(!block_has_forward(block))
+			if(is_pointer_to(block, ptr))
 			{
-				block_t *dst;
-				if(block_is_array(block))
+				if(!block_has_forward(block))
 				{
-					size_t byte_size;
-					switch(block_get_type(block))
+					block_t *dst;
+					if(block_is_array(block))
 					{
-					case 4:
-						byte_size = block_get_array_size(block) * 8;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 7:
-						byte_size = block_get_array_size(block) * 24;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 8:
-						byte_size = block_get_array_size(block) * 16;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 9:
-						byte_size = block_get_array_size(block) * 24;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 5:
-						byte_size = block_get_array_size(block) * 8;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 2:
-						byte_size = block_get_array_size(block) * 4;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 6:
-						byte_size = block_get_array_size(block) * 24;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					case 10:
-						byte_size = block_get_array_size(block) * 240;
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-						memcpy(dst, block, byte_size + 16);
-						break;
-					default:
+						size_t byte_size;
+						switch(block_get_type(block))
+						{
+						case 4:
+							byte_size = block_get_array_size(block) * 8;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 7:
+							byte_size = block_get_array_size(block) * 24;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 8:
+							byte_size = block_get_array_size(block) * 16;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 9:
+							byte_size = block_get_array_size(block) * 24;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 5:
+							byte_size = block_get_array_size(block) * 8;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 2:
+							byte_size = block_get_array_size(block) * 4;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 6:
+							byte_size = block_get_array_size(block) * 24;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						case 10:
+							byte_size = block_get_array_size(block) * 240;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
+						default:
+                                                {
+							size_t block_size = block_get_size(block);
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
+							memcpy(dst, block, block_size);
+                                                }
+						}
+					}
+					else
 					{
-						size_t block_size = block_get_size(block);
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-						memcpy(dst, block, block_size);
+						switch(block_get_type(block))
+						{
+						case 4:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
+							memcpy(dst, block, 16);
+							break;
+						case 7:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
+							memcpy(dst, block, 32);
+							break;
+						case 8:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
+							memcpy(dst, block, 24);
+							break;
+						case 9:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
+							memcpy(dst, block, 32);
+							break;
+						case 5:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
+							memcpy(dst, block, 16);
+							break;
+						case 2:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
+							memcpy(dst, block, 16);
+							break;
+						case 6:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
+							memcpy(dst, block, 32);
+							break;
+						case 10:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 232);
+							memcpy(dst, block, 248);
+							break;
+						default:
+                                                {
+							size_t block_size = block_get_size(block);
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
+							memcpy(dst, block, block_size);
+                                                }
+						}
 					}
-					}
+					block_set_forward(block, dst);
+					return dst;
 				}
 				else
-				{
-					switch(block_get_type(block))
-					{
-					case 4:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-						memcpy(dst, block, 16);
-						break;
-					case 7:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-						memcpy(dst, block, 32);
-						break;
-					case 8:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-						memcpy(dst, block, 24);
-						break;
-					case 9:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-						memcpy(dst, block, 32);
-						break;
-					case 5:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-						memcpy(dst, block, 16);
-						break;
-					case 2:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-						memcpy(dst, block, 16);
-						break;
-					case 6:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-						memcpy(dst, block, 32);
-						break;
-					case 10:
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 232);
-						memcpy(dst, block, 248);
-						break;
-					default:
-					{
-						size_t block_size = block_get_size(block);
-						dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-						memcpy(dst, block, block_size);
-					}
-					}
-				}
-				block_set_forward(block, dst);
-				return dst;
+			return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
 			}
-			else
-				return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
 		}
 	}
 	return NULL;
@@ -309,44 +312,22 @@ int gc_custom_scan_struct(void *ptr, int type)
 	switch(type)
 	{
 	case 4:
-		*(void**)(ptr + 0) = gc_custom_scan_ptr(*(void**)(ptr + 0));
+		*(void**)(ptr + 0) = gc_custom_scan_ptr(*(void**)(ptr + 0), 4);
 		break;
 	case 7:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8), 7);
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16), 7);
 		break;
 	case 8:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8), 8);
 		break;
 	case 9:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8), 9);
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16), 9);
 		break;
 	case 6:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
-		break;
-	case 10:
-		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8));
-		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16));
-		*(void**)(ptr + 24) = gc_custom_scan_ptr(*(void**)(ptr + 24));
-		*(void**)(ptr + 40) = gc_custom_scan_ptr(*(void**)(ptr + 40));
-		*(void**)(ptr + 56) = gc_custom_scan_ptr(*(void**)(ptr + 56));
-		*(void**)(ptr + 64) = gc_custom_scan_ptr(*(void**)(ptr + 64));
-		*(void**)(ptr + 72) = gc_custom_scan_ptr(*(void**)(ptr + 72));
-		*(void**)(ptr + 80) = gc_custom_scan_ptr(*(void**)(ptr + 80));
-		*(void**)(ptr + 88) = gc_custom_scan_ptr(*(void**)(ptr + 88));
-		*(void**)(ptr + 120) = gc_custom_scan_ptr(*(void**)(ptr + 120));
-		*(void**)(ptr + 128) = gc_custom_scan_ptr(*(void**)(ptr + 128));
-		*(void**)(ptr + 136) = gc_custom_scan_ptr(*(void**)(ptr + 136));
-		*(void**)(ptr + 152) = gc_custom_scan_ptr(*(void**)(ptr + 152));
-		*(void**)(ptr + 168) = gc_custom_scan_ptr(*(void**)(ptr + 168));
-		*(void**)(ptr + 184) = gc_custom_scan_ptr(*(void**)(ptr + 184));
-		*(void**)(ptr + 192) = gc_custom_scan_ptr(*(void**)(ptr + 192));
-		*(void**)(ptr + 200) = gc_custom_scan_ptr(*(void**)(ptr + 200));
-		*(void**)(ptr + 216) = gc_custom_scan_ptr(*(void**)(ptr + 216));
-		*(void**)(ptr + 224) = gc_custom_scan_ptr(*(void**)(ptr + 224));
-		*(void**)(ptr + 232) = gc_custom_scan_ptr(*(void**)(ptr + 232));
+		*(void**)(ptr + 8) = gc_custom_scan_ptr(*(void**)(ptr + 8), 4);
+		*(void**)(ptr + 16) = gc_custom_scan_ptr(*(void**)(ptr + 16), 4);
 		break;
 	}
 	return 0;
@@ -380,10 +361,6 @@ int gc_custom_walk_array(block_t *block)
 		case 6:
 			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
 				gc_custom_scan_struct(ptr, 6);
-			break;
-		case 10:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 240)
-				gc_custom_scan_struct(ptr, 10);
 			break;
 		}
 	}

@@ -586,7 +586,8 @@ int type_info_to_string(type_info_t *info, char **buff)
     aux[0] = '\0';
     for(i = 0; i < info->number_of_references; i++)
     {
-        sprintf(tmp, "%x ", (unsigned int)info->offsets[i]);
+//         sprintf(tmp, "%x(%s) ", (unsigned int)info->references[i].offset, typenum_to_string(info->references[i].type));
+        sprintf(tmp, "%x ", (unsigned int)info->references[i].offset);
         
         strcat(aux, tmp);
     }

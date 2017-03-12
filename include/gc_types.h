@@ -8,6 +8,7 @@
 #define GC_TYPES_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 //Obsolete, TODO remove
 typedef struct 
@@ -15,6 +16,15 @@ typedef struct
   int value;
   void *ptr1, *ptr2;
 } test_struct_t;
+
+/**
+ * Structure for storing information about pointers
+ */
+typedef struct 
+{
+    uint64_t offset;
+    uint64_t type;
+} ptr_info_t;
 
 /**
  * Structure for keeping info about structures
@@ -32,7 +42,11 @@ typedef struct
     /**
     * Offsets from the structure pointer to the references
     */
-    unsigned long *offsets;
+//     unsigned long *offsets;
+    /**
+     * Info about structure pointers
+     */
+    ptr_info_t *references;
 } type_info_t; 
 
 /**

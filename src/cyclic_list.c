@@ -8,6 +8,7 @@
 #include "garbage_collector.h"
 #include "gc_util.h"
 #include <stdlib.h>
+#include "gc_constants.h"
 
 type_info_t *clist_descriptor;
 
@@ -23,8 +24,9 @@ int clist_make_descriptor(type_info_t *info)
     clist_descriptor = info;
     info->size = sizeof(clist_node_t);
     info->number_of_references = 1;
-    info->offsets = (unsigned long*)malloc(1*sizeof(unsigned long));
-    info->offsets[0] = (unsigned long)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
+    info->references = (ptr_info_t*)malloc(1*sizeof(ptr_info_t));
+    info->references[0].offset = (uint64_t)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
+    info->references[0].type = TYPE_CLIST_T;
 }
 
 /**

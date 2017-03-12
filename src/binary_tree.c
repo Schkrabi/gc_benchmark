@@ -9,6 +9,7 @@
 #include "binary_tree.h" 
 #include "garbage_collector.h"
 #include "gc_util.h"
+#include "gc_constants.h"
 
 type_info_t *btree_descriptor;
  
@@ -25,9 +26,11 @@ int btree_make_descriptor(type_info_t *info)
     btree_descriptor = info;
     info->size = sizeof(btree_node_t);
     info->number_of_references = 2;
-    info->offsets = (unsigned long*)malloc(2 * sizeof(unsigned long));
-    info->offsets[0] = (unsigned long)((art_ptr_t)&measure.lchild - (art_ptr_t)&measure);
-    info->offsets[1] = (unsigned long)((art_ptr_t)&measure.rchild - (art_ptr_t)&measure);
+    info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));
+    info->references[0].offset = (uint64_t)((art_ptr_t)&measure.lchild - (art_ptr_t)&measure);
+    info->references[0].type = TYPE_BTREE_T;
+    info->references[1].offset = (uint64_t)((art_ptr_t)&measure.rchild - (art_ptr_t)&measure);
+    info->references[1].type = TYPE_BTREE_T;
 }
 
 /**

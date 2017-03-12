@@ -90,6 +90,6 @@ int gc_custom_scan_struct(void *ptr, int type);
  * @return 0 if pointer do not points anywhere, forwarding address otherwise
  * @remark Code for this function is auto-generated
  */
-void *gc_custom_scan_ptr(void *ptr);
+void *gc_custom_scan_ptr(void *ptr, uint64_t type);
 
 #endif
