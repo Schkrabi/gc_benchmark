@@ -149,5 +149,7 @@ void* gc_cheney_base_get_mem(void **ptr, size_t size)
     ret = *ptr;
     *ptr = tmp;
     
+    //printf("Moved gc_cheney_base_to_space from %p to %p\n", ret, *ptr);
+    
     return ret;
 }

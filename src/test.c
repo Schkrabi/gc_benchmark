@@ -13,6 +13,7 @@
 #include "cyclic_list.h"
 #include "cdouble_list.h"
 #include "gc_cheney_base.h"
+#include "tarray.h"
 
 #define TEST_SIZE 20
 
@@ -27,6 +28,7 @@ int gc_test()
     int *atom_test, *array_test;
     test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
     int i;
+    tarray_t *tarray;
     
     printf("\nTESTING MEMORY ALLOCATION AND COLLECTION:\n\n");
     printf("Initial memory dump:\n");
@@ -55,7 +57,9 @@ int gc_test()
     ptr_src4[1].ptr1 = NULL;
     ptr_src4[1].ptr2 = atom_test;
     ptr_src4[2].ptr1 = struct_test;
-    ptr_src4[2].ptr2 = NULL;
+    ptr_src4[2].ptr2 = tarray_init(TEST_SIZE);
+    
+    tarray = tarray_init(TEST_SIZE);
     
     printf("\nMemory dump after allocation:\n");
     mem_dump(stdout);
@@ -207,5 +211,43 @@ int cdlist_test()
     
     printf("\n");
     
+    return 0;
+}
+
+#define TEST_TARRAY_LEN 50
+
+int tarray_test()
+{
+    tarray_t    *tarray;
+    size_t      i, index;
+    int         n, j;
+    
+    tarray = NULL;
+    printf("\nTESTING TARRAY:\n\n");
+    
+    tarray = tarray_init(TEST_TARRAY_LEN);
+    
+    printf("\nInserting:\n");
+    for(i = 0; i < TEST_TARRAY_LEN; i++)
+    {
+            n = rand()%TEST_SIZE;
+            printf("inserting %d, is_success?: %d\n", n, tarray_set(tarray, i, n));
+    }
+    
+    printf("\nSelecting:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        j = rand()%TEST_TARRAY_LEN;
+        printf("item on index %d is %d\n", j, tarray_item(tarray, j));
+    }
+    
+    printf("\nSelecting - error prone:\n");
+    for(i = 0; i < TEST_SIZE; i++)
+    {
+        j = (rand()%(3*TEST_TARRAY_LEN)) - TEST_TARRAY_LEN;
+        printf("item on index %d is %d\n", j, tarray_item(tarray, j));
+    }
+    
+    printf("\n");
     return 0;
 }

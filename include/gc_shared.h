@@ -22,8 +22,6 @@ typedef struct
     uint64_t size;
 } block_t;
 
-#define ARRAY_BIT_MASK 0x8000000000000000
-#define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
 #define block_active(block) (block_has_forward(block) ? block_get_forward(block) : block)
 
 /**

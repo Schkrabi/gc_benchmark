@@ -10,7 +10,7 @@
 #include "binary_tree.h"
 #include "cyclic_list.h"
 #include "cdouble_list.h"
-#include "entanglement.h"
+#include "tarray.h"
 
 type_info_t type_table[TYPE_COUNT];
 
@@ -85,7 +85,7 @@ int init_type_table()
     type_table[TYPE_PTR].number_of_references = 1;
     type_table[TYPE_PTR].references = (ptr_info_t*)malloc(1*sizeof(ptr_info_t));
     type_table[TYPE_PTR].references[0].offset = 0;
-    type_table[TYPE_PTR].references[0].type = TYPE_PTR;
+    ptr_info_set_type(&type_table[TYPE_PTR].references[0], TYPE_PTR);
     
     type_table[TYPE_DOUBLE].size = sizeof(double);
     type_table[TYPE_DOUBLE].number_of_references = 0;
@@ -95,14 +95,14 @@ int init_type_table()
     type_table[TYPE_TEST_STRUCT_T].number_of_references = 2;
     type_table[TYPE_TEST_STRUCT_T].references = malloc(2*sizeof(ptr_info_t));
     type_table[TYPE_TEST_STRUCT_T].references[0].offset = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
-    type_table[TYPE_TEST_STRUCT_T].references[0].type = TYPE_PTR;
+    ptr_info_set_type(&type_table[TYPE_TEST_STRUCT_T].references[0], TYPE_PTR);
     type_table[TYPE_TEST_STRUCT_T].references[1].offset = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
-    type_table[TYPE_TEST_STRUCT_T].references[1].type = TYPE_PTR;
+    ptr_info_set_type(&type_table[TYPE_TEST_STRUCT_T].references[1], TYPE_PTR);
     
     btree_make_descriptor(&type_table[TYPE_BTREE_T]);
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
     cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);  
-    entanglement_make_descriptor(&type_table[TYPE_ENTANGLEMENT_T]);
+    tarray_make_descriptor(&type_table[TYPE_TARRAY_T]);
     
     return 0;
 }
@@ -118,7 +118,31 @@ int cleanup_type_table()
     free(type_table[TYPE_BTREE_T].references);
     free(type_table[TYPE_CLIST_T].references);
     free(type_table[TYPE_CDLIST_T].references);
-    free(type_table[TYPE_ENTANGLEMENT_T].references);
+    free(type_table[TYPE_TARRAY_T].references);
     
     return 0;
+}
+
+/**
+ * Sets the type for ptr descriptor
+ * @par info A pointer to ptr_info_t structure
+ * @par type A type to be set
+ */
+int ptr_info_set_type(ptr_info_t *info, int type)
+{
+    info->type = (info->type & ARRAY_BIT_MASK) | type;
+}
+
+/**
+ * Sets whetter the pointer is pointing to an array
+ * @par info A pointer to ptr_info_t structure
+ * @par is_array A boolean value indicating whetter the pointer should point towards an array
+ */
+int ptr_info_set_is_array(ptr_info_t *info, int is_array)
+{
+    uint64_t tmp;
+    
+    tmp = ptr_info_get_type(info);
+    
+    info->type = is_array ? (ARRAY_BIT_MASK | tmp) : tmp;
 }

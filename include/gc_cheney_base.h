@@ -94,3 +94,4 @@ int64_t gc_cheney_base_remaining_space();
  * @remark changes the address of src argument
  */
 void* gc_cheney_base_get_mem(void **ptr, size_t size);
+#define gc_cheney_base_is_old_mem(ptr) ((art_ptr_t)ptr >= (art_ptr_t)gc_cheney_base_from_space && (art_ptr_t)ptr < (art_ptr_t)gc_cheney_base_semispace_end(gc_cheney_base_from_space))

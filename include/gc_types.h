@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define ARRAY_BIT_MASK 0x8000000000000000
+#define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
+
 //Obsolete, TODO remove
 typedef struct 
 {
@@ -39,10 +42,6 @@ typedef struct
     * Number of references in the structure
     */
     size_t number_of_references;
-    /**
-    * Offsets from the structure pointer to the references
-    */
-//     unsigned long *offsets;
     /**
      * Info about structure pointers
      */
@@ -93,5 +92,32 @@ int init_type_table();
  * @return 0 if everything went well, errno otherwise
  */
 int cleanup_type_table();
+
+/**
+ * Gets the typo of a pointer
+ * @par ptr_info A pointer to ptr_info_t structure
+ * @return type of the pointer
+ */
+#define ptr_info_get_type(ptr_info) ((ptr_info)->type & ELEMENT_TYPE_BIT_MASK)
+/**
+ * Indicates whetter this pointer points to array
+ * @par ptr_info A pointer to ptr_info_t structure
+ * @return true or false
+ */
+#define ptr_info_is_array(ptr_info) (((ptr_info)->type & ARRAY_BIT_MASK) != 0x0)
+
+/**
+ * Sets the type for ptr descriptor
+ * @par info A pointer to ptr_info_t structure
+ * @par type A type to be set
+ */
+int ptr_info_set_type(ptr_info_t *info, int type);
+
+/**
+ * Sets whetter the pointer is pointing to an array
+ * @par info A pointer to ptr_info_t structure
+ * @par is_array A boolean value indicating whetter the pointer should point towards an array
+ */
+int ptr_info_set_is_array(ptr_info_t *info, int is_array);
 
 #endif

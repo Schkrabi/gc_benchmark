@@ -15,7 +15,7 @@
 #include "gc_util.h"
 #include <syslog.h>
 #include <cdouble_list.h>
-#include "entanglement.h"
+// #include "entanglement.h"
 #include "garbage_collector.h"
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
@@ -126,33 +126,33 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
     }
 }
 
-int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace)
-{
-    size_t i;
-    
-    gc_cheney_base_roots_count = old_pool;
-    gc_cheney_base_roots = (void**)malloc((1 + gc_cheney_base_roots_count) * sizeof(void*));
-    
-    for(i = 0; i < test_size; i++)
-    {
-        entanglement_t *e;
-        
-        e = (entanglement_t*)gc_malloc(entanglement_t);
-        gc_cheney_base_roots[old_pool] = e;
-        entanglement_init(e);
-        
-        if(i < old_pool)
-        {
-            gc_cheney_base_roots[i] = e;
-        }
-        else
-        {
-            if(rand()%100 < chance_to_replace*100)
-            {
-                gc_cheney_base_roots[rand()%old_pool] = e;
-            }
-        }
-        
-        gc_cheney_base_roots[old_pool] = NULL;
-    }
-}
+// int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace)
+// {
+//     size_t i;
+//     
+//     gc_cheney_base_roots_count = old_pool;
+//     gc_cheney_base_roots = (void**)malloc((1 + gc_cheney_base_roots_count) * sizeof(void*));
+//     
+//     for(i = 0; i < test_size; i++)
+//     {
+//         entanglement_t *e;
+//         
+//         e = (entanglement_t*)gc_malloc(entanglement_t);
+//         gc_cheney_base_roots[old_pool] = e;
+//         entanglement_init(e);
+//         
+//         if(i < old_pool)
+//         {
+//             gc_cheney_base_roots[i] = e;
+//         }
+//         else
+//         {
+//             if(rand()%100 < chance_to_replace*100)
+//             {
+//                 gc_cheney_base_roots[rand()%old_pool] = e;
+//             }
+//         }
+//         
+//         gc_cheney_base_roots[old_pool] = NULL;
+//     }
+// }

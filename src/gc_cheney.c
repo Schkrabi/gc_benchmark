@@ -156,8 +156,8 @@ void *gc_cheney_scan_ptr(void *ptr, uint64_t type)
     
     for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
     {
-        if(block_get_type(block) == type || type == TYPE_PTR)
-        {
+//         if(block_get_type(block) == type || type == TYPE_PTR)
+//         {
             if(is_pointer_to(block, ptr))
             {
                 if(!block_has_forward(block))
@@ -176,7 +176,7 @@ void *gc_cheney_scan_ptr(void *ptr, uint64_t type)
                     return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
                 }
             }
-        }
+//         }
     }
     return NULL;
 }
@@ -195,7 +195,7 @@ int gc_cheney_scan_struct(void *ptr, type_info_t *info)
         void **slot_ptr, *fwd;
         slot_ptr = (void**)(ptr + info->references[i].offset);
         
-        fwd = gc_cheney_scan_ptr(*slot_ptr, info->references[i].type);
+        fwd = gc_cheney_scan_ptr(*slot_ptr, ptr_info_get_type(&info->references[i]));
         
         if(fwd != NULL)
         {

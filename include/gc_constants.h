@@ -65,7 +65,7 @@
 #define TYPE_BTREE_T 7
 #define TYPE_CLIST_T 8
 #define TYPE_CDLIST_T 9
-#define TYPE_ENTANGLEMENT_T 10
+#define TYPE_TARRAY_T 10
 
 /**
  * xmacro for mapping a real c types into a GC types
@@ -89,17 +89,8 @@
                         x(cdlist_node_t, TYPE_CDLIST_T) \
                         x(cdlist_t*, TYPE_PTR) \
                         x(cdlist_node_t*, TYPE_PTR) \
-                        x(entanglement_t, TYPE_ENTANGLEMENT_T) \
-                        x(entanglement_t*, TYPE_PTR)
-                        
-/** 
- * Allocated memory types
- * @remark OBSOLETE
- * TODO Remove
- */
-//#define MEM_TYPE_ATOM 0
-//#define MEM_TYPE_STRUCT 1
-//#define MEM_TYPE_ARRAY 2
+                        x(tarray_t, TYPE_TARRAY_T) \
+                        x(tarray_t*, TYPE_PTR)
 
 /******************************************************************************
  *                                  TESTS                                     *

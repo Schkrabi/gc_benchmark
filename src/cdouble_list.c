@@ -23,9 +23,9 @@ int cdlist_make_descriptor(type_info_t *info)
     info->number_of_references = 2;
     info->references = (ptr_info_t*)malloc(2*sizeof(ptr_info_t));
     info->references[0].offset = (uint64_t)((art_ptr_t)&pattern.prev - (art_ptr_t)&pattern);
-    info->references[0].type = TYPE_CDLIST_T;
+    ptr_info_set_type(&info->references[0], TYPE_CDLIST_T);
     info->references[1].offset = (uint64_t)((art_ptr_t)&pattern.next - (art_ptr_t)&pattern);
-    info->references[1].type = TYPE_CDLIST_T;
+    ptr_info_set_type(&info->references[1], TYPE_CDLIST_T);
 }
 
 /**

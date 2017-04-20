@@ -280,9 +280,9 @@ int sub_main(unsigned test_num, unsigned seed)
         case TEST_LONG_LIVED:
             test_long_lived(10000, 100, 250, 0.01);
             break;
-        case TEST_LARGE_STRUCTURE:
-            test_large_structure(10000, 5, 0.01);
-            break;
+//         case TEST_LARGE_STRUCTURE:
+//             test_large_structure(10000, 5, 0.01);
+//             break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());
     
