@@ -145,6 +145,7 @@ int gc_collect()
     gc_log(LOG_INFO, "CE %u %u %u", (unsigned) collection_no, (unsigned)clock(), (unsigned)gc_remaining_space());
     collection_no++;
 #endif
+    
     return rtrno;
 }
 

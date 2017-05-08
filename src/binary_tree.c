@@ -150,3 +150,35 @@ int btree_delete(btree_t **root, long value)
      
      return most_right_node((btree_t**)&btree->rchild);
  }
+ 
+#define BTREE_PRINT_INDENT "            "
+ 
+/**
+ * Prints the btree into a stream
+ * @par tree printed tree structure
+ * @par out stream to print into
+ * @par indent auxiliary parameter for right subtree indentation
+ * @return number of characters printed
+ * @remark for testing purposes.
+ **/
+int btree_print(btree_t *tree, FILE *out, size_t indent)
+{
+    size_t len, i;
+    
+    len = 0;
+    
+    if (out == NULL)
+        return 0;
+    
+    if(tree == NULL)
+        return fprintf(out, "\n");
+    
+    len += fprintf(out, "%d ", (int)tree->value);
+    len += btree_print(tree->lchild, out, indent + 1);
+    for(i = 0; i < indent; i++)
+    {
+        len += fprintf(out, BTREE_PRINT_INDENT);
+    }
+    len += btree_print(tree->rchild, out, indent + 1);
+    return len;
+}

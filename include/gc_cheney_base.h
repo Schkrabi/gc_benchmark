@@ -8,6 +8,19 @@
 #include "gc_types.h"
 #include "gc_constants.h"
 
+#ifndef GC_CHENEY_BASE_H
+#define GC_CHENEY_BASE_H
+
+/**
+ * Structure for root of garbage collection
+ * Contatins additional neccesary information about the pointers
+ */
+typedef struct
+{
+    void *ptr;
+    int is_array;
+} root_ptr;
+
 /**
  * from space heap (active heap)
  */
@@ -37,7 +50,7 @@ extern block_t *gc_cheney_base_remaining_to_space;
 /**
  * Roots used for automatic garbage collection
  */
-extern void **gc_cheney_base_roots;
+extern root_ptr *gc_cheney_base_roots;
 
 /**
  * Number of roots in gc_roots
@@ -95,3 +108,5 @@ int64_t gc_cheney_base_remaining_space();
  */
 void* gc_cheney_base_get_mem(void **ptr, size_t size);
 #define gc_cheney_base_is_old_mem(ptr) ((art_ptr_t)ptr >= (art_ptr_t)gc_cheney_base_from_space && (art_ptr_t)ptr < (art_ptr_t)gc_cheney_base_semispace_end(gc_cheney_base_from_space))
+
+#endif

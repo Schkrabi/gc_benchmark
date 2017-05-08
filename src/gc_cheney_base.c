@@ -38,7 +38,7 @@ block_t *gc_cheney_base_remaining_to_space;
 /**
  * Roots used for automatic garbage collection
  */
-void **gc_cheney_base_roots;
+root_ptr *gc_cheney_base_roots;
 
 /**
  * Number of roots in gc_roots
@@ -52,7 +52,7 @@ size_t gc_cheney_base_roots_count;
  */
 void* gc_cheney_base_semispace_end(void *semispace_ptr)
 {
-    return semispace_ptr + SEMISPACE_SIZE;
+    return (void*)((art_ptr_t)semispace_ptr + SEMISPACE_SIZE);
 }
 
 /**

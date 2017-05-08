@@ -40,8 +40,8 @@
 #define CHENEY_GC 1
 #define CUSTOM_GC 2
 
-#define XCOLLECTOR_TABLE(x) x(cheney, CHENEY_GC) \
-                            x(custom, CUSTOM_GC)
+#define XCOLLECTOR_TABLE(x) x(cheney, CHENEY_GC) 
+//                             x(custom, CUSTOM_GC)
 
 /******************************************************************************
  *                                  TYPES                                     *

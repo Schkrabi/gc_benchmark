@@ -19,6 +19,7 @@
 
 /**
  * Testing of the basic garbage collection functionality
+ * Obsolete, needs to be rewriten!
  */
 int gc_test()
 {
@@ -52,7 +53,8 @@ int gc_test()
     ptr_src3->ptr2 = struct_test;
     
     ptr_src4 = (test_struct_t*)gc_malloc_array(test_struct_t, TEST_SIZE);
-    ptr_src4[0].ptr1 = array_test;
+    //ptr_src4[0].ptr1 = array_test; //Bad semantics
+    ptr_src4[0].ptr1 = NULL;
     ptr_src4[0].ptr2 = atom_test;
     ptr_src4[1].ptr1 = NULL;
     ptr_src4[1].ptr2 = atom_test;
@@ -65,12 +67,16 @@ int gc_test()
     mem_dump(stdout);
     
     gc_cheney_base_roots_count = 4;
-    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
     
-    gc_cheney_base_roots[0] = ptr_src1;
-    gc_cheney_base_roots[1] = ptr_src2;
-    gc_cheney_base_roots[2] = ptr_src3;
-    gc_cheney_base_roots[3] = ptr_src4;
+    gc_cheney_base_roots[0].ptr = ptr_src1;
+    gc_cheney_base_roots[0].is_array = 0;
+    gc_cheney_base_roots[1].ptr = ptr_src2;
+    gc_cheney_base_roots[1].is_array = 1;
+    gc_cheney_base_roots[2].ptr = ptr_src3;
+    gc_cheney_base_roots[2].is_array = 0;
+    gc_cheney_base_roots[3].ptr = ptr_src4;
+    gc_cheney_base_roots[3].is_array = 1;
     
     gc_collect();
     

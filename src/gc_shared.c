@@ -108,6 +108,11 @@ int block_set_forward(block_t *block, void *forward)
         return 0;
     }
     
+    if(!gc_cheney_base_is_old_mem(block))
+    {
+        printf("\n");
+    }
+    
     block->type = TYPE_FORWARD;
     block->size = (uint64_t)forward;
     
@@ -208,7 +213,6 @@ int block_is_struct_block(block_t *block)
     int type = block_get_type(block);
     return      type != TYPE_UNDEFINED
             &&  type != TYPE_INT
-            &&  type != TYPE_PTR
             &&  type != TYPE_DOUBLE;
 }
 /**

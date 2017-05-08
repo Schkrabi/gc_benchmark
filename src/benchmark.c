@@ -90,7 +90,7 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
     size_t i;
     
     gc_cheney_base_roots_count = old_pool;
-    gc_cheney_base_roots = (void**)malloc(gc_cheney_base_roots_count*sizeof(void*));
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
     
     for(i = 0; i < test_size; i++)
     {
@@ -114,13 +114,14 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
         
         if(i < old_pool)
         {
-            gc_cheney_base_roots[i] = btree;
+            gc_cheney_base_roots[i].ptr = btree;
+            gc_cheney_base_roots[i].is_array = 0;
         }
         else
         {
             if(rand()%100 < chance_to_replace*100)
             {
-                gc_cheney_base_roots[rand()%old_pool] = btree;
+                gc_cheney_base_roots[rand()%old_pool].ptr = btree;
             }
         }
     }

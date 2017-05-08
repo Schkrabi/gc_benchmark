@@ -8,6 +8,7 @@
 
 #include "gc_shared.h"
 #include "gc_types.h"
+#include "gc_cheney_base.h"
 
 /**
  * Initializes the Garbage Collector objects
@@ -47,7 +48,7 @@ int gc_custom_collect();
  * @par size size of a roots arraay
  * @return 0 if everything went well, error code otherwise
  */
-int gc_custom_collect_from_roots(void *roots[], size_t size);
+int gc_custom_collect_from_roots(root_ptr roots[], size_t size);
 
 /**
  * Scans the (copied) block of memory and copies the references it points to to the to_space
@@ -87,9 +88,11 @@ int gc_custom_scan_struct(void *ptr, int type);
 /**
  * Scans the pointer if it points towards any memory and evacuates if if so
  * @par ptr scanned pointer
+ * @par type type to which the pointer is pointing
+ * @par is_array indicates whetter the pointer is an array
  * @return 0 if pointer do not points anywhere, forwarding address otherwise
  * @remark Code for this function is auto-generated
  */
-void *gc_custom_scan_ptr(void *ptr, uint64_t type);
+void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array);
 
 #endif

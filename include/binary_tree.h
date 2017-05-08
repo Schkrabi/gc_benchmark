@@ -4,10 +4,11 @@
  * This file contaains structures and pprototypes for benchmarkking impoolementation of binary trees
  */
  
- #ifndef BINARY_TREE_H
- #define BINARY_TREE_H
+#ifndef BINARY_TREE_H
+#define BINARY_TREE_H
  
- #include "gc_shared.h"
+#include "gc_shared.h"
+#include <stdio.h>
  
  /**
   * Structure for binary tree and binary tree node
@@ -59,5 +60,15 @@ int btree_make_descriptor(type_info_t *info);
   * @return pointer to the rightmost node pointer or root if tree has height of 1
   */ 
  btree_node_t **most_right_node(btree_t **root);
+ 
+ /**
+ * Prints the btree into a stream
+ * @par tree printed tree structure
+ * @par out stream to print into
+ * @par indent auxiliary parameter for right subtree indentation
+ * @return number of characters printed
+ * @remark for testing purposes.
+ **/
+int btree_print(btree_t *tree, FILE *out, size_t indent);
  
  #endif

@@ -9,6 +9,7 @@
 
 #include "gc_shared.h"
 #include "gc_types.h"
+#include "gc_cheney_base.h"
 
 //TODO remove
 /**
@@ -89,7 +90,7 @@ void *gc_cheney_malloc_array(int type, size_t size);
  * @par size size of a roots arraay
  * @return 0 if everything went well, error code otherwise
  */
-int gc_cheney_collect_from_roots(void *roots[], size_t size);
+int gc_cheney_collect_from_roots(root_ptr roots[], size_t size);
  
 //TODO remove
 /**
@@ -104,9 +105,11 @@ int gc_cheney_collect_from_roots(void *roots[], size_t size);
 /**
  * Scans the pointer if it points towards any memory and evacuates if if so
  * @par ptr scanned pointer
+ * @par type type to which the pointer is pointing
+ * @par is_array indicates whetter the pointer is an array
  * @return 0 if pointer do not points anywhere, forwarding address otherwise
  */
-void *gc_cheney_scan_ptr(void *ptr, uint64_t type);
+void *gc_cheney_scan_ptr(void *ptr, uint64_t type, int is_array);
 
 //TODO remove
 /**

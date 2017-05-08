@@ -278,11 +278,8 @@ int sub_main(unsigned test_num, unsigned seed)
             test_short_lived(10000, 100);
             break;
         case TEST_LONG_LIVED:
-            test_long_lived(10000, 100, 250, 0.01);
+            test_long_lived(10000, 10, 15, 0.01); //Testing on 8192 bytes of memory, worst case of 15 root trees of size 10 will take only 4800 bytes - enough space for additional junk and replacements
             break;
-//         case TEST_LARGE_STRUCTURE:
-//             test_large_structure(10000, 5, 0.01);
-//             break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());
     
