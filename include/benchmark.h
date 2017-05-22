@@ -38,4 +38,11 @@ int test_short_lived(size_t test_size, size_t max_list_len);
  */
 int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace);
 
-// int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace);
+/**
+ * Test behaviour of garbage collector with large long living objects entangled in interconected graph
+ * @par test_size Overall number of memeory object that will be allocated
+ * @par old_pool number of roots for garbage collection
+ * @par chance_tp_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ * @par entanglement_buff_size maximal number of objects to choose for entangling the structures
+ */
+int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace, size_t entanglement_buff_size);

@@ -14,6 +14,7 @@
 #include "cdouble_list.h"
 #include "gc_cheney_base.h"
 #include "tarray.h"
+#include "large_structure.h"
 
 #define TEST_SIZE 20
 
@@ -84,6 +85,9 @@ int gc_test()
     mem_dump(stdout);
     
     printf("\n");
+    
+    free(gc_cheney_base_roots);
+    gc_cheney_base_roots_count = 0;
     
     return 0;
 }
@@ -222,6 +226,9 @@ int cdlist_test()
 
 #define TEST_TARRAY_LEN 50
 
+/**
+ * Testing test array data structure
+ */
 int tarray_test()
 {
     tarray_t    *tarray;
@@ -256,4 +263,50 @@ int tarray_test()
     
     printf("\n");
     return 0;
+}
+
+#define LARGE_STRUCTURE_TEST_SIZE 10
+
+/**
+ * Testing large data structure
+ */
+int large_structure_test()
+{
+    large_structure_t *q, **pool;
+    int i;
+    
+    //Clean the memory
+    gc_collect();
+    
+    printf("Memory dump before Large structure test:\n");
+    mem_dump(stdout);
+    
+    pool = (large_structure_t**)calloc(2*LARGE_STRUCTURE_TEST_SIZE, sizeof(large_structure_t*));
+    
+    for(i = 0; i < 2*LARGE_STRUCTURE_TEST_SIZE; i++)
+    {
+        pool[i] = (large_structure_t*)gc_malloc(large_structure_t);
+    }
+    
+    for(i = 0; i < 2*LARGE_STRUCTURE_TEST_SIZE; i++)
+    {
+        large_structure_entangle(pool[i], pool, 2*LARGE_STRUCTURE_TEST_SIZE);
+    }
+    
+    gc_cheney_base_roots_count = LARGE_STRUCTURE_TEST_SIZE;
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
+    
+    for(i = 0; i < LARGE_STRUCTURE_TEST_SIZE; i++)
+    {
+        gc_cheney_base_roots[i].ptr = pool[i*2];
+        gc_cheney_base_roots[i].is_array = 0;
+    }    
+    
+    printf("Memory dump after large structure allocation:\n");
+    mem_dump(stdout);
+    
+    gc_collect();
+    
+    printf("Memory dump after large structure collection:\n");
+    mem_dump(stdout);
 }

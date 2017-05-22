@@ -256,6 +256,8 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
 #define NUMINTS  (1000)
 #define FILESIZE (NUMINTS * sizeof(int))
 
+#define TEST_SIZE 10000
+
 /**
  * Main executed function
  * @par test_num test to be executed
@@ -272,13 +274,30 @@ int sub_main(unsigned test_num, unsigned seed)
             clist_test();
             type_test();
             cdlist_test();
+            tarray_test();
+            large_structure_test();
             mem_dump(stdout);
             break;
         case TEST_SHORT_LIVED:
-            test_short_lived(10000, 100);
+            test_short_lived(TEST_SIZE, 100);
             break;
         case TEST_LONG_LIVED:
-            test_long_lived(10000, 10, 15, 0.01); //Testing on 8192 bytes of memory, worst case of 15 root trees of size 10 will take only 4800 bytes - enough space for additional junk and replacements
+            //Testing on 8192 bytes of memory, worst case of 15 root trees of size 10 will take only 4800 bytes 
+            //enough space for additional junk and replacements
+            test_long_lived(TEST_SIZE, 10, 15, 0.01); 
+            break;
+        case TEST_LONG_LIVED_ALMOST_FULL:
+            //Testing on 8192 bytes of memory, worst case of 25 root trees of size 10 will take maximum of 8000 bytes 
+            //only little space for additional garbage - more collections
+            test_long_lived(TEST_SIZE, 10, 25, 0.01);
+            break;
+        case TEST_LONG_LIVED_NO_REPLACE:
+            //After generating the root set will stay constant
+            test_long_lived(TEST_SIZE, 10, 15, 0.0);
+            break;
+        case TEST_LARGE_STRUCTURE:
+            //TODO determine parameters
+            test_large_structure(TEST_SIZE, 10, 0.01, 100);
             break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());

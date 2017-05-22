@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gcs=(cheney custom)
-tests=(short_lived long_lived)
+tests=(short_lived long_lived long_lived_almost_full long_lived_no_replace large_structure)
 
 #Run the experiment
 it=0

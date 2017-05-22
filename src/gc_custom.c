@@ -241,6 +241,11 @@ void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array)
 							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
 							memcpy(dst, block, byte_size + 16);
 							break;
+						case 11:
+							byte_size = block_get_array_size(block) * 352;
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
+							memcpy(dst, block, byte_size + 16);
+							break;
 						default:
 						{
 							size_t block_size = block_get_size(block);
@@ -285,6 +290,10 @@ void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array)
 							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
 							memcpy(dst, block, 24);
 							break;
+						case 11:
+							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+							memcpy(dst, block, 360);
+							break;
 						default:
 						{
 							size_t block_size = block_get_size(block);
@@ -307,7 +316,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 	switch(type)
 	{
 	case 4:
-		scanned = (void**)ptr + 0;
+		scanned = (void**)((art_ptr_t)ptr + 0);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -320,7 +329,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
 				memcpy(dst, block, 16);
 				block_set_forward(block, dst);
-				*scanned = dst + 0;
+				*scanned = dst + 8;
 			}
 		}
 		break;
@@ -359,7 +368,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 		}
 		break;
 	case 8:
-		scanned = (void**)ptr + 8;
+		scanned = (void**)((art_ptr_t)ptr + 8);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -377,7 +386,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 		}
 		break;
 	case 9:
-		scanned = (void**)ptr + 8;
+		scanned = (void**)((art_ptr_t)ptr + 8);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -393,7 +402,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 				*scanned = dst + 8;
 			}
 		}
-		scanned = (void**)ptr + 16;
+		scanned = (void**)((art_ptr_t)ptr + 16);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -411,7 +420,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 		}
 		break;
 	case 6:
-		scanned = (void**)ptr + 8;
+		scanned = (void**)((art_ptr_t)ptr + 8);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -427,7 +436,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 				*scanned = dst + 8;
 			}
 		}
-		scanned = (void**)ptr + 16;
+		scanned = (void**)((art_ptr_t)ptr + 16);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 8);
@@ -445,7 +454,7 @@ int gc_custom_scan_struct(void *ptr, int type)
 		}
 		break;
 	case 10:
-		scanned = (void**)ptr + 8;
+		scanned = (void**)((art_ptr_t)ptr + 8);
 		if(gc_cheney_base_is_old_mem(*scanned))
 		{
 			block = (block_t*)((art_ptr_t)*scanned - 16);
@@ -460,6 +469,216 @@ int gc_custom_scan_struct(void *ptr, int type)
 				memcpy(dst, block, byte_size + 16);
 				block_set_forward(block, dst);
 				*scanned = dst + 16;
+			}
+		}
+		break;
+	case 11:
+		scanned = (void**)((art_ptr_t)ptr + 136);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 144);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 152);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 160);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 168);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 176);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 240);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 248);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 256);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 264);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 328);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 336);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
+			}
+		}
+		scanned = (void**)((art_ptr_t)ptr + 344);
+		if(gc_cheney_base_is_old_mem(*scanned))
+		{
+			block = (block_t*)((art_ptr_t)*scanned - 8);
+			if(block_has_forward(block))
+			{
+				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
+			}
+			else
+			{
+				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
+				memcpy(dst, block, 360);
+				block_set_forward(block, dst);
+				*scanned = dst + 8;
 			}
 		}
 		break;
@@ -499,6 +718,10 @@ int gc_custom_walk_array(block_t *block)
 		case 10:
 			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
 				gc_custom_scan_struct(ptr, 10);
+			break;
+		case 11:
+			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 352)
+				gc_custom_scan_struct(ptr, 11);
 			break;
 		}
 	}

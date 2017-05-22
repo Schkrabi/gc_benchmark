@@ -11,6 +11,7 @@
 #include "cyclic_list.h"
 #include "cdouble_list.h"
 #include "tarray.h"
+#include "large_structure.h"
 
 type_info_t type_table[TYPE_COUNT];
 
@@ -103,6 +104,7 @@ int init_type_table()
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
     cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);  
     tarray_make_descriptor(&type_table[TYPE_TARRAY_T]);
+    large_structure_make_descriptor(&type_table[TYPE_LARGE_STRUCTURE_T]);
     
     return 0;
 }

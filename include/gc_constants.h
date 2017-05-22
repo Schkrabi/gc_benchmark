@@ -40,8 +40,8 @@
 #define CHENEY_GC 1
 #define CUSTOM_GC 2
 
-#define XCOLLECTOR_TABLE(x) x(cheney, CHENEY_GC) 
-//                             x(custom, CUSTOM_GC)
+#define XCOLLECTOR_TABLE(x) x(cheney, CHENEY_GC) \
+                            x(custom, CUSTOM_GC)
 
 /******************************************************************************
  *                                  TYPES                                     *
@@ -49,7 +49,7 @@
 /**
  * Overall number of types recognized by GC
  */
-#define TYPE_COUNT 11
+#define TYPE_COUNT 12
 
 /**
  * Type offsets into a type table
@@ -66,6 +66,7 @@
 #define TYPE_CLIST_T 8
 #define TYPE_CDLIST_T 9
 #define TYPE_TARRAY_T 10
+#define TYPE_LARGE_STRUCTURE_T 11
 
 /**
  * xmacro for mapping a real c types into a GC types
@@ -90,7 +91,9 @@
                         x(cdlist_t*, TYPE_PTR) \
                         x(cdlist_node_t*, TYPE_PTR) \
                         x(tarray_t, TYPE_TARRAY_T) \
-                        x(tarray_t*, TYPE_PTR)
+                        x(tarray_t*, TYPE_PTR) \
+                        x(large_structure_t, TYPE_LARGE_STRUCTURE_T) \
+                        x(large_structure_t*, TYPE_PTR)
 
 /******************************************************************************
  *                                  TESTS                                     *
@@ -100,10 +103,14 @@
 #define TEST_SHORT_LIVED 1
 #define TEST_LONG_LIVED 2
 #define TEST_LARGE_STRUCTURE 3
+#define TEST_LONG_LIVED_ALMOST_FULL 4
+#define TEST_LONG_LIVED_NO_REPLACE 5
 
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
                         x(short_lived, TEST_SHORT_LIVED) \
                         x(long_lived, TEST_LONG_LIVED)  \
-                        x(large_structure, TEST_LARGE_STRUCTURE)
+                        x(large_structure, TEST_LARGE_STRUCTURE) \
+                        x(long_lived_almost_full, TEST_LONG_LIVED_ALMOST_FULL) \
+                        x(long_lived_no_replace, TEST_LONG_LIVED_NO_REPLACE)
 
 #endif

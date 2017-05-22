@@ -31,3 +31,11 @@ int clist_test();
  * Testing of cyclic double linked list data structure
  */
 int cdlist_test();
+/**
+ * Testing test array data structure
+ */
+int tarray_test();
+/**
+ * Testing large data structure
+ */
+int large_structure_test();
