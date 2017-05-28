@@ -8,6 +8,7 @@
 #include "gc_shared.h"
 #include "gc_cheney.h"
 #include "gc_custom.h"
+#include "gc_generated.h"
 #include <stdlib.h>
 #include "gc_constants.h"
 #include <time.h>

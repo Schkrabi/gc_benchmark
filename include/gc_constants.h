@@ -35,13 +35,23 @@
 #define NO_COLLECTOR 0
 /**
  * Constant for Cheneys gabgae collector
- * @see gabage_collector.h: used_gc
+ * @see garbage_collector.h: used_gc
  */
 #define CHENEY_GC 1
+/**
+ * Constant for Custom garbage collector
+ * @see garbage_collector.h: used_gc
+ */
 #define CUSTOM_GC 2
+/**
+ * Constant for Generated garbage collector
+ * @see garbage_collector.h: used_gc
+ */
+#define GENERATED_GC 3
 
 #define XCOLLECTOR_TABLE(x) x(cheney, CHENEY_GC) \
-                            x(custom, CUSTOM_GC)
+                            x(custom, CUSTOM_GC) \
+                            x(generated, GENERATED_GC)
 
 /******************************************************************************
  *                                  TYPES                                     *

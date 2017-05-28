@@ -10,7 +10,7 @@ data = read.csv(args[1], header=TRUE)
 unitDiff <- function (x,y) {
                     d <- x - y
                     if (d < 0) {
-                        2^32 - x + y
+                        2^32 + x - y
                     }
                     else {
                         d
