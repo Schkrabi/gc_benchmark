@@ -76,13 +76,6 @@ int __type_num(const char *arg);
 const char* typenum_to_string(int arg);
 
 /**
- * Gets the size of type reperesented by typenum
- * @par arg type int (offset into a type table
- * @return size of coresponding c type in bytes
- */
-//size_t typenum_size(int arg);
-
-/**
  * Initializes type table for the garbage collector
  * @return 0 if everything went well, errno otherwise
  */
