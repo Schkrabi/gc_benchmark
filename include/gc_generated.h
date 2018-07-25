@@ -16,9 +16,14 @@
 #define R_TYPE		(R(1))
 #define R_IS_ARRAY	(R(2))
 #define R_BLOCK		(R(3))
-#define R_V1		(R(4))
+#define R_ACTIVE	(R(4))
 #define R_LOOP          (R(5))
 #define R_IF            (R(6))
+
+/**
+ * Jit compiler
+ */
+extern struct jit *compiler;
 
 /**
  * Pointer for hookup of dynamicaly generated code
@@ -81,51 +86,95 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
  * @par type_count count of types of structures
  * @returns Always 0
  **/
-int make_gc_walk_array(type_info_t type_table[], size_t type_count);
+int make_gc_walk_array(struct jit *p, type_info_t type_table[], size_t type_count);
+
+//global ptr to hookup the 	jit_op's in macros
+ extern jit_op 	*__jit_op_macro_after1,
+        *__jit_op_macro_after2,
+        *__jit_op_macro_after3;
 
 #define JIT_BLOCK_GET_TYPE(p, R_TARGET, R_SRC) \
     jit_ldr(p, R_TARGET, R_SRC, sizeof(uint64_t));\
     jit_andi(p, R_TARGET, R_TARGET, ELEMENT_TYPE_BIT_MASK)
     
-#define JIT_BLOCK_HAS_FORWARD(p, R_DST, R_SRC) \
-    JIT_BLOCK_GET_TYPE(p, R_DST, R_BLOCK); \
-    jit_eqi(p, R_DST, R_DST, TYPE_FORWARD)
+#define JIT_JMP_BLOCK_HAS_FORWARD(p, jmp_label, R_DST, R_SRC) \
+    JIT_BLOCK_GET_TYPE(p, R_DST, R_SRC); \
+    jmp_label = jit_beqi(p, R_DST, R_DST, TYPE_FORWARD)
     
-#define JIT_BLOCK_GET_FORWARD(p, R_WRK)\
-    jit_addi(p, R_WRK, R_WRK, sizeof(uint64_t));\
-    jit_ldr(p, R_WRK, R_WRK, sizeof(uint64_t))
-    
-//TODO prototype & move
-int jit_block_active(struct jit *p)
-{
-    jit_op *after;
-    JIT_BLOCK_HAS_FORWARD(p, R_IF, R_BLOCK);
-    after = jit_beqi(p, JIT_FORWARD, R_IF, 0);
-    JIT_BLOCK_GET_FORWARD(p, R_BLOCK);
-    jit_movr(p, R_BLOCK, R_BLOCK); //Useless op. need it for label
-    jit_patch(p, after);
-    return 0;
-}
+#define JIT_BLOCK_GET_FORWARD(p, R_DST, R_SRC)\
+    jit_addi(p, R_DST, R_SRC, sizeof(uint64_t));\
+    jit_ldr(p, R_DST, R_DST, sizeof(uint64_t))
 
-#define JIT_BLOCK_IS_ARRAY(p, R_DST, R_SRC)\
-    jit_block_active(p);\
-    JIT_BLOCK_GET_TYPE(p, R_DST, R_SRC);\
-    jit_andi(p, R_DST, R_DST, ARRAY_BIT_MASK);\
-    jit_eqi(p, R_DST, R_DST, 0)
-    
-int jit_get_data_start(struct jit *p)
-{
-    jit_op *array, *end;
-    
-    JIT_BLOCK_IS_ARRAY(p, R_IS_ARRAY, R_BLOCK);
-        array = jit_beqi(p, JIT_FORWARD, R_IS_ARRAY, 0);
-    jit_addi(p, R_PTR, R_BLOCK, sizeof(uint64_t));
-    end = jit_jmpi(p, JIT_FORWARD);
-    jit_addi(p, R_PTR, R_BLOCK, 2*sizeof(uint64_t));
-    jit_patch(p, array);
-    jit_movr(p, R_PTR, R_PTR); //Useles op, need for label
-    jit_patch(p, end);
-}
+#define JIT_BLOCK_ACTIVE(p, R_DST, R_SRC)\
+	JIT_JMP_BLOCK_HAS_FORWARD(p, __jit_op_macro_after1, R_DST, R_SRC);\
+	jit_movr(p, R_DST, R_SRC);\
+	__jit_op_macro_after2 = jit_jmpi(p, JIT_FORWARD);\
+	jit_patch(p, __jit_op_macro_after1);\
+	JIT_BLOCK_GET_FORWARD(p, R_DST, R_SRC);\
+	jit_patch(p, __jit_op_macro_after2)
+	
+#define JIT_JMP_BLOCK_IS_ARRAY_ACTIVE_BLOCK(p, jmp_label, R_DST, R_SRC)\
+	jit_ldr(p, R_DST, R_SRC, sizeof(uint64_t));\
+	jit_andi(p, R_DST, R_DST, ARRAY_BIT_MASK);\
+	jmp_label = jit_bnei(p, JIT_FORWARD, R_DST, 0)
+	
+#define JIT_JMP_BLOCK_IS_ARRAY(p, jmp_label, R_DST, R_SRC)\
+	JIT_BLOCK_ACTIVE(p, R_DST, R_SRC);\
+	JIT_JMP_BLOCK_IS_ARRAY_ACTIVE_BLOCK(p, jmp_label, R_DST, R_DST)
+
+#define JIT_GET_DATA_START(p, R_DST, R_SRC)\
+	JIT_JMP_BLOCK_IS_ARRAY(p, __jit_op_macro_after1, R_DST, R_SRC);\
+	jit_addi(p, R_DST, R_SRC, sizeof(uint64_t));\
+	__jit_op_macro_after2 = jit_jmpi(p, JIT_FORWARD);\
+	jit_patch(p, __jit_op_macro_after1);\
+	jit_addi(p, R_DST, R_SRC, 2*sizeof(uint64_t));\
+	jit_patch(p, __jit_op_macro_after2)
+	
+#define JIT_BLOCK_GET_INFO_ACTIVE_BLOCK(p, R_DST, R_SRC)\
+	JIT_BLOCK_GET_TYPE(p, R_DST, R_SRC);\
+	jit_muli(p, R_DST, R_DST, sizeof(type_info_t));\
+	jit_addi(p, R_DST, R_DST, (art_ptr_t)&type_table)
+	
+#define JIT_BLOCK_GET_INFO(p, R_DST, R_SRC)\
+	JIT_BLOCK_ACTIVE(p, R_DST, R_SRC);\
+	JIT_BLOCK_GET_INFO_ACTIVE_BLOCK(p, R_DST, R_DST)
+	
+#define JIT_GET_TYPE_SIZE(p, R_DST, R_SRC)\
+	jit_ldr(p, R_DST, R_SRC, sizeof(size_t))
+	
+#define JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_DST, R_SRC)\
+	jit_movr(p, R_DST, R_SRC);\
+	jit_addi(p, R_DST, R_DST, sizeof(uint64_t));\
+	jit_ldr(p, R_DST, R_DST, sizeof(uint64_t))
+	
+#define JIT_GET_ARRAY_SIZE(p, R_DST, R_SRC)\
+	JIT_BLOCK_ACTIVE(p, R_DST, R_SRC);\
+	JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_DST, R_DST)
+	
+#define JIT_BLOCK_GET_SIZE_ACTIVE_BLOCK(p, R_DST, R_AUX, R_SRC)\
+	JIT_BLOCK_GET_INFO_ACTIVE_BLOCK(p, R_AUX, R_SRC);\
+	JIT_GET_TYPE_SIZE(p, R_DST, R_AUX);\
+	JIT_JMP_BLOCK_IS_ARRAY_ACTIVE_BLOCK(p, __jit_op_macro_after1, R_AUX, R_SRC);\
+	jit_movi(p, R_AUX, 8);\
+	__jit_op_macro_after3 = jit_jmpi(p, JIT_FORWARD);\
+	jit_patch(p, __jit_op_macro_after1);\
+	JIT_GET_ARRAY_SIZE(p, R_AUX, R_SRC);\
+	jit_mulr(p, R_DST, R_DST, R_AUX);\
+	jit_movi(p, R_AUX, 16);\
+	jit_patch(p, __jit_op_macro_after3);\
+	jit_prepare(p);\
+	jit_putargr(p, R_DST);\
+	jit_call(p, align_size);\
+	jit_retval(p, R_DST);\
+	jit_addr(p, R_DST, R_DST, R_AUX)	
+	
+#define JIT_NEXT_BLOCK(p, R_DST, R_AUX, R_AUX2, R_SRC)\
+        JIT_BLOCK_ACTIVE(p, R_AUX, R_SRC);\
+        JIT_BLOCK_GET_SIZE_ACTIVE_BLOCK(p, R_DST, R_AUX2, R_AUX);\
+        jit_addr(p, R_DST, R_DST, R_SRC)
+        
+#define JIT_GET_DATA_END(p, R_DST, R_AUX, R_AUX2, R_SRC)\
+        JIT_NEXT_BLOCK(p, R_DST, R_AUX, R_AUX2, R_SRC)
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  HOOKUP POINTERS FOR GENERADED CODE                       //

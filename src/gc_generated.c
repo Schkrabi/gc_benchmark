@@ -15,6 +15,15 @@
 #include "gc_constants.h"
 
 /**
+ * Jit compiler
+ */
+struct jit *compiler;
+
+ jit_op 	*__jit_op_macro_after1,
+        *__jit_op_macro_after2,
+        *__jit_op_macro_after3;
+
+/**
  * Pointer for hookup of dynamicaly generated code
  */
 int (*gc_generated_main)();
@@ -48,7 +57,8 @@ int gc_generated_init()
     gc_cheney_base_roots_count = 0;
     
     //Generate assembly code
-    make_gc_walk_array(&type_table, TYPE_COUNT);
+	compiler = jit_init();
+    make_gc_walk_array(compiler, type_table, TYPE_COUNT);
     
     return 0;
 }
@@ -61,6 +71,9 @@ int gc_generated_cleanup()
 {
     void *ptr = gc_cheney_base_from_space > gc_cheney_base_to_space ? gc_cheney_base_to_space : gc_cheney_base_from_space;
     release_memory_primitive(ptr);
+	
+	//Release generated assembly code
+	jit_free(compiler);
 }
 
 /**
@@ -148,38 +161,36 @@ int gc_generated_collect()
 int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
 {
     if(info->number_of_references > 0)
-    {
-        //Patch the current switch label and forwared declare the next
-        jit_patch(p, current);
+    {        
+        //Patch the current switch label and forwared declare the next        
         *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+        if(current != NULL)
+        {
+            jit_patch(p, current);
+        }
         
         //Call for get_data_start(block)
-        
-        
-        //jit_prepare(p);
-        //jit_putargr(p, R_BLOCK); 
-        //jit_call(p, get_data_start); //NOT A FUNCTION A MACRO!!
-        //jit_retval(p, R_PTR);
+        JIT_GET_DATA_START(p, R_PTR, R_BLOCK);
         
         //Call for get_data_end(block)
-        jit_prepare(p);
-        jit_putargr(p, R_BLOCK);
-        jit_call(p, get_data_end); //NOT A FUNCTION A MACRO!!
-        jit_retval(p, R_LOOP);
+        JIT_GET_DATA_END(p, R_LOOP, R_IF, R_IS_ARRAY, R_BLOCK); //TODO AUX registers
         
         //for cyclle
         jit_label *for_label = jit_get_label(p);
         jit_op *loop_end = jit_bger_u(p, JIT_FORWARD, R_PTR, R_LOOP);
         
+            //jit_msg(p, "loop");
             jit_prepare(p);
-            jit_putargi(p, type_num);
             jit_putargr(p, R_PTR);
+            jit_putargi(p, type_num);
             jit_call(p, gc_generated_scan_struct);
         
         jit_addi(p, R_PTR, R_PTR, info->size);
         jit_jmpi(p, for_label);
-        jit_patch(p, loop_end);
         
+        //jit_msg(p, "loop finished");
+        
+        jit_patch(p, loop_end);
         //Declare another switch end label
         *end = jit_jmpi(p, JIT_FORWARD);
     }
@@ -192,15 +203,15 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
  * @par type_count count of types of structures
  * @returns Always 0
  **/
-int make_gc_walk_array(type_info_t type_table[], size_t type_count)
+int make_gc_walk_array(struct jit *p, type_info_t type_table[], size_t type_count)
 {
     int i;
-    struct jit * p;
-    
     jit_op *current, *next, **ends;
     
-    p = jit_init();
     jit_prolog(p, &gc_generated_walk_array);
+    
+    jit_declare_arg(p, JIT_PTR, sizeof(void*));
+    jit_getarg(p, R_BLOCK, 0);
     
     jit_prepare(p);
     jit_putargr(p, R_BLOCK);
@@ -208,31 +219,39 @@ int make_gc_walk_array(type_info_t type_table[], size_t type_count)
     jit_retval(p, R_IF);
     
     jit_op *if_end = jit_beqi(p, JIT_FORWARD, R_IF, 0);
-        
+    
         JIT_BLOCK_GET_TYPE(p, R_TYPE, R_BLOCK);
         
-        ends = (jit_op**)malloc(sizeof(jit_op*) * type_count);
-        current = jit_blti_u(p, JIT_FORWARD, R_BLOCK, 0); //Necessary? how to initialize jit_op without calling jump?
+        ends = (jit_op**)calloc(type_count, sizeof(jit_op*));
+        current = NULL;
         
         for(i = 0; i < type_count; i++)
         {
             make_gc_walk_array_per_type(p, &type_table[i], i, current, &next, &(ends[i]));
-            current = next;            
+            if(next != NULL)
+            {
+                current = next;
+                next = NULL;            
+            }
         }
         jit_patch(p, current);
         
         for(i = 0; i < type_count; i++)
         {
-            jit_patch(p, ends[i]);
+            if(ends[i] != NULL)
+            {
+                jit_patch(p, ends[i]);
+            }
         }
     
     jit_patch(p, if_end);
     
-    jit_generate_code(p);
-    //TODO Debug
-    jit_dump_ops(p, JIT_DEBUG_CODE);
-    jit_free(p);
+    jit_reti(p, 0);
     
+    //jit_check_code(p, JIT_WARN_ALL);
+    jit_generate_code(p);
+    
+    free(ends);    
     return 0;    
 }
 
@@ -799,45 +818,3 @@ int gc_generated_scan_struct(void *ptr, int type)
 	}
 	return 0;
 }
-
-/*
-int gc_generated_walk_array(block_t *block)
-{
-	if(block_is_struct_block(block))
-	{
-		void *ptr;
-		uint64_t type;
-		type = block_get_type(block);
-		switch(type)
-		{
-		case 4:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 8)
-				gc_generated_scan_struct(ptr, 4);
-			break;
-		case 7:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_generated_scan_struct(ptr, 7);
-			break;
-		case 8:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
-				gc_generated_scan_struct(ptr, 8);
-			break;
-		case 9:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_generated_scan_struct(ptr, 9);
-			break;
-		case 6:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_generated_scan_struct(ptr, 6);
-			break;
-		case 10:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
-				gc_generated_scan_struct(ptr, 10);
-			break;
-		case 11:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 352)
-				gc_generated_scan_struct(ptr, 11);
-			break;
-		}
-	}
-}*/
