@@ -476,6 +476,33 @@ int mem_dump(FILE *file)
 }
 
 /**
+ * Dumps block in given semispace
+ * @par file output file
+ * @par semispace_ptr pointer to the begining of semispace
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_semispace(FILE *file, void* semispace_ptr)
+{
+    block_t *block;
+    int sum, tmp;
+    
+    fprintf(file, "Dumping semispace %p\n", semispace_ptr);
+    for(block = semispace_ptr; block < gc_cheney_base_semispace_limit(semispace_ptr); block = next_block(block))
+    {
+        tmp = dump_block(file, block);
+        if(tmp < 0)
+        {
+            break;
+        }
+        sum += tmp;
+    }
+    
+    //sum += fprintf(file, "Free space: %u bytes\n", (unsigned)gc_cheney_base_remaining_space());
+    
+    return sum;	
+}
+
+/**
  * Dumps information about block of memory to the given file
  * @par file output file
  * @par block a memory block

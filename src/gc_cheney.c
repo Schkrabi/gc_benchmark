@@ -156,28 +156,22 @@ void *gc_cheney_scan_ptr(void *ptr, uint64_t type, int is_array_ptr)
 {
     block_t *block;
     
-    
     block = (block_t*)((art_ptr_t)ptr - (is_array_ptr ? sizeof(block_t) : sizeof(uint64_t)));
-//     for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
-//     {
-//         if(block_get_type(block) == type || type == TYPE_PTR)
-//         {
-//             if(is_pointer_to(block, ptr))
-            if(gc_cheney_base_is_old_mem(block))
-            {
-                if(!block_has_forward(block))
-                {
-                    block_t *dst;
-                    size_t block_size = block_get_size(block);
-                    dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-                    
-                    memcpy(dst, block, block_size);
-                    block_set_forward(block, dst);
-                }
-                return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
-            }
-//         }
-//     }
+
+    if(gc_cheney_base_is_old_mem(block))
+    {
+        if(!block_has_forward(block))
+        {
+            block_t *dst;
+            size_t block_size = block_get_size(block);
+            dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
+            
+            memcpy(dst, block, block_size);
+            block_set_forward(block, dst);
+        }
+        return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
+    }
+
     return NULL;
 }
 

@@ -19,7 +19,6 @@
 
 #include "sparc-codegen.h"
 #include "x86-common-stuff.c"
-#include "util.h"
 
 #define JIT_GET_ADDR(jit, imm) (!jit_is_label(jit, (void *)(imm)) ? (imm) :  \
 		((((long)jit->buf + (long)((jit_label *)(imm))->pos - (long)jit->ip)) / 4))
@@ -31,15 +30,15 @@ inline jit_hw_reg * rmap_get(jit_rmap * rmap, jit_value reg);
 static inline int GET_REG_POS(struct jit * jit, int r)
 {
 	struct jit_func_info * info = jit_current_func_info(jit);
-	if (JIT_REG_SPEC(r) == JIT_RTYPE_REG) {
-		if (JIT_REG_TYPE(r) == JIT_RTYPE_INT) {
-			return - (info->allocai_mem + EXTRA_SPACE + JIT_REG_ID(r) * REG_SIZE + REG_SIZE);
+	if (JIT_REG(r).spec == JIT_RTYPE_REG) {
+		if (JIT_REG(r).type == JIT_RTYPE_INT) {
+			return - (info->allocai_mem + EXTRA_SPACE + JIT_REG(r).id * REG_SIZE + REG_SIZE);
 		} else {
-			return - (info->allocai_mem + EXTRA_SPACE + info->gp_reg_count * REG_SIZE + JIT_REG_ID(r) * sizeof(double) + sizeof(double));
+			return - (info->allocai_mem + EXTRA_SPACE + info->gp_reg_count * REG_SIZE + JIT_REG(r).id * sizeof(double) + sizeof(double));
 		}
 	}
-	if (JIT_REG_SPEC(r) == JIT_RTYPE_ARG) {
-		int arg_id = JIT_REG_ID(r);
+	if (JIT_REG(r).spec == JIT_RTYPE_ARG) {
+		int arg_id = JIT_REG(r).id;
 		struct jit_inp_arg * a = &(jit_current_func_info(jit)->args[arg_id]);
 		return a->spill_pos;
 	}
@@ -390,13 +389,26 @@ void jit_patch_local_addrs(struct jit *jit)
 }
 
 /**
+ * computes number of 1's in the given binary number
+ * this was taken from the Hacker's Delight book by Henry S. Warren
+ */
+static inline int _bit_pop(unsigned int x) {
+	x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
+	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+	x = (x & 0x0F0F0F0F) + ((x >> 4) & 0x0F0F0F0F);
+	x = (x & 0x00FF00FF) + ((x >> 8) & 0x00FF00FF);
+	x = (x & 0x0000FFFF) + ((x >>16) & 0x0000FFFF);
+	return x;
+}
+
+/**
  * Generates multiplication using only the shift left and add operations
  */
 void emit_optimized_multiplication(struct jit * jit, long a1, long a2, long a3)
 {
 	int bits = _bit_pop(a3);
 	unsigned long ar = (unsigned long)a3;
-	int in_tmp = 0; // 1 if there's something in the temporary registers g1, g2
+	int in_tmp = 0; // 1 if there's something the temporary registers g1, g2
 	for (int i = 0; i < 32; i++) {
 		if (ar & 0x1) {
 			bits--;
@@ -446,12 +458,8 @@ void emit_mul(struct jit * jit, jit_op * op)
 			sparc_neg(jit->ip, a1);
 			return;
 		}
-		if (IS_SIGNED(op)) sparc_smul_imm(jit->ip, FALSE, a2, a3, a1);
-		else sparc_umul_imm(jit->ip, FALSE, a2, a3, a1);
-	} else {
-		if (IS_SIGNED(op)) sparc_smul(jit->ip, FALSE, a2, a3, a1);
-		else sparc_umul_imm(jit->ip, FALSE, a2, a3, a1); 
-	}
+		sparc_smul_imm(jit->ip, FALSE, a2, a3, a1);
+	} else sparc_smul(jit->ip, FALSE, a2, a3, a1);
 }
 
 // common function for floor & ceil ops
@@ -521,38 +529,18 @@ static void emit_sparc_floor(struct jit * jit, long a1, long a2, int floor)
 	sparc_add(jit->ip, FALSE, a1, sparc_g1, a1);
 }
 
-static void emit_memcpy(struct jit * jit, jit_op * op, jit_value a1, jit_value a2, jit_value a3)
-{
-	int scrapreg = sparc_g1;
-	int counterreg = sparc_g2;
-
-	if (IS_IMM(op)) sparc_set(jit->ip, a3, counterreg);
-	else {
-		if (!jit_set_get(op->live_out, op->arg[2])) counterreg = a3;
-		else sparc_mov_reg_reg(jit->ip, a3, sparc_g2);
-	}
-
-	jit_value loop = (jit_value) jit->ip;
-	
-	sparc_sub_imm(jit->ip, TRUE, counterreg, 1, counterreg);
-	sparc_ldub(jit->ip, a2, counterreg, scrapreg);
-	sparc_stb(jit->ip, scrapreg, a1, counterreg);
-	sparc_branch(jit->ip, FALSE, sparc_bne, (loop - (jit_value) jit->ip) / 4);
-	sparc_nop(jit->ip);
-}
-
 static inline void emit_ureg(struct jit * jit, long vreg, long hreg_id)
 {
-	if (JIT_REG_SPEC(vreg) == JIT_RTYPE_ARG) {
-		if (JIT_REG_TYPE(vreg) == JIT_RTYPE_INT) sparc_st_imm(jit->ip, hreg_id, sparc_fp, GET_REG_POS(jit, vreg));
+	if (JIT_REG(vreg).spec == JIT_RTYPE_ARG) {
+		if (JIT_REG(vreg).type == JIT_RTYPE_INT) sparc_st_imm(jit->ip, hreg_id, sparc_fp, GET_REG_POS(jit, vreg));
 		else {
-			int arg_id = JIT_REG_ID(vreg);
+			int arg_id = JIT_REG(vreg).id;
 			struct jit_inp_arg * a = &(jit_current_func_info(jit)->args[arg_id]);
 			if (a->passed_by_reg) sparc_st_imm(jit->ip, hreg_id, sparc_fp, a->spill_pos);
 		} 
 	}
-	if (JIT_REG_SPEC(vreg)== JIT_RTYPE_REG) {
-		if (JIT_REG_TYPE(vreg)!= JIT_RTYPE_FLOAT)
+	if (JIT_REG(vreg).spec == JIT_RTYPE_REG) {
+		if (JIT_REG(vreg).type != JIT_RTYPE_FLOAT)
 			sparc_st_imm(jit->ip, hreg_id, sparc_fp, GET_REG_POS(jit, vreg));
 		else sparc_stdf_imm(jit->ip, hreg_id, sparc_fp, GET_REG_POS(jit, vreg));
 	}
@@ -612,54 +600,30 @@ void jit_gen_op(struct jit * jit, struct jit_op * op)
 		case JIT_MUL:  emit_mul(jit, op); break;
 
 		case JIT_HMUL: 
-			if (IS_SIGNED(op)) {
-				if (IS_IMM(op)) sparc_smul_imm(jit->ip, FALSE, a2, a3, sparc_g0);
-				else sparc_smul(jit->ip, FALSE, a2, a3, sparc_g0);
-			} else {
-				if (IS_IMM(op)) sparc_umul_imm(jit->ip, FALSE, a2, a3, sparc_g0);
-				else sparc_umul(jit->ip, FALSE, a2, a3, sparc_g0);
-			}
+			if (IS_IMM(op)) sparc_smul_imm(jit->ip, FALSE, a2, a3, sparc_g0);
+			else sparc_smul(jit->ip, FALSE, a2, a3, sparc_g0);
 			sparc_nop(jit->ip);
 			sparc_rdy(jit->ip, a1);
 			break;
 
 		case JIT_DIV: 
-			if (IS_SIGNED(op)) {
-				if (IS_IMM(op)) {
-					switch (a3) {
-						case 2: sparc_sra_imm(jit->ip, a2, 1, a1); goto op_complete;
-						case 4: sparc_sra_imm(jit->ip, a2, 2, a1); goto op_complete;
-						case 8: sparc_sra_imm(jit->ip, a2, 3, a1); goto op_complete;
-						case 16: sparc_sra_imm(jit->ip, a2, 4, a1); goto op_complete;
-						case 32: sparc_sra_imm(jit->ip, a2, 5, a1); goto op_complete;
-					}
-				} 
-				sparc_sra_imm(jit->ip, a2, 31, sparc_g1);
-				sparc_wry(jit->ip, sparc_g1, sparc_g0);
-				sparc_nop(jit->ip);
-				sparc_nop(jit->ip);
-				sparc_nop(jit->ip);
+			if (IS_IMM(op)) {
+				switch (a3) {
+					case 2: sparc_sra_imm(jit->ip, a2, 1, a1); goto op_complete;
+					case 4: sparc_sra_imm(jit->ip, a2, 2, a1); goto op_complete;
+					case 8: sparc_sra_imm(jit->ip, a2, 3, a1); goto op_complete;
+					case 16: sparc_sra_imm(jit->ip, a2, 4, a1); goto op_complete;
+					case 32: sparc_sra_imm(jit->ip, a2, 5, a1); goto op_complete;
+				}
+			} 
+			sparc_sra_imm(jit->ip, a2, 31, sparc_g1);
+			sparc_wry(jit->ip, sparc_g1, sparc_g0);
+			sparc_nop(jit->ip);
+			sparc_nop(jit->ip);
+			sparc_nop(jit->ip);
 
-				if (IS_IMM(op)) sparc_sdiv_imm(jit->ip, FALSE, a2, a3, a1);
-				else sparc_sdiv(jit->ip, FALSE, a2, a3, a1);
-			} else { // UNSIGNED
-				if (IS_IMM(op)) {
-					switch (a3) {
-						case 2: sparc_srl(jit->ip, a2, 1, a1); goto op_complete;
-						case 4: sparc_srl_imm(jit->ip, a2, 2, a1); goto op_complete;
-						case 8: sparc_srl_imm(jit->ip, a2, 3, a1); goto op_complete;
-						case 16: sparc_srl_imm(jit->ip, a2, 4, a1); goto op_complete;
-						case 32: sparc_srl_imm(jit->ip, a2, 5, a1); goto op_complete;
-					}
-				} 
-				sparc_wry(jit->ip, sparc_g0, sparc_g0);
-				sparc_nop(jit->ip);
-				sparc_nop(jit->ip);
-				sparc_nop(jit->ip);
-
-				if (IS_IMM(op)) sparc_udiv_imm(jit->ip, FALSE, a2, a3, a1);
-				else sparc_udiv(jit->ip, FALSE, a2, a3, a1);
-			}
+			if (IS_IMM(op)) sparc_sdiv_imm(jit->ip, FALSE, a2, a3, a1);
+			else sparc_sdiv(jit->ip, FALSE, a2, a3, a1);
 			break;
 
 		case JIT_MOD: 
@@ -672,32 +636,17 @@ void jit_gen_op(struct jit * jit, struct jit_op * op)
 					case 32: sparc_and_imm(jit->ip, FALSE, a2, 0x1f, a1); goto op_complete;
 				}
 			}
-			if (IS_SIGNED(op)) {
-				sparc_sra_imm(jit->ip, a2, 31, sparc_g1);
-				sparc_wry(jit->ip, sparc_g1, sparc_g0);
+			sparc_sra_imm(jit->ip, a2, 31, sparc_g1);
+			sparc_wry(jit->ip, sparc_g1, sparc_g0);
+			sparc_nop(jit->ip);
+			sparc_nop(jit->ip);
+			sparc_nop(jit->ip);
+			if (IS_IMM(op)) {
+				sparc_sdiv_imm(jit->ip, FALSE, a2, a3, sparc_g1);
+				sparc_smul_imm(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
 			} else {
-				sparc_wry(jit->ip, sparc_g0, sparc_g0);
-			}
-			sparc_nop(jit->ip);
-			sparc_nop(jit->ip);
-			sparc_nop(jit->ip);
-			if (IS_SIGNED(op)) {
-				if (IS_IMM(op)) {
-					sparc_sdiv_imm(jit->ip, FALSE, a2, a3, sparc_g1);
-					sparc_smul_imm(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
-				} else {
-					sparc_sdiv(jit->ip, FALSE, a2, a3, sparc_g1);
-					sparc_smul(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
-				}
-			} else {
-				if (IS_IMM(op)) {
-					sparc_udiv_imm(jit->ip, FALSE, a2, a3, sparc_g1);
-					sparc_umul_imm(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
-				} else {
-					sparc_udiv(jit->ip, FALSE, a2, a3, sparc_g1);
-					sparc_umul(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
-				}
-
+				sparc_sdiv(jit->ip, FALSE, a2, a3, sparc_g1);
+				sparc_smul(jit->ip, FALSE, sparc_g1, a3, sparc_g1);
 			}
 			sparc_sub(jit->ip, FALSE, a2, sparc_g1, a1);
 			break;
@@ -764,8 +713,6 @@ void jit_gen_op(struct jit * jit, struct jit_op * op)
 				 sparc_call_simple(jit->ip, printf);
 				 sparc_nop(jit->ip);
 				 break;
-		case JIT_TRACE: // FIXME
-				break;
 
 		case JIT_ALLOCA: break;
 
@@ -786,10 +733,6 @@ void jit_gen_op(struct jit * jit, struct jit_op * op)
 		case JIT_REF_DATA:
 			op->patch_addr = JIT_BUFFER_OFFSET(jit);
 			sparc_set32x(jit->ip, 0xdeadbeef, a1);
-			break;
-
-		case JIT_MEMCPY:
-			emit_memcpy(jit, op, a1, a2, a3);
 			break;
 
 
@@ -1053,8 +996,8 @@ op_complete:
 		case (JIT_UREG): emit_ureg(jit, a1, a2); break;
 		case (JIT_SYNCREG): emit_ureg(jit, a1, a2); break;
 		case (JIT_LREG): 
-			if (JIT_REG_SPEC(a2) == JIT_RTYPE_ARG) assert(0);
-			if (JIT_REG_TYPE(a2) == JIT_RTYPE_INT)
+			if (JIT_REG(a2).spec == JIT_RTYPE_ARG) assert(0);
+			if (JIT_REG(a2).type == JIT_RTYPE_INT)
 				sparc_ld_imm(jit->ip, sparc_fp, GET_REG_POS(jit, a2), a1);
 			else sparc_lddf_imm(jit->ip, sparc_fp, GET_REG_POS(jit, a2), a1);
 			break;

@@ -94,8 +94,7 @@ static int rmap_subset(jit_op * op, jit_tree * current, jit_tree * target)
 
 	// ignores mappings of register which are not live
 	jit_set * tgt_livein = op->jmp_addr->live_in;
-	//if (!jit_set_get(tgt_livein, current->key) && !jit_set_get(op->live_out, current->key)) goto skip;
-	if (!jit_set_get(tgt_livein, current->key)) goto skip;
+	if (!jit_set_get(tgt_livein, current->key) && !jit_set_get(op->live_out, current->key)) goto skip;
 
 	jit_tree * found = jit_tree_search(target, current->key);
 	if ((!found) || (current->value != found->value)) return 0;
@@ -186,7 +185,6 @@ static int candidate_score(jit_op * op, jit_value virtreg, jit_hw_reg * hreg, in
 	}
 
 
-// FIXME:ARM
 #ifdef JIT_ARCH_COMMON86
 	jit_tree * hint_node = jit_tree_search(op->allocator_hints, virtreg);
 	if (hint_node) {
@@ -209,13 +207,13 @@ static int candidate_score(jit_op * op, jit_value virtreg, jit_hw_reg * hreg, in
  */
 static jit_hw_reg * rmap_spill_candidate(struct jit_reg_allocator * al, jit_op * op, jit_value virtreg, int * spill, jit_value * reg_to_spill, int callee_saved)
 {
-	jit_reg r = (jit_reg) virtreg;
+	jit_reg r = JIT_REG(virtreg);
 	jit_hw_reg * regs;
 	int reg_count;
 	jit_hw_reg * result = NULL;
 	int best_score = INT_MIN;
 
-	if (JIT_REG_TYPE(r) == JIT_RTYPE_INT) {
+	if (r.type == JIT_RTYPE_INT) {
 		regs = al->gp_regs;
 		reg_count = al->gp_reg_cnt;
 	} else {

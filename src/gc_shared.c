@@ -108,10 +108,10 @@ int block_set_forward(block_t *block, void *forward)
         return 0;
     }
     
-    if(!gc_cheney_base_is_old_mem(block))
+    /*if(!gc_cheney_base_is_old_mem(block))
     {
         printf("\n");
-    }
+    }*/
     
     block->type = TYPE_FORWARD;
     block->size = (uint64_t)forward;

@@ -49,9 +49,6 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-#define TRACE_PREV      (1)
-#define TRACE_NEXT      (2)
-
 
 typedef struct {
 	int id;
@@ -135,9 +132,6 @@ struct jit_func_info {			// collection of information related to one function
 	int fp_reg_count;		// total number of FP registers used in the processed function
 	int has_prolog;			// flag indicating if the function has a complete prologue and epilogue
 	struct jit_op *first_op;	// first operation of the function
-#if defined(JIT_ARCH_ARM32)
-	int gp_callee_saved_regs;	// bit mask describing used callee saved registers
-#endif
 };
 
 struct jit {
@@ -154,7 +148,6 @@ struct jit {
 	jit_prepared_args prepared_args; // list of arguments passed between PREPARE-CALL
 	int push_count;			// number of values pushed on the stack; used by AMD64
 	unsigned int optimizations;
-	unsigned char mmaped_buf;	// indicates that the buffer was allocated with the `mmap' call
 };
 
 struct jit_debug_info {
@@ -177,7 +170,6 @@ void jit_optimize_frame_ptr(struct jit * jit);
 void jit_optimize_unused_assignments(struct jit * jit);
 static int is_cond_branch_op(jit_op *op); // FIXME: rename to: jit_op_is_cond_branch
 static inline void jit_set_free(jit_set * s);
-void jit_trace_callback(struct jit *jit, jit_op *op, int verbosity, int trace);
 
 /**
  * Initialize argpos-th argument.
@@ -195,7 +187,6 @@ void jit_gen_op(struct jit * jit, jit_op * op);
 char * jit_reg_allocator_get_hwreg_name(struct jit_reg_allocator * al, int reg);
 int jit_reg_in_use(jit_op * op, int reg, int fp);
 jit_hw_reg * jit_get_unused_reg(struct jit_reg_allocator * al, jit_op * op, int fp);
-jit_hw_reg * jit_get_unused_reg_with_index(struct jit_reg_allocator * al, jit_op * op, int fp, int index);
 void rmap_free(jit_rmap * regmap);
 void jit_allocator_hints_free(jit_tree *);
 
@@ -216,7 +207,6 @@ static struct jit_op * jit_op_new(unsigned short code, unsigned char spec, long 
 	r->r_arg[2] = -1;
 
 	r->assigned = 0;
-	r->in_use = 1;
 	r->arg_size = arg_size;
 	r->next = NULL;
 	r->prev = NULL;
@@ -227,7 +217,6 @@ static struct jit_op * jit_op_new(unsigned short code, unsigned char spec, long 
 	r->live_out = NULL;
 	r->allocator_hints = NULL;
 	r->debug_info = NULL;
-	r->addendum = NULL;
 	return r;
 }
 
@@ -319,9 +308,8 @@ static inline void funcall_put_arg(struct jit * jit, jit_op * op)
 	arg->argpos = jit->prepared_args.gp_args++;
 	jit->prepared_args.ready++;
 
-	if (jit->prepared_args.gp_args > jit->reg_al->gp_arg_reg_cnt) {
+	if (jit->prepared_args.ready > jit->reg_al->gp_arg_reg_cnt)
 		jit->prepared_args.stack_size += REG_SIZE;
-	}
 }
 
 static inline void funcall_fput_arg(struct jit * jit, jit_op * op)
@@ -336,7 +324,7 @@ static inline void funcall_fput_arg(struct jit * jit, jit_op * op)
 	else arg->value.generic = op->arg[0];
 	jit->prepared_args.ready++;
 
-	if (jit->prepared_args.fp_args > jit->reg_al->fp_arg_reg_cnt) {
+	if (jit->prepared_args.ready > jit->reg_al->fp_arg_reg_cnt) {
 #ifdef JIT_ARCH_AMD64
 		jit->prepared_args.stack_size += REG_SIZE;
 #else

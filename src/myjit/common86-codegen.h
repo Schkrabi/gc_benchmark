@@ -61,7 +61,6 @@
 #define common86_alu_reg_reg(ptr, op, reg1, reg2) 	x86_alu_reg_reg(ptr, op, reg1, reg2)
 #define common86_alu_reg_imm(ptr, op, reg, imm) 	x86_alu_reg_imm(ptr, op, reg, imm)
 #define common86_alu_reg_membase(ptr, op, reg, basereg, disp) 	x86_alu_reg_membase(ptr, op, reg, basereg, disp)
-#define common86_alu_reg_memindex(ptr, op, reg, basereg, disp, indexreg, shift) 	x86_alu_reg_memindex(ptr, op, reg, basereg, disp, indexreg, shift)
 
 #define common86_shift_reg_imm(ptr, op, reg, imm) 	x86_shift_reg_imm(ptr, op, reg, imm)
 #define common86_shift_reg(ptr, op, reg) 		x86_shift_reg(ptr, op, reg)
@@ -90,21 +89,9 @@
 
 #define common86_push_reg(ptr, reg) 			x86_push_reg(ptr, reg)
 #define common86_pop_reg(ptr, reg) 			x86_pop_reg(ptr, reg)
-#define common86_pushf(ptr)				x86_pushfd(ptr) 
-#define common86_popf(ptr)				x86_popfd(ptr) 
 
 
 #define common86_nop(ptr)				x86_nop(ptr)
-
-#define common86_push_xmm_reg(ptr, reg) { \
-	x86_alu_reg_imm(ptr, X86_SUB, X86_ESP, 8);\
-	sse_movlpd_membase_xreg(ptr, reg, X86_ESP, 0); \
-} while(0)
-
-#define common86_pop_xmm_reg(ptr, reg) { \
-	sse_movlpd_xreg_membase(ptr, reg, X86_ESP, 0); \
-	x86_alu_reg_imm(ptr, X86_ADD, X86_ESP, 8);\
-} while(0)
 
 #endif
 
@@ -153,7 +140,6 @@
 #define common86_alu_reg_reg(ptr, op, reg1, reg2) 	amd64_alu_reg_reg(ptr, op, reg1, reg2)
 #define common86_alu_reg_imm(ptr, op, reg, imm) 	amd64_alu_reg_imm(ptr, op, reg, imm)
 #define common86_alu_reg_membase(ptr, op, reg, basereg, disp) 	amd64_alu_reg_membase(ptr, op, reg, basereg, disp)
-#define common86_alu_reg_memindex(ptr, op, reg, basereg, disp, indexreg, shift) 	amd64_alu_reg_memindex(ptr, op, reg, basereg, disp, indexreg, shift)
 
 #define common86_shift_reg_imm(ptr, op, reg, imm) 	amd64_shift_reg_imm(ptr, op, reg, imm)
 #define common86_shift_reg(ptr, op, reg) 		amd64_shift_reg(ptr, op, reg)
@@ -182,20 +168,7 @@
 
 #define common86_push_reg(ptr, reg) 			amd64_push_reg(ptr, reg)
 #define common86_pop_reg(ptr, reg) 			amd64_pop_reg(ptr, reg)
-#define common86_pushf(ptr)				amd64_pushfd(ptr) 
-#define common86_popf(ptr)				amd64_popfd(ptr)
 
 #define common86_nop(ptr)				amd64_nop(ptr)
-
-#define common86_push_xmm_reg(ptr, reg) { \
-	amd64_alu_reg_imm(ptr, X86_SUB, AMD64_RSP, 8);\
-	sse_movlpd_membase_xreg(ptr, reg, AMD64_RSP, 0); \
-} while(0)
-
-#define common86_pop_xmm_reg(ptr, reg) { \
-	sse_movlpd_xreg_membase(ptr, reg, AMD64_RSP, 0); \
-	amd64_alu_reg_imm(ptr, X86_ADD, AMD64_RSP, 8);\
-} while(0)
-
 
 #endif

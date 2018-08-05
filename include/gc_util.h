@@ -111,6 +111,15 @@ void *get_stack_bottom();
  * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
  */
 int mem_dump(FILE *file);
+
+/**
+ * Dumps block in given semispace
+ * @par file output file
+ * @par semispace_ptr pointer to the begining of semispace
+ * @return If successful, the total number of characters written is returned otherwise, a negative number is returned.
+ */
+int dump_semispace(FILE *file, void* semispace_ptr);
+
 /**
  * Dumps information about block of memory to the given file
  * @par file output file

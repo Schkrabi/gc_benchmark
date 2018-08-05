@@ -17,13 +17,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define _BSD_SOURCE
-#define _DARWIN_C_SOURCE
-
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -39,11 +35,6 @@
 
 #ifdef JIT_ARCH_SPARC
 #include "sparc-specific.h"
-#endif
-
-
-#ifdef JIT_ARCH_ARM32
-#include "arm32-specific.h"
 #endif
 
 #include "jitlib-debug.c"
@@ -95,10 +86,9 @@ struct jit * jit_init()
 	r->optimizations = 0;
 
 	r->buf = NULL;
-	r->mmaped_buf = 0;
 	r->labels = NULL;
 	r->reg_al = jit_reg_allocator_create();
-	jit_enable_optimization(r, JIT_OPT_JOIN_ADDMUL | JIT_OPT_OMIT_FRAME_PTR | JIT_OPT_DEAD_CODE);
+	jit_enable_optimization(r, JIT_OPT_JOIN_ADDMUL | JIT_OPT_OMIT_FRAME_PTR);
 
 	return r;
 }
@@ -133,56 +123,17 @@ jit_label * jit_get_label(struct jit * jit)
 /**
  * returns 1 if the immediate value has to be transformed into register
  */
-static int jit_imm_overflow(struct jit *jit, jit_op *op, long value)
+static int jit_imm_overflow(struct jit * jit, int signed_op, long value)
 {
-#ifndef JIT_ARCH_ARM32
 	unsigned long mask = ~((1UL << JIT_IMM_BITS) - 1);
 	unsigned long high_bits = value & mask;
 
-	if (IS_SIGNED(op)) {
+	if (signed_op) {
 		if ((high_bits != 0) && (high_bits != mask)) return 1;
 	} else {
 		if (high_bits != 0) return 1;
 	}
 	return 0;
-#else
-	long abs_value = (value < 0 ? - value : value);
-	if (GET_OP(op) == JIT_HMUL) return 1;
-	if (GET_OP(op) == JIT_SUBC) return 1;
-	if (op->code == (JIT_LD | IMM | SIGNED)) return 1;
-	if (op->code == (JIT_LD | IMM | UNSIGNED)) return 1;
-
-	if (op->code == (JIT_LSH | IMM | SIGNED)) return (value < 0) || (value > 31);
-	if (op->code == (JIT_RSH | IMM | SIGNED)) return (value < 0) || (value > 31);
-	if (op->code == (JIT_RSH | IMM | UNSIGNED)) return (value < 0) || (value > 31);
-
-	if ((op->code == (JIT_LDX | IMM | SIGNED)) && (op->arg_size == 1)) return (value < -255) || (value > 255);
-	if ((op->code == (JIT_LDX | IMM | SIGNED)) && (op->arg_size == 2)) return (value < -255) || (value > 255);;
-	if ((op->code == (JIT_LDX | IMM | UNSIGNED)) && (op->arg_size == 2)) return (value < -255) || (value > 255);;
-	if ((op->code == (JIT_STX | IMM)) && (op->arg_size == 2)) return (value < -255) || (value > 255);;
-
-
-	if ((op->code == (JIT_LDX | IMM | UNSIGNED)) && (op->arg_size == 1) && (arm32_imm_rotate(abs_value) >= 0)) return 0;
-	if ((op->code == (JIT_LDX | IMM | UNSIGNED)) && (op->arg_size == 4) && (arm32_imm_rotate(abs_value) >= 0)) return 0;
-	if ((op->code == (JIT_LDX | IMM | SIGNED)) && (op->arg_size == 4) && (arm32_imm_rotate(abs_value) >= 0)) return 0;
-	if ((op->code == (JIT_STX | IMM)) && (op->arg_size == 4) && (arm32_imm_rotate(abs_value) >= 0)) return 0;
-
-	if (GET_OP(op) == JIT_FLD) return 0;
-	if (GET_OP(op) == JIT_FLDX) return 0;
-	if (GET_OP(op) == JIT_FST) return 0;
-	if (GET_OP(op) == JIT_FSTX) return 0;
-
-	if ((GET_OP(op) == JIT_MUL) && (value == 0)) return 0;
-	if (GET_OP(op) == JIT_MOD) {
-		if ((op->code == (JIT_MOD | IMM | SIGNED)) && is_pow2(value)) return 0;
-		return 1;
-	}
-	if ((GET_OP(op) == JIT_DIV) || (GET_OP(op) == JIT_MUL)) {
-		if (IS_IMM(op)) return !is_pow2(value);
-		return 0;
-	}
-	return arm32_imm_rotate(value) == -1;
-#endif
 }
 
 /**
@@ -205,13 +156,12 @@ static void jit_correct_long_imms(struct jit * jit)
 		if (GET_OP(op) == JIT_REF_DATA) continue;
 		if (GET_OP(op) == JIT_REF_CODE) continue;
 		if (GET_OP(op) == JIT_FORCE_ASSOC) continue;
-		if (GET_OP(op) == JIT_TRACE) continue;
 		int imm_arg;
 		for (int i = 1; i < 4; i++)
 			if (ARG_TYPE(op, i) == IMM) imm_arg = i - 1;
 		long value = op->arg[imm_arg];
 
-		if (jit_imm_overflow(jit, op, value)) {
+		if (jit_imm_overflow(jit, IS_SIGNED(op), value)) {
 			jit_op * newop = jit_op_new(JIT_MOV | IMM, SPEC(TREG, IMM, NO), R_IMM, value, 0, REG_SIZE);
 			jit_op_prepend(op, newop);
 
@@ -237,9 +187,6 @@ static inline void jit_correct_float_imms(struct jit * jit)
 		if (GET_OP(op) == JIT_FLDX) continue;
 		if (GET_OP(op) == JIT_FST) continue;
 		if (GET_OP(op) == JIT_FSTX) continue;
-#if defined(JIT_ARCH_ARM32)
-		if (is_cond_branch_op(op) && IS_IMM(op) && (op->flt_imm == 0.0)) continue;
-#endif
 // FIXME: TODO		if (GET_OP(op) == JIT_FMSG) continue;
 		int imm_arg;
 		for (int i = 1; i < 4; i++)
@@ -316,9 +263,9 @@ static inline void jit_prepare_reg_counts(struct jit * jit)
 	
 		for (int i = 0; i < 3; i++)
 			if ((ARG_TYPE(op, i + 1) == TREG) || (ARG_TYPE(op, i + 1) == REG)) {
-				jit_reg r = (jit_reg) op->arg[i];
-				if ((JIT_REG_TYPE(r) == JIT_RTYPE_INT) && (JIT_REG_ID(r) > last_gp)) last_gp = JIT_REG_ID(r);
-				if ((JIT_REG_TYPE(r) == JIT_RTYPE_FLOAT) && (JIT_REG_ID(r) > last_fp)) last_fp = JIT_REG_ID(r);
+				jit_reg r = JIT_REG(op->arg[i]);
+				if ((r.type == JIT_RTYPE_INT) && (r.id > last_gp)) last_gp = r.id;
+				if ((r.type == JIT_RTYPE_FLOAT) && (r.id > last_fp)) last_fp = r.id;
 			}
 				
 		if (GET_OP(op) == JIT_DECL_ARG) {
@@ -332,17 +279,7 @@ static inline void jit_prepare_reg_counts(struct jit * jit)
 			while (1) {
 				if (GET_OP(op->next) == JIT_PUTARG) xop->arg[0]++;
 				else if (GET_OP(op->next) == JIT_FPUTARG) xop->arg[1]++;
-				else {
-					jit_opcode next_code = GET_OP(op->next);
-					if (next_code == JIT_CALL) break;
-					if ((next_code != JIT_TRACE) && (next_code != JIT_CODE_ALIGN)
-					&& (next_code != JIT_UREG) && (next_code != JIT_LREG)
-					&& (next_code != JIT_RENAMEREG) && (next_code != JIT_SYNCREG))
-					{
-						printf("Garbage in the prepare-call block. Opcode: %x\n", next_code >> 3);
-						abort();
-					}
-				}
+				else break;
 				op = op->next;
 			}
 		}
@@ -416,9 +353,7 @@ void jit_generate_code(struct jit * jit)
 	jit_prepare_arguments(jit);
 	jit_prepare_spills_on_jmpr_targets(jit);
 
-	if (jit->optimizations & JIT_OPT_DEAD_CODE) {
-		jit_dead_code_analysis(jit, 1);
-	}
+	jit_dead_code_analysis(jit, 1);	
 	jit_flw_analysis(jit);
 
 
@@ -452,13 +387,6 @@ void jit_generate_code(struct jit * jit)
 		unsigned long offset_1 = (jit->ip - jit->buf);
 		switch (GET_OP(op)) {
 			case JIT_DATA_BYTE: *(jit->ip)++ = (unsigned char) op->arg[0]; break;
-			case JIT_DATA_BYTES: 
-				while (jit->buf_capacity - (jit->ip - jit->buf) < op->arg[0])
-					jit_buf_expand(jit);
-				
-				for (int i = 0; i < op->arg[0]; i++)
-					*(jit->ip)++ = *(((unsigned char *) op->addendum) + i);
-				break;
 			case JIT_DATA_REF_CODE: 
 			case JIT_DATA_REF_DATA: 
 				op->patch_addr = JIT_BUFFER_OFFSET(jit);
@@ -470,8 +398,6 @@ void jit_generate_code(struct jit * jit)
 			case JIT_FORCE_SPILL:
 			case JIT_FORCE_ASSOC:
 			case JIT_COMMENT:
-			case JIT_MARK:
-			case JIT_TOUCH:
 				break;
 			// platform specific opcodes
 			default: jit_gen_op(jit, op);
@@ -483,11 +409,9 @@ void jit_generate_code(struct jit * jit)
 
 	/* moves the code to its final destination */
 	int code_size = jit->ip - jit->buf;  
-	//void * mem;
-	//posix_memalign(&mem, sysconf(_SC_PAGE_SIZE), code_size);
-	//mprotect(mem, code_size, PROT_READ | PROT_EXEC | PROT_WRITE);
-	void *mem = mmap(NULL, jit->buf_capacity, PROT_READ | PROT_EXEC | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	if (mem == MAP_FAILED) perror("mmap");
+	void * mem;
+	posix_memalign(&mem, sysconf(_SC_PAGE_SIZE), code_size);
+	mprotect(mem, code_size, PROT_READ | PROT_EXEC | PROT_WRITE);
 	memcpy(mem, jit->buf, code_size);
 	JIT_FREE(jit->buf);
 
@@ -495,7 +419,6 @@ void jit_generate_code(struct jit * jit)
 	long pos = jit->ip - jit->buf;
 	jit->buf = mem;
 	jit->ip = jit->buf + pos;
-	jit->mmaped_buf = 1;
 
 	jit_patch_external_calls(jit);
 	jit_patch_local_addrs(jit);
@@ -507,28 +430,10 @@ void jit_generate_code(struct jit * jit)
 	}
 }
 
-void jit_trace(struct jit *jit, int verbosity)
-{
-#if defined(JIT_ARCH_COMMON86) || defined(JIT_ARCH_ARM32)
-	for (jit_op *op = jit_op_first(jit->ops)->next; op != NULL; op = op->next) {
-		if (GET_OP(op) == JIT_PROLOG) continue;
-		if (GET_OP(op) == JIT_DATA_BYTE) continue;
-		if (GET_OP(op) == JIT_DATA_REF_CODE) continue;
-		if (GET_OP(op) == JIT_DATA_REF_DATA) continue;
-		jit_op * o = jit_op_new(JIT_TRACE, SPEC(IMM, NO, NO), verbosity, 0, 0, 0);
-		o->r_arg[0] = o->arg[0];
-		jit_op_prepend(op, o);
-	}
-#else
-	printf("jit_trace is not supported on this architecture\n");
-#endif
-}
-
 static void free_ops(struct jit_op * op)
 {
 	if (op == NULL) return;
 	free_ops(op->next);
-	if (op->addendum) JIT_FREE(op->addendum);
 	jit_free_op(op);
 
 }
@@ -547,8 +452,7 @@ static int is_cond_branch_op(jit_op *op)
 	|| (code == JIT_BGE) || (code == JIT_BEQ) ||  (code == JIT_BNE)
 	|| (code == JIT_FBLT) || (code == JIT_FBLE) || (code == JIT_FBGT)
 	|| (code == JIT_FBGE) || (code == JIT_FBEQ) ||  (code == JIT_FBNE)
-	|| (code == JIT_BOADD) || (code == JIT_BOSUB) || (code == JIT_BNOADD)
-	|| (code == JIT_BNOSUB);
+	|| (code == JIT_BOADD) || (code == JIT_BOSUB);
 }
 
 
@@ -567,19 +471,6 @@ void jit_free(struct jit * jit)
 	jit_reg_allocator_free(jit->reg_al);
 	free_ops(jit_op_first(jit->ops));
 	free_labels(jit->labels);
-	if (jit->buf) {
-		if (jit->mmaped_buf) munmap(jit->buf, jit->buf_capacity);
-		else JIT_FREE(jit->buf);
-	}
+	if (jit->buf) JIT_FREE(jit->buf);
 	JIT_FREE(jit);
-}
-
-int jit_regs_active_count(jit_op *op)
-{
-	return jit_set_size(op->live_out);
-}
-
-void jit_regs_active(jit_op *op, jit_value *dest)
-{
-	jit_set_to_array(op->live_out, dest);
 }

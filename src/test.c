@@ -6,6 +6,7 @@
 
 #include "gc_types.h"
 #include <stdio.h>
+#include <inttypes.h>
 #include "garbage_collector.h"
 #include "gc_util.h"
 #include "gc_cheney.h"
@@ -20,76 +21,267 @@
 
 /**
  * Testing of the basic garbage collection functionality
- * Obsolete, needs to be rewriten!
  */
 int gc_test()
 {
-    type_info_t *struct_info;
-    test_struct_t test_instance;
-    void **ptr_src1, **ptr_src2;
-    int *atom_test, *array_test;
-    test_struct_t *struct_test, *struct_array_test, *ptr_src3, *ptr_src4;
-    int i;
-    tarray_t *tarray;
-    
-    printf("\nTESTING MEMORY ALLOCATION AND COLLECTION:\n\n");
-    printf("Initial memory dump:\n");
-    mem_dump(stdout);
-    
-    atom_test = gc_malloc(int);
-    struct_test = gc_malloc(test_struct_t);
-    array_test = gc_malloc_array(int, TEST_SIZE);
-    struct_array_test = gc_malloc_array(test_struct_t, TEST_SIZE);
-    
-    ptr_src1 = (void**)gc_malloc(void*);
-    *ptr_src1 = atom_test;
-    
-    ptr_src2 = (void**)gc_malloc_array(void*,TEST_SIZE);
-    ptr_src2[0] = atom_test;
-    ptr_src2[1] = struct_test;
-    ptr_src2[2] = NULL;
-    
-    ptr_src3 = (test_struct_t*)gc_malloc(test_struct_t);
-    ptr_src3->ptr1 = NULL;
-    ptr_src3->ptr2 = struct_test;
-    
-    ptr_src4 = (test_struct_t*)gc_malloc_array(test_struct_t, TEST_SIZE);
-    //ptr_src4[0].ptr1 = array_test; //Bad semantics
-    ptr_src4[0].ptr1 = NULL;
-    ptr_src4[0].ptr2 = atom_test;
-    ptr_src4[1].ptr1 = NULL;
-    ptr_src4[1].ptr2 = atom_test;
-    ptr_src4[2].ptr1 = struct_test;
-    ptr_src4[2].ptr2 = tarray_init(TEST_SIZE);
-    
-    tarray = tarray_init(TEST_SIZE);
-    
-    printf("\nMemory dump after allocation:\n");
-    mem_dump(stdout);
-    
-    gc_cheney_base_roots_count = 4;
-    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
-    
-    gc_cheney_base_roots[0].ptr = ptr_src1;
-    gc_cheney_base_roots[0].is_array = 0;
-    gc_cheney_base_roots[1].ptr = ptr_src2;
-    gc_cheney_base_roots[1].is_array = 1;
-    gc_cheney_base_roots[2].ptr = ptr_src3;
-    gc_cheney_base_roots[2].is_array = 0;
-    gc_cheney_base_roots[3].ptr = ptr_src4;
-    gc_cheney_base_roots[3].is_array = 1;
-    
-    gc_collect();
-    
-    printf("\nMemory dump after collection:\n");
-    mem_dump(stdout);
-    
-    printf("\n");
-    
-    free(gc_cheney_base_roots);
-    gc_cheney_base_roots_count = 0;
-    
-    return 0;
+	btree_t
+		*evacuated_array,
+		*evacuated_referenced_atom,
+		*not_evacuated_array,
+		*not_evacuated_referenced_atom;
+
+	int 	*evacuated_referenced_array,
+		*not_evacuated_referenced_array,
+		i,
+		checkOk;
+
+	tarray_t 
+		*evacuated_atom,
+		*not_evacuated_atom;
+
+	int allocation_checklist[8];
+	int collection_checklist[8];
+	block_t *block;
+
+	for(i = 0; i < 8; i++)
+	{
+		allocation_checklist[i] = 0;
+		collection_checklist[i] = 0;
+	}
+
+	printf("\nTESTING MEMORY ALLOCATION\n");
+
+//Evacuated
+	evacuated_atom = gc_malloc(tarray_t);
+	evacuated_atom->size = 0x0;
+
+	evacuated_array = gc_malloc_array(btree_t, TEST_SIZE);
+	for(i = 0; i < TEST_SIZE; i++)
+	{
+		evacuated_array[i].value = 0x1;
+		evacuated_array[i].lchild = NULL;
+		evacuated_array[i].rchild = NULL;
+	}
+
+	evacuated_referenced_atom = gc_malloc(btree_t);
+	evacuated_referenced_atom->value = 0x2;
+	evacuated_referenced_atom->lchild = NULL;
+	evacuated_referenced_atom->rchild = NULL;
+	//Set reference
+	evacuated_array[0].lchild = evacuated_referenced_atom;
+
+	evacuated_referenced_array = gc_malloc_array(int, TEST_SIZE);
+	for(i = 0; i < TEST_SIZE; i++)
+	{
+		evacuated_referenced_array[i] = 0x3;
+	}
+	//Set reference 
+	evacuated_atom->data = evacuated_referenced_array;
+
+//Not Evacuated
+	not_evacuated_atom = gc_malloc(tarray_t);
+	not_evacuated_atom->size = 0x4;
+
+	not_evacuated_array = gc_malloc_array(btree_t, TEST_SIZE);
+	for(i = 0; i < TEST_SIZE; i++)
+	{
+		not_evacuated_array[i].value = 0x5;
+		not_evacuated_array[i].lchild = NULL;
+		not_evacuated_array[i].rchild = NULL;
+	}
+
+	not_evacuated_referenced_atom = gc_malloc(btree_t);
+	not_evacuated_referenced_atom->value = 0x6;
+	not_evacuated_referenced_atom->lchild = NULL;
+	not_evacuated_referenced_atom->rchild = NULL;
+	//Set reference
+	not_evacuated_array[0].rchild = not_evacuated_referenced_atom;
+
+	not_evacuated_referenced_array = gc_malloc_array(int, TEST_SIZE);
+	for(i = 0; i < TEST_SIZE; i++)
+	{
+		not_evacuated_referenced_array[i] = 0x7;
+	}
+	//Set reference
+	not_evacuated_atom->data = not_evacuated_referenced_array;
+
+//Check allocation
+	for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
+    	{
+		switch(block_get_type(block))
+		{
+			case TYPE_BTREE_T:
+			{
+				btree_t *b = get_data_start(block);
+				allocation_checklist[b->value]++;
+				break;
+			}
+			case TYPE_TARRAY_T:
+			{
+				tarray_t *t = get_data_start(block);
+				allocation_checklist[t->size]++;
+				break;
+			}
+			case TYPE_INT:
+			{
+				int *j = get_data_start(block);
+				allocation_checklist[*j]++;
+				break;
+			}
+			default:
+				printf("Allocation error block type %"PRIu64" found\n", block_get_type(block));
+		}
+	}
+
+	checkOk = 1;
+	if(allocation_checklist[0] != 1)
+	{
+		printf("Error allocating atom\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[1] != 1)
+	{
+		printf("Error allocating array\n");
+		checkOk = 0;	}
+	if(allocation_checklist[2] != 1)
+	{
+		printf("Error allocating referenced atom\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[3] != 1)
+	{
+		printf("Error allocating referenced array\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[4] != 1)
+	{
+
+		printf("Error allocating not evacuated atom\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[5] != 1)
+	{
+		printf("Error allocating not evacuated array\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[6] != 1)
+	{
+		printf("Error allocating not evacuated referenced atom\n");
+		checkOk = 0;
+	}
+	if(allocation_checklist[7] != 1)
+	{
+		printf("Error allocating not evacuated referenced array\n");
+		checkOk = 0;	
+	}
+	
+	if(checkOk)
+	{
+		printf("SUCCESS\n");
+	}
+	else
+	{
+		printf("FAILED\n");
+		printf("\nMemory dump\n");
+		mem_dump(stdout);
+	}
+
+//Collection
+	printf("\nTESTING MEMORY COLLECTION\n");
+	gc_cheney_base_roots_count = 2;
+   	gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
+
+	//Direct reference from roots to atom
+	gc_cheney_base_roots[0].ptr = evacuated_atom;
+	gc_cheney_base_roots[0].is_array = 0;
+
+	//Direct reference from roots to array
+	gc_cheney_base_roots[1].ptr = evacuated_array;
+	gc_cheney_base_roots[1].is_array = 1;
+	
+	gc_collect();
+
+	for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
+    	{
+		switch(block_get_type(block))
+		{
+			case TYPE_BTREE_T:
+			{
+				btree_t *b = get_data_start(block);
+				collection_checklist[b->value]++;
+				break;
+			}
+			case TYPE_TARRAY_T:
+			{
+				tarray_t *t = get_data_start(block);
+				collection_checklist[t->size]++;
+				break;
+			}
+			case TYPE_INT:
+			{
+				int *j = get_data_start(block);
+				collection_checklist[*j]++;
+				break;
+			}
+			default:
+				printf("Allocation error block type %"PRIu64" found\n", block_get_type(block));
+		}
+	}
+
+	checkOk = 1;
+	if(collection_checklist[0] != 1)
+	{
+		printf("Error atom should have not been collected\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[1] != 1)
+	{
+		printf("Error array should have not been collected\n");
+		checkOk = 0;	}
+	if(collection_checklist[2] != 1)
+	{
+		printf("Error referenced atom should have not been collected\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[3] != 1)
+	{
+		printf("Error referenced array should have not been collected\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[4] != 0)
+	{
+
+		printf("Error collecting not evacuated atom\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[5] != 0)
+	{
+		printf("Error collecting not evacuated array\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[6] != 0)
+	{
+		printf("Error collecting not evacuated referenced atom\n");
+		checkOk = 0;
+	}
+	if(collection_checklist[7] != 0)
+	{
+		printf("Error collecting not evacuated referenced array\n");
+		checkOk = 0;	
+	}
+	
+	if(checkOk)
+	{
+		printf("SUCCESS\n");
+	}
+	else
+	{
+		printf("FAILED\n");
+		printf("\nMemory dump\n");
+		mem_dump(stdout);
+	}
+
+	return 0;
 }
 
 /**

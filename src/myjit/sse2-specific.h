@@ -30,7 +30,6 @@
 #ifdef JIT_ARCH_I386
 #define sse_movsd_reg_reg(ip, r1, r2) 				x86_movsd_reg_reg(ip, r1, r2)
 #define sse_movsd_reg_mem(ip, r1, mem) 				x86_movsd_reg_mem(ip, r1, mem)
-#define sse_movss_reg_membase(ip, r1, basereg, disp) 		x86_movss_reg_membase(ip, r1, basereg, disp)
 #define sse_movlpd_membase_xreg(ip, dreg, basereg, disp) 	x86_movlpd_membase_xreg(ip, dreg, basereg, disp)
 #define sse_movlpd_xreg_membase(ip, dreg, basereg, disp) 	x86_movlpd_xreg_membase(ip, dreg, basereg, disp)
 #define sse_movlpd_mem_reg(ip, mem, reg) 			x86_movlpd_mem_xreg(ip, mem, reg)
@@ -71,7 +70,6 @@
 #define sse_movsd_reg_reg(ip,r1,r2) amd64_sse_movsd_reg_reg(ip,r1,r2)
 #define sse_movsd_reg_mem(ip, r1, mem) amd64_movsd_reg_mem(ip,r1,mem)
 #define sse_movsd_reg_membase(ip, r1, basereg, disp) 	amd64_movsd_reg_membase(ip, r1, basereg, disp)
-#define sse_movss_reg_membase(ip, r1, basereg, disp) 	amd64_movss_reg_membase(ip, r1, basereg, disp)
 #define sse_movlpd_membase_xreg(ip,dreg,basereg,disp) 	amd64_sse_movlpd_membase_xreg(ip,dreg,basereg,disp)
 #define sse_movlpd_xreg_membase(ip,dreg,basereg,disp) 	amd64_sse_movlpd_xreg_membase(ip,dreg,basereg,disp)
 #define sse_movlpd_memindex_xreg(ip, basereg, disp, indexreg, shift, reg)  amd64_sse_movlpd_memindex_xreg(ip, basereg, disp, indexreg, shift, reg)
@@ -330,7 +328,7 @@ static void emit_sse_fst_op(struct jit * jit, jit_op * op, jit_value a1, jit_val
 		if (live) sse_alu_pd_reg_reg_imm(jit->ip, X86_SSE_SHUF, a2, a2, 1);
 
 	} else {
-		if (IS_IMM(op)) sse_movlpd_mem_reg(jit->ip, a1, a2);
+		if (IS_IMM(op)) sse_movlpd_mem_reg(jit->ip, a2, a1);
 		else sse_movlpd_membase_xreg(jit->ip, a2, a1, 0);
 	}
 }

@@ -17,13 +17,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define GET_GPREG_POS(jit, r) (- ((JIT_REG_ID(r) + 1) * REG_SIZE) - jit_current_func_info(jit)->allocai_mem)
-#define GET_FPREG_POS(jit, r) (- jit_current_func_info(jit)->gp_reg_count * REG_SIZE - (JIT_REG_ID(r) + 1) * sizeof(jit_float) - jit_current_func_info(jit)->allocai_mem)
+#define GET_GPREG_POS(jit, r) (- ((JIT_REG(r).id + 1) * REG_SIZE) - jit_current_func_info(jit)->allocai_mem)
+#define GET_FPREG_POS(jit, r) (- jit_current_func_info(jit)->gp_reg_count * REG_SIZE - (JIT_REG(r).id + 1) * sizeof(jit_float) - jit_current_func_info(jit)->allocai_mem)
 
 static inline int GET_REG_POS(struct jit * jit, int r)
 {
-	if (JIT_REG_SPEC(r) == JIT_RTYPE_REG) {
-		if (JIT_REG_TYPE(r) == JIT_RTYPE_INT) return GET_GPREG_POS(jit, r);
+	if (JIT_REG(r).spec == JIT_RTYPE_REG) {
+		if (JIT_REG(r). type == JIT_RTYPE_INT) return GET_GPREG_POS(jit, r);
 		else return GET_FPREG_POS(jit, r);
 	} else assert(0); 
 }
@@ -146,8 +146,6 @@ void jit_patch_external_calls(struct jit * jit)
 			x86_patch(jit->buf + (long)op->patch_addr, (unsigned char *)op->arg[0]);
 		if (GET_OP(op) == JIT_MSG)
 			x86_patch(jit->buf + (long)op->patch_addr, (unsigned char *)printf);
-		if (GET_OP(op) == JIT_TRACE) 
-			x86_patch(jit->buf + (long)op->patch_addr, (unsigned char *)jit_trace_callback);
 	}
 }
 
@@ -176,40 +174,15 @@ static void emit_prolog_op(struct jit * jit, jit_op * op)
 
 static void emit_msg_op(struct jit * jit, jit_op * op)
 {
-	emit_save_all_regs(jit, op);
-
+	x86_pushad(jit->ip);
 	if (!IS_IMM(op)) x86_push_reg(jit->ip, op->r_arg[1]);
 	x86_push_imm(jit->ip, op->r_arg[0]);
 	op->patch_addr = JIT_BUFFER_OFFSET(jit); 
 	x86_call_imm(jit->ip, printf);
 	if (IS_IMM(op)) x86_alu_reg_imm(jit->ip, X86_ADD, X86_ESP, 4);
 	else x86_alu_reg_imm(jit->ip, X86_ADD, X86_ESP, 8);
-
-	emit_restore_all_regs(jit, op);
+	x86_popad(jit->ip);
 }
-
-static void emit_trace_op(struct jit *jit, jit_op *op)
-{       
-	int trace = 0;
-	emit_save_all_regs(jit, op);
-        
-	jit_opcode prev_code = GET_OP(op->prev);
-	jit_opcode next_code = GET_OP(op->next);
-	if ((prev_code == JIT_PROLOG) || (prev_code == JIT_LABEL) || (prev_code == JIT_PATCH)) trace |= TRACE_PREV;
-	if ((next_code != JIT_PROLOG) && (next_code != JIT_LABEL) && (next_code != JIT_PATCH)) trace |= TRACE_NEXT;
-
-	x86_push_imm(jit->ip, trace);
-	x86_push_imm(jit->ip, op->r_arg[0]);
-	x86_push_imm(jit->ip, op);
-	x86_push_imm(jit->ip, jit);
-
-	op->patch_addr = JIT_BUFFER_OFFSET(jit); 
-	x86_call_imm(jit->ip, jit_trace_callback);
-	x86_alu_reg_imm(jit->ip, X86_ADD, X86_ESP, 16);
-
-	emit_restore_all_regs(jit, op);
-}
-
 
 static void emit_fret_op(struct jit * jit, jit_op * op)
 {

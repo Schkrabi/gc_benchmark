@@ -86,11 +86,11 @@ static void assign_regs_for_args(struct jit_reg_allocator * al, jit_op * op)
 	for (int i = 0; i < info->general_arg_cnt + info->float_arg_cnt; i++) {
 		int isfp_arg = (info->args[i].type == JIT_FLOAT_NUM);
 		if (!isfp_arg && (assoc_gp_regs < al->gp_arg_reg_cnt)) {
-			rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_INT, JIT_RTYPE_ARG, i), al->gp_arg_regs[assoc_gp_regs]);
+			rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_INT, JIT_RTYPE_ARG, i), al->gp_arg_regs[i]);
 			assoc_gp_regs++;
 		}
 		if (isfp_arg && (assoc_fp_regs < al->fp_arg_reg_cnt)) {
-			rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_FLOAT, JIT_RTYPE_ARG, i), al->fp_arg_regs[assoc_fp_regs]);
+			rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_FLOAT, JIT_RTYPE_ARG, i), al->fp_arg_regs[i]);
 			assoc_fp_regs++;
 		}
 	}
@@ -138,40 +138,11 @@ static void assign_regs_for_args(struct jit_reg_allocator * al, jit_op * op)
 }
 #endif
 
-#ifdef JIT_ARCH_ARM32
-static void assign_regs_for_args(struct jit_reg_allocator * al, jit_op * op)
-{
-	// XXX: similar to X86 code
-	struct jit_func_info * info = (struct jit_func_info *) op->arg[1];
-
-	int assoc_gp_regs = 0;
-	for (int i = 0; i < info->general_arg_cnt + info->float_arg_cnt; i++) {
-		struct jit_inp_arg *arg = &info->args[i];
-		int isfp_arg = (arg->type == JIT_FLOAT_NUM);
-		if (!isfp_arg && (assoc_gp_regs < al->gp_arg_reg_cnt)) {
-			rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_INT, JIT_RTYPE_ARG, i), al->gp_arg_regs[assoc_gp_regs]);
-			assoc_gp_regs++;
-		}
-		// only double precision fp-arguments are associated with their registers
-		if (isfp_arg && (arg->passed_by_reg) && (arg->size == sizeof(double))) {
-			jit_hw_reg *hreg = NULL;
-			for (int j = 0; j < al->fp_arg_reg_cnt; j++) {
-				if (al->fp_arg_regs[j]->id == arg->location.reg) {
-					hreg = al->fp_arg_regs[j];
-					break;
-				}
-			}
-			if (hreg) rmap_assoc(op->regmap, jit_mkreg(JIT_RTYPE_FLOAT, JIT_RTYPE_ARG, i), hreg);
-		}
-	}
-}
-#endif
-
 static void prepare_registers_for_call(struct jit_reg_allocator * al, jit_op * op)
 {
 	jit_value r, reg;
 	jit_hw_reg * hreg = NULL;
-#if defined(JIT_ARCH_COMMON86) || defined(JIT_ARCH_ARM32)
+#ifdef JIT_ARCH_COMMON86
 	if (al->ret_reg) hreg = rmap_is_associated(op->regmap, al->ret_reg->id, 0, &r);
 	if (hreg) {
 		// checks whether there is a free callee-saved register
@@ -225,7 +196,7 @@ skip:
  * If the hw. register which is used to return values is unused (i.e., it's
  * in the register pool) it associates this register with the given virtual register
  * and returns 1.
- * Tacitly assumes that the return register has been unassociated before function call.
+ * Tacitly assumes, that return register has been unassociated before function call.
  */
 static int assign_ret_reg(jit_op * op, jit_hw_reg * ret_reg)
 {
@@ -240,16 +211,11 @@ static int assign_getarg(jit_op * op, struct jit_reg_allocator * al)
 	struct jit_inp_arg * arg = &(al->current_func_info->args[arg_id]);
 	int reg_id = jit_mkreg(arg->type == JIT_FLOAT_NUM ? JIT_RTYPE_FLOAT : JIT_RTYPE_INT, JIT_RTYPE_ARG, arg_id);
 	if (!jit_set_get(op->live_out, reg_id)) {
-
-#if defined(JIT_ARCH_I386) || defined(JIT_ARCH_SPARC)
-		if ((arg->type != JIT_FLOAT_NUM) && (arg->size == REG_SIZE))
-#elif defined(JIT_ARCH_AMD64)
 		if (((arg->type != JIT_FLOAT_NUM) && (arg->size == REG_SIZE))
-			|| ((arg->type == JIT_FLOAT_NUM) && (arg->size == sizeof(double))))
-#elif defined(JIT_ARCH_ARM32)
-		if (arg->type != JIT_FLOAT_NUM)
+#ifdef JIT_ARCH_AMD64
+				|| ((arg->type == JIT_FLOAT_NUM) && (arg->size == sizeof(double)))
 #endif
-		{
+		   ) {
 			jit_hw_reg * hreg = rmap_get(op->regmap, reg_id);
 			if (hreg) {
 				rmap_unassoc(op->regmap, reg_id);
@@ -308,9 +274,9 @@ static int assign_call(jit_op * op, struct jit_reg_allocator * al)
 		}
 	}
 #endif
-#if defined(JIT_ARCH_AMD64) || defined(JIT_ARCH_ARM32)
+#ifdef JIT_ARCH_AMD64
 	// since the CALLR may use the given register also to pass an argument,
-	// code generator has to take care of the register value itself
+	// code genarator has to take care of the register value itself
 	return 1;
 #else
 	return 0;
@@ -366,34 +332,17 @@ static void associate_register_alias(struct jit_reg_allocator * al, jit_op * op,
 	else assert(0);
 }
 
-static int is_transfer_op(jit_op *op)
-{
-	jit_opcode code = GET_OP(op);
-	return (code == JIT_TRANSFER_ADD)
-		|| (code == JIT_TRANSFER_SUB)
-		|| (code == JIT_TRANSFER_OR)
-		|| (code == JIT_TRANSFER_XOR)
-		|| (code == JIT_TRANSFER_AND); 
-}
-
 static void associate_register(struct jit_reg_allocator * al, jit_op * op, int i)
 {
 	jit_hw_reg * reg = rmap_get(op->regmap, op->arg[i]);
-	if (GET_OP(op) == JIT_FRETVAL) printf(":JJJ:%i\n", reg->id);
 	if (reg) op->r_arg[i] = reg->id;
 	else {
-		if (!is_transfer_op(op) 
-#if defined(JIT_ARCH_AMD64) || defined(JIT_ARCH_ARM32)
-		&& (GET_OP(op) != JIT_CALL)
-#endif
-		) {
-			reg = make_free_reg(al, op, op->arg[i]);
-			rmap_assoc(op->regmap, op->arg[i], reg);
+		reg = make_free_reg(al, op, op->arg[i]);
+		rmap_assoc(op->regmap, op->arg[i], reg);
 
-			op->r_arg[i] = reg->id;
-			if (jit_set_get(op->live_in, op->arg[i]))
-				load_reg(op, rmap_get(op->regmap, op->arg[i]), op->arg[i]);
-		} else op->r_arg[i] = -1;
+		op->r_arg[i] = reg->id;
+		if (jit_set_get(op->live_in, op->arg[i]))
+			load_reg(op, rmap_get(op->regmap, op->arg[i]), op->arg[i]);
 	}
 }
 
@@ -421,17 +370,17 @@ static void assign_regs(struct jit * jit, struct jit_op * op)
 		}
 	}
 
-	// operations requiring some special core
+	// operations reuqiring some special core
 	switch (GET_OP(op)) {
 		case JIT_PREPARE: prepare_registers_for_call(al, op); break;
 		// PUTARG have to take care of the register allocation by itself
 		case JIT_PUTARG: skip = 1; break;
 		case JIT_FPUTARG: skip = 1; break;
 
-#if defined(JIT_ARCH_COMMON86) || defined(JIT_ARCH_ARM32)
+#ifdef JIT_ARCH_COMMON86
 		case JIT_RETVAL: skip = assign_ret_reg(op, al->ret_reg); break;
 #endif
-#if defined(JIT_ARCH_SPARC) || defined(JIT_ARCH_ARM32) || defined(JIT_ARCH_AMD64)
+#ifdef JIT_ARCH_SPARC
 		case JIT_FRETVAL: skip = assign_ret_reg(op, al->fpret_reg); break;
 #endif
 		case JIT_GETARG: skip = assign_getarg(op, al); break;
@@ -440,7 +389,6 @@ static void assign_regs(struct jit * jit, struct jit_op * op)
 		case JIT_FULL_SPILL: skip = spill_all_registers(op, al); break;
 		case JIT_FORCE_SPILL: skip = force_spill(op); break;
 		case JIT_FORCE_ASSOC: skip = force_assoc(op, al); break;
-//		case JIT_TOUCH: skip = 1; break;
 		default: break;
 	}
 
@@ -449,8 +397,8 @@ static void assign_regs(struct jit * jit, struct jit_op * op)
 	// associates virtual registers with their hardware counterparts
 	for (i = 0; i < 3; i++) {
 		if ((ARG_TYPE(op, i + 1) == REG) || (ARG_TYPE(op, i + 1) == TREG)) {
-			jit_reg virt_reg = (jit_reg) op->arg[i];
-			if (JIT_REG_SPEC(virt_reg) == JIT_RTYPE_ALIAS) associate_register_alias(al, op, i);
+			jit_reg virt_reg = JIT_REG(op->arg[i]);
+			if (virt_reg.spec == JIT_RTYPE_ALIAS) associate_register_alias(al, op, i);
 			else associate_register(al, op, i);
 		} else if (ARG_TYPE(op, i + 1) == IMM) {
 			// assigns immediate values
@@ -516,13 +464,13 @@ void jit_collect_statistics(struct jit * jit)
 			new_hint->refs = 0;
 
 			new_hint->last_pos = ops_from_return;
-#if defined (JIT_ARCH_COMMON86) || defined (JIT_ARCH_ARM32)
+#ifdef JIT_ARCH_COMMON86
 			if ((GET_OP(op) == JIT_RETVAL) || (GET_OP(op) == JIT_RET)) 
 				new_hint->should_be_eax++;
 #endif 
 			new_hints = jit_tree_insert(new_hints, reg, new_hint, NULL);
 		}
-#if defined (JIT_ARCH_COMMON86) || defined (JIT_ARCH_ARM32)
+#ifdef JIT_ARCH_COMMON86
 		if (GET_OP(op) == JIT_CALL) mark_calleesaved_regs(new_hints, op);
 #endif
 		hints_refcount_inc(new_hints);
@@ -595,8 +543,7 @@ static inline void branch_adjustment(struct jit * jit, jit_op * op)
 	jit_rmap * cur_regmap = op->regmap;
 	jit_rmap * tgt_regmap = op->jmp_addr->regmap;
 
-	//if (!rmap_equal(op, cur_regmap, tgt_regmap)) {
-	if (!rmap_subset(op, tgt_regmap->map, cur_regmap->map)) {
+	if (!rmap_equal(op, cur_regmap, tgt_regmap)) {
 		switch (GET_OP(op)) {
 			case JIT_BEQ: op->code = JIT_BNE | (op->code & 0x7); break;
 			case JIT_BGT: op->code = JIT_BLE | (op->code & 0x7); break;
@@ -682,9 +629,8 @@ int jit_reg_in_use(jit_op * op, int reg, int fp)
 
 /**
  * returns a register which is unused, otherwise returns NULL
- * index -- indicates the position in the list of unused register (0 -- first unused register, 1 -- second, etc.) 
  */
-jit_hw_reg * jit_get_unused_reg_with_index(struct jit_reg_allocator * al, jit_op * op, int fp, int index)
+jit_hw_reg * jit_get_unused_reg(struct jit_reg_allocator * al, jit_op * op, int fp)
 {
 	jit_hw_reg * regs;
 	int reg_count;
@@ -696,20 +642,7 @@ jit_hw_reg * jit_get_unused_reg_with_index(struct jit_reg_allocator * al, jit_op
 		regs = al->fp_regs;
 		reg_count = al->fp_reg_cnt;
 	}
-	for (int i = 0; i < reg_count; i++) {
-		if (regs[i].callee_saved) continue;
-		if (!jit_reg_in_use(op, regs[i].id, fp)) {
-			if (index == 0) return &(regs[i]);
-			else index--;
-		}
-	}
+	for (int i = 0; i < reg_count; i++)
+		if (!jit_reg_in_use(op, regs[i].id, fp)) return &(regs[i]);
 	return NULL;
-}
-
-/**
- * returns a register which is unused, otherwise returns NULL
- */
-jit_hw_reg * jit_get_unused_reg(struct jit_reg_allocator * al, jit_op * op, int fp)
-{
-	return jit_get_unused_reg_with_index(al, op, fp, 0);
 }
