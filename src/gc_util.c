@@ -19,6 +19,7 @@
 #include "gc_cheney_base.h"
 #include "benchmark.h"
 #include "garbage_collector.h"
+#include <inttypes.h>
 
 #define LOG_DIR "../log/"
 #define LOG_BUFF_SIZE 40485760 //1 MB
@@ -672,3 +673,22 @@ static inline unsigned long long int rdtsc()
         __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
         return x;
 } 
+
+/**
+ * Prints each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns always 0
+ */
+int lin_mem_dump(void *ptr, size_t size)
+{
+	size_t i;
+	
+	for(i = 0; i < size; i += sizeof(uint64_t))
+	{
+		printf("| %" PRIx64 " ", *((uint64_t*)((art_ptr_t)ptr + i)));
+	}
+	printf("\n");
+	return 0;	
+}

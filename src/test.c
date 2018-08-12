@@ -201,6 +201,7 @@ int gc_test()
 	
 	gc_collect();
 
+	checkOk = 1;
 	for(block = gc_cheney_base_from_space; block < gc_cheney_base_remaining_block; block = next_block(block))
     	{
 		switch(block_get_type(block))
@@ -224,11 +225,13 @@ int gc_test()
 				break;
 			}
 			default:
+			{
 				printf("Allocation error block type %"PRIu64" found\n", block_get_type(block));
+				checkOk = 0;
+			}
 		}
 	}
 
-	checkOk = 1;
 	if(collection_checklist[0] != 1)
 	{
 		printf("Error atom should have not been collected\n");

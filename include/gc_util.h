@@ -176,4 +176,13 @@ int str_replace_char(char *str, char c, char replace);
  * @return time mesuring integer
  */
 static inline unsigned long long int rdtsc();
+
+/**
+ * Prints each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns always 0
+ */
+int lin_mem_dump(void *ptr, size_t size);
 #endif

@@ -25,6 +25,7 @@
  */
 extern struct jit *jit_gc_walk_array;
 extern struct jit *jit_gc_scan_ptr;
+extern struct jit *jit_gc_scan_struct;
 
 /**
  * Pointer for hookup of dynamicaly generated code
@@ -125,6 +126,25 @@ int make_gc_scan_ptr_per_type_array(struct jit *p, type_info_t *info, int type_n
  * @par type_count number of types in system
  */
 int make_gc_scan_ptr(struct jit *p, type_info_t type_table[], size_t type_count);
+
+/**
+ * Genrates assembly code for gc_generated_scan_struct
+ * @par p jit compiler
+ * @par type_table table with type descriptors
+ * @par type_count number of types in system
+ */
+int make_gc_scan_struct(struct jit *p, type_info_t type_table[], size_t type_count);
+
+/**
+ * Generates assembly code for gc_generated_struct per type
+ * @par p jit compiler
+ * @par info pointer to the structure with type info
+ * @par type_num number of the type in system
+ * @par current jit label to patch for switch code
+ * @par next pointer to the jit label for next part of the switch
+ * @par pointer to jit label for the end of the switch
+ */
+int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end);
 
 //global ptr to hookup the 	jit_op's in macros
  extern jit_op 	*__jit_op_macro_after1,
@@ -231,10 +251,13 @@ int make_gc_scan_ptr(struct jit *p, type_info_t type_table[], size_t type_count)
 //                  HOOKUP POINTERS FOR GENERADED CODE                       //
 ///////////////////////////////////////////////////////////////////////////////
 typedef int (* walk_array_ftype)(block_t *);
-walk_array_ftype gc_generated_walk_array;
+extern walk_array_ftype gc_generated_walk_array;
 
 typedef int (* scan_ptr_ftype)(void *, uint64_t, int);
-scan_ptr_ftype gc_generated_scan_ptr;
+extern scan_ptr_ftype gc_generated_scan_ptr;
+
+typedef int (* scan_struct_ftype)(void*,int);
+extern scan_struct_ftype gc_generated_scan_struct;
 
 /////////////////////////
 //PLACEHOLDER CODE HERE//
@@ -244,7 +267,7 @@ int gc_generated_walk_block(block_t *block);
 int gc_generated_walk_struct(block_t *block);
 int64_t gc_generated_remaining_space();
 //void *gc_generated_scan_ptr(void *ptr, uint64_t type, int is_array);
-int gc_generated_scan_struct(void *ptr, int type);
+//int gc_generated_scan_struct(void *ptr, int type);
 //int gc_generated_walk_array(block_t *block);
 
 #endif

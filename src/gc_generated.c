@@ -20,6 +20,7 @@
  */
 struct jit *jit_gc_walk_array;
 struct jit *jit_gc_scan_ptr;
+struct jit *jit_gc_scan_struct;
 
  jit_op 	*__jit_op_macro_after1,
         *__jit_op_macro_after2,
@@ -29,6 +30,10 @@ struct jit *jit_gc_scan_ptr;
  * Pointer for hookup of dynamicaly generated code
  */
 int (*gc_generated_main)();
+
+walk_array_ftype gc_generated_walk_array;
+scan_ptr_ftype gc_generated_scan_ptr;
+scan_struct_ftype gc_generated_scan_struct;
 
 /**
  * Initializes the Garbage Collector objects
@@ -59,11 +64,14 @@ int gc_generated_init()
     gc_cheney_base_roots_count = 0;
     
     //Generate assembly code
-    jit_gc_walk_array = jit_init();
-    make_gc_walk_array(jit_gc_walk_array, type_table, TYPE_COUNT);
-
     jit_gc_scan_ptr = jit_init();
     make_gc_scan_ptr(jit_gc_scan_ptr, type_table, TYPE_COUNT);
+	
+    jit_gc_scan_struct = jit_init();
+    make_gc_scan_struct(jit_gc_scan_struct, type_table, TYPE_COUNT);
+
+    jit_gc_walk_array = jit_init();
+    make_gc_walk_array(jit_gc_walk_array, type_table, TYPE_COUNT);
     
     return 0;
 }
@@ -80,6 +88,7 @@ int gc_generated_cleanup()
     //Release generated assembly code
     jit_free(jit_gc_walk_array);
     jit_free(jit_gc_scan_ptr);
+    jit_free(jit_gc_scan_struct);
 }
 
 /**
@@ -527,6 +536,177 @@ jit_patch(p, has_forward);
 	return 0;
 }
 
+#define ARRAY_BLOCK_OFFSET  sizeof(block_t)
+#define ATOM_BLOCK_OFFSET sizeof(uint64_t)
+int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
+{
+	//INPUT
+	// R_PTR - pointer to struct
+	// R_TYPE - type num
+	
+	//USED
+	// R_IF - scanned pointer
+	// R_BLOCK - block pointer
+  	// R_LOOP - array size (old mem), original pointer (forwarded)
+	// R_IS_ARRAY - forwarding address
+
+	if(info->number_of_references > 0)
+    	{
+		int i;
+		//Patch the current switch label and forwared declare the next        
+		if(current != NULL)
+		{
+		    jit_patch(p, current);
+		}
+		*next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+
+		for(i = 0; i < info->number_of_references; i++)
+        	{
+			size_t  offset;
+			uint64_t type;
+			int is_array;
+			jit_op *if_end, *old_mem, *forwarded, *end;
+
+			offset = info->references[i].offset;
+			type = ptr_info_get_type(&info->references[i]);
+			is_array = ptr_info_is_array(&info->references[i]);
+
+			jit_movr(p, R_IF, R_PTR);
+			jit_addi(p, R_IF, R_IF, offset);
+			jit_ldr(p, R_IS_ARRAY, R_IF, sizeof(void*));
+
+			JIT_JMP_IS_OLD_MEM(p, old_mem, R_LOOP, R_IS_ARRAY);
+			if_end = jit_jmpi(p, JIT_FORWARD);
+			jit_patch(p, old_mem);
+
+				jit_movr(p, R_BLOCK, R_IF);
+				jit_ldr(p, R_BLOCK, R_BLOCK, sizeof(block_t*));
+				jit_subi(p, R_BLOCK, R_BLOCK, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
+
+				JIT_JMP_BLOCK_HAS_FORWARD(p, forwarded, R_LOOP, R_BLOCK);				
+					
+					if(is_array)
+					{
+						JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
+						jit_muli(p, R_LOOP, R_LOOP, type_table[type].size);
+						jit_addi(p, R_LOOP, R_LOOP, sizeof(block_t));
+
+						jit_prepare(p);
+						jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
+						jit_putargr(p, R_LOOP);
+						jit_call(p, gc_cheney_base_get_mem);
+						jit_retval(p, R_IS_ARRAY);
+
+						jit_prepare(p);
+						jit_putargr(p, R_IS_ARRAY);
+						jit_putargr(p, R_BLOCK);
+						jit_putargr(p, R_LOOP);
+						jit_call(p, memcpy);
+					}
+					else
+					{
+						jit_prepare(p);
+						jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
+						jit_putargi(p, type_table[type].size - sizeof(uint64_t));
+						jit_call(p, gc_cheney_base_get_mem);
+						jit_retval(p, R_IS_ARRAY);
+
+						jit_prepare(p);
+						jit_putargr(p, R_IS_ARRAY);
+						jit_putargr(p, R_BLOCK);
+						jit_putargi(p, type_table[type].size + sizeof(uint64_t));
+						jit_call(p, memcpy);
+					}
+
+					jit_prepare(p);
+					jit_putargr(p, R_BLOCK);
+					jit_putargr(p, R_IS_ARRAY);
+					jit_call(p, block_set_forward);
+					
+					jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
+					jit_str(p, R_IF, R_IS_ARRAY, sizeof(void*));
+
+					end = jit_jmpi(p, JIT_FORWARD);
+				
+				jit_patch(p, forwarded);
+					
+					//Not Old mem
+					jit_ldr(p, R_LOOP, R_IF, sizeof(void*));
+
+					jit_movr(p, R_IS_ARRAY, R_BLOCK);
+					jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(uint64_t));
+					jit_ldr(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(void*));
+	
+					jit_prepare(p);
+					jit_putargr(p, R_LOOP);
+					jit_putargr(p, R_BLOCK);
+					jit_putargr(p, R_IS_ARRAY);
+					jit_call(p, gc_cheney_base_get_forwarding_addr);
+					jit_retval(p, R_LOOP);
+
+					jit_str(p, R_IF, R_LOOP, sizeof(void*));
+
+			jit_patch(p, if_end);
+			jit_patch(p, end);
+		}		
+
+		//Declare another switch end label
+		*end = jit_jmpi(p, JIT_FORWARD);
+	}
+	
+	return 0;
+}
+
+int make_gc_scan_struct(struct jit *p, type_info_t type_table[], size_t type_count)
+{
+	jit_op *current, *next, **ends;
+	int i;
+
+	jit_prolog(p, &gc_generated_scan_struct);
+
+	jit_declare_arg(p, JIT_PTR, sizeof(void*));
+	jit_declare_arg(p, JIT_SIGNED_NUM, sizeof(int));
+
+	jit_getarg(p, R_PTR, 0);
+	jit_getarg(p, R_TYPE, 1);
+
+	current = NULL;
+	next = NULL;
+	ends = (jit_op**)calloc(type_count, sizeof(jit_op*));
+
+	for(i = 0; i < type_count; i++)
+	{
+		make_gc_scan_struct_per_type(p, &type_table[i], i, current, &next, &ends[i]);
+		if(next != NULL)
+		{
+			current = next;
+			next = NULL;
+		}
+	}
+
+	jit_patch(p, current);
+	
+	for(i = 0; i < type_count; i++)
+	{
+		if(ends[i] != NULL)
+		{
+			jit_patch(p, ends[i]);
+		}
+	}	
+
+	jit_reti(p, 0x0);
+
+	free(ends);	
+
+	//////////////////////////////////////FOOTER///////////////////////////
+	//jit_disable_optimization(p, JIT_OPT_ALL);
+	jit_check_code(p, JIT_WARN_ALL);
+	jit_generate_code(p);
+	//jit_dump_ops(p, JIT_DEBUG_OPS);//TODO remove
+	////////////////////////////////////FOOTER END/////////////////////////
+	return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //            TODO GENERATE CODE FOR FOLLOWING FUNCTIONS                     //
 ///////////////////////////////////////////////////////////////////////////////
@@ -592,129 +772,7 @@ int gc_generated_walk_struct(block_t *block)
     gc_generated_scan_struct(get_data_start(block), block_get_type(block));
 }
 
-/*void *gc_generated_scan_ptr(void *ptr, uint64_t type, int is_array)
-{
-	block_t *block;
-	block = (block_t*)((art_ptr_t)ptr - (is_array ? 16 : 8));
-	if(gc_cheney_base_is_old_mem(block))
-	{
-				if(!block_has_forward(block))
-				{
-					block_t *dst;
-					if(is_array)
-					{
-						size_t byte_size;
-						switch(block_get_type(block))
-						{
-						case 4:
-							byte_size = block_get_array_size(block) * 8;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 7:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 8:
-							byte_size = block_get_array_size(block) * 16;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 9:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 5:
-							byte_size = block_get_array_size(block) * 8;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 2:
-							byte_size = block_get_array_size(block) * 4;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 6:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 10:
-							byte_size = block_get_array_size(block) * 16;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 11:
-							byte_size = block_get_array_size(block) * 352;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						default:
-						{
-							size_t block_size = block_get_size(block);
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-							memcpy(dst, block, block_size);
-						}
-						}
-					}
-					else
-					{
-						switch(block_get_type(block))
-						{
-						case 4:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 7:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 8:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-							memcpy(dst, block, 24);
-							break;
-						case 9:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 5:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 2:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 6:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 10:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-							memcpy(dst, block, 24);
-							break;
-						case 11:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-							memcpy(dst, block, 360);
-							break;
-						default:
-						{
-							size_t block_size = block_get_size(block);
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-							memcpy(dst, block, block_size);
-						}
-						}
-					}
-					block_set_forward(block, dst);
-				}
-			return gc_cheney_base_get_forwarding_addr(ptr, block, block_get_forward(block));
-	}
-	return NULL;
-}*/
-
-int gc_generated_scan_struct(void *ptr, int type)
+/*int gc_generated_scan_struct(void *ptr, int type)
 {
 	block_t *block;
 	void *dst, **scanned;
@@ -1089,4 +1147,4 @@ int gc_generated_scan_struct(void *ptr, int type)
 		break;
 	}
 	return 0;
-}
+}*/
