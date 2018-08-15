@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gcs=(cheney custom)
+gcs=(cheney custom generated)
 tests=(short_lived long_lived long_lived_almost_full long_lived_no_replace large_structure)
 
 #Run the experiment

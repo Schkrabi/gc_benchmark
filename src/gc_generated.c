@@ -698,10 +698,10 @@ int make_gc_scan_struct(struct jit *p, type_info_t type_table[], size_t type_cou
 	free(ends);	
 
 	//////////////////////////////////////FOOTER///////////////////////////
-	jit_disable_optimization(p, JIT_OPT_ALL);
-	jit_check_code(p, JIT_WARN_ALL);
+	//jit_disable_optimization(p, JIT_OPT_ALL);
+	//jit_check_code(p, JIT_WARN_ALL);
 	jit_generate_code(p);
-	jit_dump_ops(p, JIT_DEBUG_OPS);//TODO remove
+	//jit_dump_ops(p, JIT_DEBUG_OPS);//TODO remove
 	////////////////////////////////////FOOTER END/////////////////////////
 	return 0;
 }

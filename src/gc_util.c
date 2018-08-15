@@ -488,7 +488,7 @@ int dump_semispace(FILE *file, void* semispace_ptr)
     int sum, tmp;
     
     fprintf(file, "Dumping semispace %p\n", semispace_ptr);
-    for(block = semispace_ptr; block < gc_cheney_base_semispace_limit(semispace_ptr); block = next_block(block))
+    for(block = semispace_ptr; block < (block_t*)gc_cheney_base_semispace_limit(semispace_ptr); block = next_block(block))
     {
         tmp = dump_block(file, block);
         if(tmp < 0)
