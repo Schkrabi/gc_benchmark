@@ -15,12 +15,15 @@
 #include "gc_util.h"
 #include <syslog.h>
 #include <string.h>
+#include <stdio.h>
+#include "gc_cheney_base.h"
 
 /**
  * Logging macros uncomment to log specific functionality
  */
 //#define LOG_ALLOCATION
 #define LOG_COLLECTION
+#define LOG_MEM_DUMP
 
  /**
  * Byte indicating which garbage collector is used
@@ -29,6 +32,11 @@ char used_gc;
 
 #ifdef LOG_COLLECTION
 size_t collection_no = 0;
+#endif
+
+#ifdef LOG_MEM_DUMP
+FILE *mem_dump_file;
+#define MEM_DUMP_FILE_NAME "dump"
 #endif
 
 /**
@@ -60,6 +68,9 @@ int parse_gc_arg(const char *arg)
  */
 int gc_init()
 {
+#ifdef LOG_MEM_DUMP
+	mem_dump_file = fopen(MEM_DUMP_FILE_NAME, "w+");
+#endif
   switch(used_gc)
   {
     XCOLLECTOR_TABLE(__XCOLLECTOR_INIT)
@@ -75,6 +86,9 @@ int gc_init()
  */
 int gc_cleanup()
 {
+#ifdef LOG_MEM_DUMP
+	fclose(mem_dump_file);
+#endif
     switch(used_gc)
     {
         XCOLLECTOR_TABLE(__XCOLLECTOR_CLEANUP)
@@ -130,6 +144,12 @@ int gc_collect()
 {
     int rtrno;
     
+#ifdef LOG_MEM_DUMP
+	flin_mem_dump(mem_dump_file, gc_cheney_base_from_space, SEMISPACE_SIZE);
+	fputc('\n', mem_dump_file);
+	flin_mem_dump(mem_dump_file, gc_cheney_base_to_space, SEMISPACE_SIZE);
+	fputc('\n', mem_dump_file);
+#endif
 #ifdef LOG_COLLECTION
     //Logging start of the collection, collection id, tick time, available free memory, 
     gc_log(LOG_INFO, "CS %u %u %u", (unsigned)collection_no, (unsigned)clock(), (unsigned)gc_remaining_space()); 
@@ -145,6 +165,12 @@ int gc_collect()
     //Logging end of the collection, collection id, tick time, available free memory, 
     gc_log(LOG_INFO, "CE %u %u %u", (unsigned) collection_no, (unsigned)clock(), (unsigned)gc_remaining_space());
     collection_no++;
+#endif
+#ifdef LOG_MEM_DUMP
+	flin_mem_dump(mem_dump_file, gc_cheney_base_from_space, SEMISPACE_SIZE);
+	fputc('\n', mem_dump_file);
+	flin_mem_dump(mem_dump_file, gc_cheney_base_to_space, SEMISPACE_SIZE);
+	fputc('\n', mem_dump_file);
 #endif
     
     return rtrno;

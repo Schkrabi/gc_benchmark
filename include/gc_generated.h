@@ -147,7 +147,7 @@ int make_gc_scan_struct(struct jit *p, type_info_t type_table[], size_t type_cou
 int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end);
 
 //global ptr to hookup the 	jit_op's in macros
- extern jit_op 	*__jit_op_macro_after1,
+ extern jit_op *__jit_op_macro_after1,
         *__jit_op_macro_after2,
         *__jit_op_macro_after3;
 
@@ -241,11 +241,11 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
 	jit_patch(p, __jit_op_macro_after1)
 
 #define JIT_JMP_IS_OLD_MEM(p, label, R_DST, R_SRC)\
-	__jit_op_macro_after1 = jit_blti(p, JIT_FORWARD, R_SRC, (uint64_t)gc_cheney_base_from_space);\
-	jit_movi(p, R_DST, (uint64_t)gc_cheney_base_from_space);\
-	jit_addi(p, R_DST, R_DST, SEMISPACE_SIZE);\
-	label = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
-	jit_patch(p, __jit_op_macro_after1)
+    jit_ldi(p, R_DST, &gc_cheney_base_from_space, sizeof(uint64_t));\
+    __jit_op_macro_after1 = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
+    jit_addi(p, R_DST, R_DST, SEMISPACE_SIZE);\
+    label = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
+    jit_patch(p, __jit_op_macro_after1)
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  HOOKUP POINTERS FOR GENERADED CODE                       //

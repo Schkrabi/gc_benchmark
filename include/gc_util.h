@@ -185,4 +185,34 @@ static inline unsigned long long int rdtsc();
  * @returns always 0
  */
 int lin_mem_dump(void *ptr, size_t size);
+
+/**
+ * Prints into a file each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par file target file
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns nonnegative number on success, or EOF on error.
+ */
+int flin_mem_dump(FILE *file, void *ptr, size_t mem_size);
+
+/**
+ * Prints into a string each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par buff string to be printed into
+ * @par buff_size max length of a buffer
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns pointer to printed string
+ */
+char* slin_mem_dump(char* buff, size_t buff_size, void *ptr, size_t mem_size);
+
+/**
+ * Initializes block of memory with given values in the dump format
+ * @par ptr pointer to part of memory
+ * @par mem_size size of the initailized memory
+ * @oar str string with the dump of memory to be initialized by
+ * @returns Always 0
+ */
+int init_mem_from_string(void *ptr, size_t mem_size, const char* str);
 #endif

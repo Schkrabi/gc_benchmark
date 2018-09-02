@@ -679,16 +679,89 @@ static inline unsigned long long int rdtsc()
  * @remark For debugging purposes
  * @par ptr pointer to memory
  * @par size length of memory to be printed in bytes
- * @returns always 0
+ * @returns nonnegative number on success, or EOF on error.
  */
 int lin_mem_dump(void *ptr, size_t size)
 {
-	size_t i;
+	return flin_mem_dump(stdout, ptr, size);	
+}
+
+#define MAX_DUMP_DIGIT_LEN 20
+
+/**
+ * Prints into a file each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par file target file
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns nonnegative number on success, or EOF on error.
+ */
+int flin_mem_dump(FILE *file, void *ptr, size_t mem_size)
+{
+	char *buff;
+	size_t buff_size = MAX_DUMP_DIGIT_LEN * (mem_size/sizeof(uint64_t));
+
+	buff = (char*)calloc(buff_size, sizeof(char));
+	slin_mem_dump(buff, buff_size, ptr, mem_size);
 	
-	for(i = 0; i < size; i += sizeof(uint64_t))
+	return fputs(buff, file);
+}
+
+/**
+ * Prints into a string each 8 bytes of memory as hexadecimal 64-bit number
+ * @remark For debugging purposes
+ * @par buff string to be printed into
+ * @par buff_size max length of a buffer
+ * @par ptr pointer to memory
+ * @par size length of memory to be printed in bytes
+ * @returns pointer to printed string
+ */
+char* slin_mem_dump(char* buff, size_t buff_size, void *ptr, size_t mem_size)
+{
+	size_t i, j;
+	j = 0;
+	
+	for(i = 0; i < mem_size && j < buff_size; i += sizeof(uint64_t))
 	{
-		printf("| %" PRIx64 " ", *((uint64_t*)((art_ptr_t)ptr + i)));
+		j += sprintf((char*)((art_ptr_t)buff + j), "%" PRIx64 " |", *((uint64_t*)((art_ptr_t)ptr + i)));
 	}
-	printf("\n");
-	return 0;	
+	buff[buff_size - 1] = '\0';
+	return buff;	
+}
+
+/**
+ * Initializes block of memory with given values in the dump format
+ * @par ptr pointer to part of memory
+ * @par mem_size size of the initailized memory
+ * @oar str string with the dump of memory to be initialized by
+ * @returns Always 0
+ */
+int init_mem_from_string(void *ptr, size_t mem_size, const char* str)
+{
+	char *end_of_num, *bgn_of_num;
+	uint64_t *current;
+	void *end;
+	size_t len;
+
+	end = (void*)((art_ptr_t)ptr + mem_size);
+	current = ptr;
+
+	bgn_of_num = str;
+		
+	while(current < end)
+	{
+		uint64_t num;
+		num = strtoll(bgn_of_num, &end_of_num, 16);
+
+		*current = num;
+		if(	end_of_num == NULL
+		||	*end_of_num == '\0')
+		{
+			break;
+		}		
+		
+		bgn_of_num = (char*)((art_ptr_t)end_of_num + 2);
+		current = (uint64_t*)((art_ptr_t)current + sizeof(uint64_t));
+	}
+	return 0;
 }
