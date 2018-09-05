@@ -25,6 +25,8 @@ struct jit *jit_gc_scan_struct;
  jit_op *__jit_op_macro_after1,
         *__jit_op_macro_after2,
         *__jit_op_macro_after3;
+        
+size_t __jit_memcpy_aux_size;
 
 /**
  * Pointer for hookup of dynamicaly generated code
@@ -299,41 +301,36 @@ jit_patch(p, if_end);
  */
 int make_gc_scan_ptr_per_type_atom(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
 {
-	//INPUT
-	// R_BLOCK - ptr to block
-	// R_TYPE - type num
+    //INPUT
+    // R_BLOCK - ptr to block
+    // R_TYPE - type num
 
-	//USED R_IF
+    //USED R_IF
 
-	//OUTPUT
-	// R_IF - pointer where data was copied to
-	
-	//Patch the current switch label and forwared declare the next        
-	if(current != NULL)
-	{
-	    jit_patch(p, current);
-	}
+    //OUTPUT
+    // R_IF - pointer where data was copied to
+    
+    //Patch the current switch label and forwared declare the next        
+    if(current != NULL)
+    {
+        jit_patch(p, current);
+    }
 
-	*next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+    *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
 
-	//call gc_cheney_base_get_mem	
-	jit_prepare(p);
-	jit_putargi(p, &gc_cheney_base_remaining_to_space);
-	jit_putargi(p, atom_alloc_size(info));
-	jit_call(p, gc_cheney_base_get_mem);
-	jit_retval(p, R_IF); 
+    //call gc_cheney_base_get_mem	
+    jit_prepare(p);
+    jit_putargi(p, &gc_cheney_base_remaining_to_space);
+    jit_putargi(p, atom_alloc_size(info));
+    jit_call(p, gc_cheney_base_get_mem);
+    jit_retval(p, R_IF); 
 
-	//call memcpy
-	jit_prepare(p);
-	jit_putargr(p, R_IF);
-	jit_putargr(p, R_BLOCK);
-	jit_putargi(p, (uint64_t)(atom_alloc_size(info) + sizeof(block_t)));
-	jit_call(p, memcpy);
+    JIT_MEMCPY_CONST_SIZE(p, R_IF, R_BLOCK, R_LOOP, (uint64_t)(atom_alloc_size(info) + sizeof(block_t)));
 
-	//Declare another switch end label
-	*end = jit_jmpi(p, JIT_FORWARD);
+    //Declare another switch end label
+    *end = jit_jmpi(p, JIT_FORWARD);
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -347,45 +344,41 @@ int make_gc_scan_ptr_per_type_atom(struct jit *p, type_info_t *info, int type_nu
  */
 int make_gc_scan_ptr_per_type_array(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
 {
-	//INPUT
-	// R_BLOCK - ptr to block
-	// R_TYPE - type num
-	
-	//USED
-	// R_IF
-	// R_LOOP
-	//OUTPUT
-	// R_IF - pointer where data was copied to
+    //INPUT
+    // R_BLOCK - ptr to block
+    // R_TYPE - type num
+    
+    //USED
+    // R_IF
+    // R_LOOP
+    //OUTPUT
+    // R_IF - pointer where data was copied to
 
-	//Patch the current switch label and forwared declare the next        
-	if(current != NULL)
-	{
-	    jit_patch(p, current);
-	}
-	*next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+    //Patch the current switch label and forwared declare the next        
+    if(current != NULL)
+    {
+        jit_patch(p, current);
+    }
+    *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
 
-	JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
-	
-	jit_muli(p, R_LOOP, R_LOOP, (uint64_t)(info->size));
-	
-	jit_prepare(p);
-	jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
-	jit_putargr(p, R_LOOP);
-	jit_call(p, gc_cheney_base_get_mem);
-	jit_retval(p, R_IF);
-	
-	jit_addi(p, R_LOOP, R_LOOP, (uint64_t)sizeof(block_t));
+    JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
+    
+    jit_muli(p, R_LOOP, R_LOOP, (uint64_t)(info->size));
+    
+    jit_prepare(p);
+    jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
+    jit_putargr(p, R_LOOP);
+    jit_call(p, gc_cheney_base_get_mem);
+    jit_retval(p, R_IF);
+    
+    jit_addi(p, R_LOOP, R_LOOP, (uint64_t)sizeof(block_t));
 
-	jit_prepare(p);
-	jit_putargr(p, R_IF);
-	jit_putargr(p, R_BLOCK);
-	jit_putargr(p, R_LOOP);
-	jit_call(p, memcpy);
+    JIT_MEMCPY_DYNAMIC_SIZE(p, R_IF, R_BLOCK, R_ACTIVE, R_LOOP);
 
-	//Declare another switch end label
-	*end = jit_jmpi(p, JIT_FORWARD);
-	
-	return 0;
+    //Declare another switch end label
+    *end = jit_jmpi(p, JIT_FORWARD);
+    
+    return 0;
 }
 
 /**
@@ -540,120 +533,116 @@ jit_patch(p, has_forward);
 #define ATOM_BLOCK_OFFSET sizeof(uint64_t)
 int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
 {
-	//INPUT
-	// R_PTR - pointer to struct
-	// R_TYPE - type num
-	
-	//USED
-	// R_IF - scanned pointer
-	// R_BLOCK - block pointer
-  	// R_LOOP - array size (old mem), original pointer (forwarded)
-	// R_IS_ARRAY - forwarding address
+    //INPUT
+    // R_PTR - pointer to struct
+    // R_TYPE - type num
+    
+    //USED
+    // R_IF - scanned pointer
+    // R_BLOCK - block pointer
+    // R_LOOP - array size (old mem), original pointer (forwarded)
+    // R_IS_ARRAY - forwarding address
+    // R_ACTIVE - "dirty" register for dynamic size memcpy
 
-	if(info->number_of_references > 0)
-    	{
-		int i;
-		//Patch the current switch label and forwared declare the next        
-		if(current != NULL)
-		{
-		    jit_patch(p, current);
-		}
-		*next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+    if(info->number_of_references > 0)
+    {
+        int i;
+        //Patch the current switch label and forwared declare the next        
+        if(current != NULL)
+        {
+            jit_patch(p, current);
+        }
+        *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
 
-		for(i = 0; i < info->number_of_references; i++)
-        	{
-			size_t  offset;
-			uint64_t type;
-			int is_array;
-			jit_op *if_end, *old_mem, *forwarded, *end;
+        for(i = 0; i < info->number_of_references; i++)
+        {
+            size_t  offset;
+            uint64_t type;
+            int is_array;
+            jit_op *if_end, *old_mem, *forwarded, *end;
 
-			offset = info->references[i].offset;
-			type = ptr_info_get_type(&info->references[i]);
-			is_array = ptr_info_is_array(&info->references[i]);
+            offset = info->references[i].offset;
+            type = ptr_info_get_type(&info->references[i]);
+            is_array = ptr_info_is_array(&info->references[i]);
 
-			jit_movr(p, R_IF, R_PTR);
-			jit_addi(p, R_IF, R_IF, offset);
-			jit_ldr(p, R_IS_ARRAY, R_IF, sizeof(void*));
+            jit_movr(p, R_IF, R_PTR);
+            jit_addi(p, R_IF, R_IF, offset);
+            jit_ldr(p, R_IS_ARRAY, R_IF, sizeof(void*));
 
-			JIT_JMP_IS_OLD_MEM(p, old_mem, R_LOOP, R_IS_ARRAY);
-			if_end = jit_jmpi(p, JIT_FORWARD);
-			jit_patch(p, old_mem);
+            JIT_JMP_IS_OLD_MEM(p, old_mem, R_LOOP, R_IS_ARRAY);
+            if_end = jit_jmpi(p, JIT_FORWARD);
+            jit_patch(p, old_mem);
 
-				jit_movr(p, R_BLOCK, R_IF);
-				jit_ldr(p, R_BLOCK, R_BLOCK, sizeof(block_t*));
-				jit_subi(p, R_BLOCK, R_BLOCK, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
+                jit_movr(p, R_BLOCK, R_IF);
+                jit_ldr(p, R_BLOCK, R_BLOCK, sizeof(block_t*));
+                jit_subi(p, R_BLOCK, R_BLOCK, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
 
-				JIT_JMP_BLOCK_HAS_FORWARD(p, forwarded, R_LOOP, R_BLOCK);				
-					
-					if(is_array)
-					{
-						JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
-						jit_muli(p, R_LOOP, R_LOOP, type_table[type].size);
+                JIT_JMP_BLOCK_HAS_FORWARD(p, forwarded, R_LOOP, R_BLOCK);
+                                    
+                if(is_array)
+                {
+                    jit_op *loop_start, *loop_end;
+                    
+                    JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
+                    jit_muli(p, R_LOOP, R_LOOP, type_table[type].size);
 
-						jit_prepare(p);
-						jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
-						jit_putargr(p, R_LOOP);
-						jit_call(p, gc_cheney_base_get_mem);
-						jit_retval(p, R_IS_ARRAY);
+                    jit_prepare(p);
+                    jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
+                    jit_putargr(p, R_LOOP);
+                    jit_call(p, gc_cheney_base_get_mem);
+                    jit_retval(p, R_IS_ARRAY);
 
-						jit_prepare(p);
-						jit_putargr(p, R_IS_ARRAY);
-						jit_putargr(p, R_BLOCK);
-						jit_putargr(p, R_LOOP);
-						jit_call(p, memcpy);
-					}
-					else
-					{
-						jit_prepare(p);
-						jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
-						jit_putargi(p, type_table[type].size - sizeof(uint64_t));
-						jit_call(p, gc_cheney_base_get_mem);
-						jit_retval(p, R_IS_ARRAY);
+                    JIT_MEMCPY_DYNAMIC_SIZE(p, R_IS_ARRAY, R_BLOCK, R_ACTIVE, R_LOOP);
+                    
+                }
+                else
+                {
+                    jit_prepare(p);
+                    jit_putargi(p, (void**)&gc_cheney_base_remaining_to_space);
+                    jit_putargi(p, type_table[type].size - sizeof(uint64_t));
+                    jit_call(p, gc_cheney_base_get_mem);
+                    jit_retval(p, R_IS_ARRAY);
 
-						jit_prepare(p);
-						jit_putargr(p, R_IS_ARRAY);
-						jit_putargr(p, R_BLOCK);
-						jit_putargi(p, type_table[type].size + sizeof(uint64_t));
-						jit_call(p, memcpy);
-					}
+                    JIT_MEMCPY_CONST_SIZE(p, R_IS_ARRAY, R_BLOCK, R_LOOP, type_table[type].size + sizeof(uint64_t));
+                }
 
-					jit_prepare(p);
-					jit_putargr(p, R_BLOCK);
-					jit_putargr(p, R_IS_ARRAY);
-					jit_call(p, block_set_forward);
-					
-					jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
-					jit_str(p, R_IF, R_IS_ARRAY, sizeof(void*));
+                jit_prepare(p);
+                jit_putargr(p, R_BLOCK);
+                jit_putargr(p, R_IS_ARRAY);
+                jit_call(p, block_set_forward);
+                
+                jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
+                jit_str(p, R_IF, R_IS_ARRAY, sizeof(void*));
 
-					end = jit_jmpi(p, JIT_FORWARD);
-				
-				jit_patch(p, forwarded);
-					
-					//Not Old mem
-					jit_ldr(p, R_LOOP, R_IF, sizeof(void*));
+                end = jit_jmpi(p, JIT_FORWARD);
+                        
+            jit_patch(p, forwarded);
+                                
+                //Not Old mem
+                jit_ldr(p, R_LOOP, R_IF, sizeof(void*));
 
-					jit_movr(p, R_IS_ARRAY, R_BLOCK);
-					jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(uint64_t));
-					jit_ldr(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(void*));
-	
-					jit_prepare(p);
-					jit_putargr(p, R_LOOP);
-					jit_putargr(p, R_BLOCK);
-					jit_putargr(p, R_IS_ARRAY);
-					jit_call(p, gc_cheney_base_get_forwarding_addr);
-					jit_retval(p, R_LOOP);
+                jit_movr(p, R_IS_ARRAY, R_BLOCK);
+                jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(uint64_t));
+                jit_ldr(p, R_IS_ARRAY, R_IS_ARRAY, sizeof(void*));
 
-					jit_str(p, R_IF, R_LOOP, sizeof(void*));
+                jit_prepare(p);
+                jit_putargr(p, R_LOOP);
+                jit_putargr(p, R_BLOCK);
+                jit_putargr(p, R_IS_ARRAY);
+                jit_call(p, gc_cheney_base_get_forwarding_addr);
+                jit_retval(p, R_LOOP);
 
-			jit_patch(p, if_end);
-			jit_patch(p, end);
-		}		
+                jit_str(p, R_IF, R_LOOP, sizeof(void*));
 
-		//Declare another switch end label
-		*end = jit_jmpi(p, JIT_FORWARD);
-	}
-	
-	return 0;
+            jit_patch(p, if_end);
+            jit_patch(p, end);
+        }
+
+        //Declare another switch end label
+        *end = jit_jmpi(p, JIT_FORWARD);
+    }
+    
+    return 0;
 }
 
 int make_gc_scan_struct(struct jit *p, type_info_t type_table[], size_t type_count)

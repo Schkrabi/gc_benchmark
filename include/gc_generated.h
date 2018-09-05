@@ -151,6 +151,9 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
         *__jit_op_macro_after2,
         *__jit_op_macro_after3;
 
+//global size variable for memcpy macro        
+extern size_t __jit_memcpy_aux_size;
+
 #define JIT_BLOCK_GET_TYPE(p, R_TARGET, R_SRC) \
     jit_ldr(p, R_TARGET, R_SRC, sizeof(uint64_t));\
     jit_andi(p, R_TARGET, R_TARGET, ELEMENT_TYPE_BIT_MASK)
@@ -246,6 +249,22 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
     jit_addi(p, R_DST, R_DST, SEMISPACE_SIZE);\
     label = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
     jit_patch(p, __jit_op_macro_after1)
+    
+#define JIT_MEMCPY_CONST_SIZE(p, R_DST_PTR, R_SRC_PTR, R_TMP, size)\
+    for(__jit_memcpy_aux_size = 0; __jit_memcpy_aux_size < size; __jit_memcpy_aux_size += sizeof(uint64_t))\
+    {\
+        jit_ldxi_u(p, R_TMP, R_SRC_PTR, __jit_memcpy_aux_size, sizeof(uint64_t));\
+        jit_stxi(p, __jit_memcpy_aux_size, R_DST_PTR, R_TMP, sizeof(uint64_t));\
+    }
+    
+#define JIT_MEMCPY_DYNAMIC_SIZE(p, R_DST_PTR, R_SRC_PTR, R_TMP, R_SIZE)\
+    __jit_op_macro_after1 = jit_get_label(p);\
+    __jit_op_macro_after2 = jit_blei(p, JIT_FORWARD, R_SIZE, 0);\
+        jit_subi(p, R_SIZE, R_SIZE, sizeof(uint64_t));\
+        jit_ldxr_u(p, R_TMP, R_SRC_PTR, R_SIZE, sizeof(uint64_t));\
+        jit_stxr(p, R_SIZE, R_DST_PTR, R_TMP, sizeof(uint64_t));\
+        jit_jmpi(p, __jit_op_macro_after1);\
+    jit_patch(p, __jit_op_macro_after2)
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  HOOKUP POINTERS FOR GENERADED CODE                       //
