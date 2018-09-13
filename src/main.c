@@ -21,6 +21,7 @@
 #include "benchmark.h"
 #include <unistd.h>
 #include "test.h"
+#include "graph.h"
 
 #define GC_CLEANUP_ERR 0x1
 #define TYPE_CLEANUP_ERR 0x2
@@ -276,6 +277,7 @@ int sub_main(unsigned test_num, unsigned seed)
             cdlist_test();
             tarray_test();
             large_structure_test();
+            test_graphs();
             mem_dump(stdout);
             break;
         case TEST_SHORT_LIVED:

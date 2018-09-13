@@ -12,6 +12,7 @@
 #include "cdouble_list.h"
 #include "tarray.h"
 #include "large_structure.h"
+#include "graph.h"
 
 type_info_t type_table[TYPE_COUNT];
 
@@ -105,6 +106,7 @@ int init_type_table()
     cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);  
     tarray_make_descriptor(&type_table[TYPE_TARRAY_T]);
     large_structure_make_descriptor(&type_table[TYPE_LARGE_STRUCTURE_T]);
+    graph_framework_make_descriptors(&type_table[TYPE_GRAPH_T], &type_table[TYPE_GRAPH_NODE_T], &type_table[TYPE_GRAPH_EDGE_T]);
     
     return 0;
 }
