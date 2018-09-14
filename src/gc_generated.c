@@ -198,7 +198,7 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
         {
             jit_patch(p, current);
         }
-	*next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+	*next = jit_bnei(p, (jit_value)JIT_FORWARD, R_TYPE, type_num);
         
         //Call for get_data_start(block)
         JIT_GET_DATA_START(p, R_PTR, R_BLOCK);
@@ -208,7 +208,7 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
         
         //for cyclle
         jit_label *for_label = jit_get_label(p);
-        jit_op *loop_end = jit_bger_u(p, JIT_FORWARD, R_PTR, R_LOOP);
+        jit_op *loop_end = jit_bger_u(p, (jit_value)JIT_FORWARD, R_PTR, R_LOOP);
         
             //jit_msg(p, "loop");
             jit_prepare(p);
@@ -223,7 +223,7 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
         
         jit_patch(p, loop_end);
         //Declare another switch end label
-        *end = jit_jmpi(p, JIT_FORWARD);
+        *end = jit_jmpi(p, (jit_value)JIT_FORWARD);
     }
     return 0;
 }
@@ -251,7 +251,7 @@ int make_gc_walk_array(struct jit *p, type_info_t type_table[], size_t type_coun
 	jit_call(p, block_is_struct_block);
 	jit_retval(p, R_IF);
 
-	jit_op *if_end = jit_beqi(p, JIT_FORWARD, R_IF, 0x0);
+	jit_op *if_end = jit_beqi(p, (jit_value)JIT_FORWARD, R_IF, 0x0);
 
 	JIT_BLOCK_GET_TYPE(p, R_TYPE, R_BLOCK);
 
@@ -316,7 +316,7 @@ int make_gc_scan_ptr_per_type_atom(struct jit *p, type_info_t *info, int type_nu
         jit_patch(p, current);
     }
 
-    *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+    *next = jit_bnei(p, (jit_value)JIT_FORWARD, R_TYPE, type_num);
 
     //call gc_cheney_base_get_mem	
     jit_prepare(p);
@@ -328,7 +328,7 @@ int make_gc_scan_ptr_per_type_atom(struct jit *p, type_info_t *info, int type_nu
     JIT_MEMCPY_CONST_SIZE(p, R_IF, R_BLOCK, R_LOOP, (uint64_t)(atom_alloc_size(info) + sizeof(block_t)));
 
     //Declare another switch end label
-    *end = jit_jmpi(p, JIT_FORWARD);
+    *end = jit_jmpi(p, (jit_value)JIT_FORWARD);
 
     return 0;
 }
@@ -359,7 +359,7 @@ int make_gc_scan_ptr_per_type_array(struct jit *p, type_info_t *info, int type_n
     {
         jit_patch(p, current);
     }
-    *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+    *next = jit_bnei(p, (jit_value)JIT_FORWARD, R_TYPE, type_num);
 
     JIT_GET_ARRAY_SIZE_ACTIVE_BLOCK(p, R_LOOP, R_BLOCK);
     
@@ -376,7 +376,7 @@ int make_gc_scan_ptr_per_type_array(struct jit *p, type_info_t *info, int type_n
     JIT_MEMCPY_DYNAMIC_SIZE(p, R_IF, R_BLOCK, R_ACTIVE, R_LOOP);
 
     //Declare another switch end label
-    *end = jit_jmpi(p, JIT_FORWARD);
+    *end = jit_jmpi(p, (jit_value)JIT_FORWARD);
     
     return 0;
 }
@@ -425,9 +425,9 @@ int make_gc_scan_ptr(struct jit *p, type_info_t type_table[], size_t type_count)
 jit_patch(p, old_mem);
 
 	//Compute block ptr
-	not_array_block = jit_beqi(p, JIT_FORWARD, R_IS_ARRAY, 0x0);
+	not_array_block = jit_beqi(p, (jit_value)JIT_FORWARD, R_IS_ARRAY, 0x0);
 	jit_subi(p, R_BLOCK, R_PTR, sizeof(block_t));
-	array_block = jit_jmpi(p, JIT_FORWARD);
+	array_block = jit_jmpi(p, (jit_value)JIT_FORWARD);
 	
 jit_patch(p, not_array_block);
 	jit_subi(p, R_BLOCK, R_PTR, sizeof(uint64_t));
@@ -435,7 +435,7 @@ jit_patch(p, not_array_block);
 jit_patch(p, array_block);
 	//Is block forwarded?
 	jit_ldr(p, R_IF, R_BLOCK, sizeof(uint64_t));
-	has_forward = jit_beqi(p, JIT_FORWARD, R_IF, TYPE_FORWARD);
+	has_forward = jit_beqi(p, (jit_value)JIT_FORWARD, R_IF, TYPE_FORWARD);
 
 	//Get type of a block
 	jit_ldr(p, R_TYPE, R_BLOCK, sizeof(uint64_t));
@@ -443,7 +443,7 @@ jit_patch(p, array_block);
 
 	//Is block array block?
 	jit_andi(p, R_IF, R_IF, ARRAY_BIT_MASK); //Block->type already in R_IF
-	array = jit_beqi(p, JIT_FORWARD, R_IF, 0x0);
+	array = jit_beqi(p, (jit_value)JIT_FORWARD, R_IF, 0x0);
 	
 	//ATOM
 	current = NULL;
@@ -470,7 +470,7 @@ jit_patch(p, array_block);
 	}
 	free(ends);
 	
-	atom_set_forwarding = jit_jmpi(p, JIT_FORWARD);
+	atom_set_forwarding = jit_jmpi(p, (jit_value)JIT_FORWARD);
 
 jit_patch(p, array);
 	//ARRAY
@@ -552,7 +552,7 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
         {
             jit_patch(p, current);
         }
-        *next = jit_bnei(p, JIT_FORWARD, R_TYPE, type_num);
+        *next = jit_bnei(p, (jit_value)JIT_FORWARD, R_TYPE, type_num);
 
         for(i = 0; i < info->number_of_references; i++)
         {
@@ -570,7 +570,7 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
             jit_ldr(p, R_IS_ARRAY, R_IF, sizeof(void*));
 
             JIT_JMP_IS_OLD_MEM(p, old_mem, R_LOOP, R_IS_ARRAY);
-            if_end = jit_jmpi(p, JIT_FORWARD);
+            if_end = jit_jmpi(p, (jit_value)JIT_FORWARD);
             jit_patch(p, old_mem);
 
                 jit_movr(p, R_BLOCK, R_IF);
@@ -614,7 +614,7 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
                 jit_addi(p, R_IS_ARRAY, R_IS_ARRAY, is_array ? ARRAY_BLOCK_OFFSET : ATOM_BLOCK_OFFSET);
                 jit_str(p, R_IF, R_IS_ARRAY, sizeof(void*));
 
-                end = jit_jmpi(p, JIT_FORWARD);
+                end = jit_jmpi(p, (jit_value)JIT_FORWARD);
                         
             jit_patch(p, forwarded);
                                 
@@ -639,7 +639,7 @@ int make_gc_scan_struct_per_type(struct jit *p, type_info_t *info, int type_num,
         }
 
         //Declare another switch end label
-        *end = jit_jmpi(p, JIT_FORWARD);
+        *end = jit_jmpi(p, (jit_value)JIT_FORWARD);
     }
     
     return 0;

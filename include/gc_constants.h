@@ -68,7 +68,7 @@
 #define TYPE_UNDEFINED 0
 #define TYPE_FORWARD 1
 #define TYPE_INT 2
-#define TYPE_GRAPH_NODE 3 
+#define TYPE_GRAPH_NODE_T 3 
 #define TYPE_PTR 4
 #define TYPE_DOUBLE 5
 #define TYPE_TEST_STRUCT_T 6
@@ -77,8 +77,8 @@
 #define TYPE_CDLIST_T 9
 #define TYPE_TARRAY_T 10
 #define TYPE_LARGE_STRUCTURE_T 11
-#define TYPE_GRAPH_EDGE 12
-#define TYPE_GRAPH 13
+#define TYPE_GRAPH_EDGE_T 12
+#define TYPE_GRAPH_T 13
 
 /**
  * xmacro for mapping a real c types into a GC types
@@ -106,11 +106,11 @@
                         x(tarray_t*, TYPE_PTR) \
                         x(large_structure_t, TYPE_LARGE_STRUCTURE_T) \
                         x(large_structure_t*, TYPE_PTR)\
-                        x(graph_node_t, TYPE_GRAPH_NODE)\
+                        x(graph_node_t, TYPE_GRAPH_NODE_T)\
                         x(graph_node_t*, TYPE_PTR)\
-                        x(graph_edge_t, TYPE_GRAPH_EDGE)\
+                        x(graph_edge_t, TYPE_GRAPH_EDGE_T)\
                         x(graph_edge_t*, TYPE_PTR)\
-                        x(graph_t, TYPE_GRAPH)\
+                        x(graph_t, TYPE_GRAPH_T)\
                         x(graph_t*, TYPE_PTR)   
 
 /******************************************************************************

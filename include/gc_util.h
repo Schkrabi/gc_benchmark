@@ -214,5 +214,5 @@ char* slin_mem_dump(char* buff, size_t buff_size, void *ptr, size_t mem_size);
  * @oar str string with the dump of memory to be initialized by
  * @returns Always 0
  */
-int init_mem_from_string(void *ptr, size_t mem_size, const char* str);
+int init_mem_from_string(void *ptr, size_t mem_size, char* str);
 #endif

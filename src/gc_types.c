@@ -79,10 +79,6 @@ int init_type_table()
     type_table[TYPE_INT].number_of_references = 0;
     type_table[TYPE_INT].references = NULL;
     
-    type_table[TYPE_ARRAY].size = 0;
-    type_table[TYPE_ARRAY].number_of_references = 0;
-    type_table[TYPE_ARRAY].references = NULL;
-    
     type_table[TYPE_PTR].size = sizeof(void*);
     type_table[TYPE_PTR].number_of_references = 1;
     type_table[TYPE_PTR].references = (ptr_info_t*)malloc(1*sizeof(ptr_info_t));

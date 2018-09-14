@@ -169,7 +169,7 @@ extern size_t __jit_memcpy_aux_size;
 #define JIT_BLOCK_ACTIVE(p, R_DST, R_SRC)\
 	JIT_JMP_BLOCK_HAS_FORWARD(p, __jit_op_macro_after1, R_DST, R_SRC);\
 	jit_movr(p, R_DST, R_SRC);\
-	__jit_op_macro_after2 = jit_jmpi(p, JIT_FORWARD);\
+	__jit_op_macro_after2 = jit_jmpi(p, (jit_value)JIT_FORWARD);\
 	jit_patch(p, __jit_op_macro_after1);\
 	JIT_BLOCK_GET_FORWARD(p, R_DST, R_SRC);\
 	jit_patch(p, __jit_op_macro_after2)
@@ -177,7 +177,7 @@ extern size_t __jit_memcpy_aux_size;
 #define JIT_JMP_BLOCK_IS_ARRAY_ACTIVE_BLOCK(p, jmp_label, R_DST, R_SRC)\
 	jit_ldr(p, R_DST, R_SRC, sizeof(uint64_t));\
 	jit_andi(p, R_DST, R_DST, ARRAY_BIT_MASK);\
-	jmp_label = jit_bnei(p, JIT_FORWARD, R_DST, 0)
+	jmp_label = jit_bnei(p, (jit_value)JIT_FORWARD, R_DST, 0)
 	
 #define JIT_JMP_BLOCK_IS_ARRAY(p, jmp_label, R_DST, R_SRC)\
 	JIT_BLOCK_ACTIVE(p, R_DST, R_SRC);\
@@ -186,7 +186,7 @@ extern size_t __jit_memcpy_aux_size;
 #define JIT_GET_DATA_START(p, R_DST, R_SRC)\
 	JIT_JMP_BLOCK_IS_ARRAY(p, __jit_op_macro_after1, R_DST, R_SRC);\
 	jit_addi(p, R_DST, R_SRC, sizeof(uint64_t));\
-	__jit_op_macro_after2 = jit_jmpi(p, JIT_FORWARD);\
+	__jit_op_macro_after2 = jit_jmpi(p, (jit_value)JIT_FORWARD);\
 	jit_patch(p, __jit_op_macro_after1);\
 	jit_addi(p, R_DST, R_SRC, 2*sizeof(uint64_t));\
 	jit_patch(p, __jit_op_macro_after2)
@@ -217,7 +217,7 @@ extern size_t __jit_memcpy_aux_size;
 	JIT_GET_TYPE_SIZE(p, R_DST, R_AUX);\
 	JIT_JMP_BLOCK_IS_ARRAY_ACTIVE_BLOCK(p, __jit_op_macro_after1, R_AUX, R_SRC);\
 	jit_movi(p, R_AUX, 8);\
-	__jit_op_macro_after3 = jit_jmpi(p, JIT_FORWARD);\
+	__jit_op_macro_after3 = jit_jmpi(p, (jit_value)JIT_FORWARD);\
 	jit_patch(p, __jit_op_macro_after1);\
 	JIT_GET_ARRAY_SIZE(p, R_AUX, R_SRC);\
 	jit_mulr(p, R_DST, R_DST, R_AUX);\
@@ -239,15 +239,15 @@ extern size_t __jit_memcpy_aux_size;
 
 #define JIT_SEMISPACE_LIMIT(p, R_DST, R_SRC)\
 	jit_movi(p, R_DST, (uint64_t)gc_cheney_base_semispace_middle);\
-	__jit_op_macro_after1 = jit_blti(p, JIT_FORWARD, R_SRC, (uint64_t)gc_cheney_base_semispace_middle);\
+	__jit_op_macro_after1 = jit_blti(p, (jit_value)JIT_FORWARD, R_SRC, (uint64_t)gc_cheney_base_semispace_middle);\
 	jit_addi(p, R_DST, R_DST, SEMISPACE_SIZE);\
 	jit_patch(p, __jit_op_macro_after1)
 
 #define JIT_JMP_IS_OLD_MEM(p, label, R_DST, R_SRC)\
     jit_ldi(p, R_DST, &gc_cheney_base_from_space, sizeof(uint64_t));\
-    __jit_op_macro_after1 = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
+    __jit_op_macro_after1 = jit_bltr(p, (jit_value)JIT_FORWARD, R_SRC, R_DST);\
     jit_addi(p, R_DST, R_DST, SEMISPACE_SIZE);\
-    label = jit_bltr(p, JIT_FORWARD, R_SRC, R_DST);\
+    label = jit_bltr(p, (jit_value)JIT_FORWARD, R_SRC, R_DST);\
     jit_patch(p, __jit_op_macro_after1)
     
 #define JIT_MEMCPY_CONST_SIZE(p, R_DST_PTR, R_SRC_PTR, R_TMP, size)\
@@ -258,8 +258,8 @@ extern size_t __jit_memcpy_aux_size;
     }
     
 #define JIT_MEMCPY_DYNAMIC_SIZE(p, R_DST_PTR, R_SRC_PTR, R_TMP, R_SIZE)\
-    __jit_op_macro_after1 = jit_get_label(p);\
-    __jit_op_macro_after2 = jit_blei(p, JIT_FORWARD, R_SIZE, 0);\
+    __jit_op_macro_after1 = (jit_op*)jit_get_label(p);\
+    __jit_op_macro_after2 = jit_blei(p, (jit_value)JIT_FORWARD, R_SIZE, 0);\
         jit_subi(p, R_SIZE, R_SIZE, sizeof(uint64_t));\
         jit_ldxr_u(p, R_TMP, R_SRC_PTR, R_SIZE, sizeof(uint64_t));\
         jit_stxr(p, R_SIZE, R_DST_PTR, R_TMP, sizeof(uint64_t));\
@@ -272,7 +272,7 @@ extern size_t __jit_memcpy_aux_size;
 typedef int (* walk_array_ftype)(block_t *);
 extern walk_array_ftype gc_generated_walk_array;
 
-typedef int (* scan_ptr_ftype)(void *, uint64_t, int);
+typedef void* (* scan_ptr_ftype)(void *, uint64_t, int);
 extern scan_ptr_ftype gc_generated_scan_ptr;
 
 typedef int (* scan_struct_ftype)(void*,int);

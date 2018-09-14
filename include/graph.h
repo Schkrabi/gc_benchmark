@@ -10,15 +10,14 @@
 #include <stdio.h>
 
 /**
- * Forward declarations
+ * Froward declaration
  */
-typedef graph_node;
-typedef graph_edge;
+struct graph_edge;
 
 /**
  * Graph node structure
  */
-typedef struct 
+typedef struct graph_node 
 {
     /**
      * Id of node in graph
@@ -35,13 +34,13 @@ typedef struct
     /**
      * Outgoing edges
      */
-    graph_edge *edges;
+    struct graph_edge *edges;
 } graph_node_t;
 
 /**
  * Graph directed edge structure
  */
-typedef struct
+typedef struct graph_edge
 {
     /**
      * Value of this edge
@@ -50,7 +49,7 @@ typedef struct
     /**
      * Originating node of this directed edge
      */
-    graph_node *from,
+    struct graph_node *from,
     /**
      * Pointed node of this directed edge
      */
@@ -60,7 +59,7 @@ typedef struct
 /**
  * Graph structure
  */
-typedef struct
+typedef struct graph
 {
     /**
      * Last used id for nodes
@@ -73,7 +72,7 @@ typedef struct
     /**
      * Nodes of this graph
      */
-    graph_node *nodes;
+    struct graph_node *nodes;
 } graph_t;
 
 /**
@@ -114,21 +113,21 @@ graph_t* make_empty_graph();
  * @par graph graph_t structure to which node is added
  * @returns pointer to newly allocated graph_node_t structure
  */
-graph_node_t* add_node(graph_t *graph);
+graph_node_t* graph_add_node(graph_t *graph);
 /**
  * removes node and all edges from and to it from the graph
  * @par graph graph_t structure where node is located
  * @par id id of the removed node
  * @returns 1 if node was removed, 0 if node was not found in graph
  */
-int remove_node(graph_t* graph, uint64_t id);
+int graph_remove_node_by_id(graph_t* graph, uint64_t id);
 /**
  * removes node and all edges from and to it from the graph
  * @par graph graph_t structure where node is located
  * @par node pointer to removed node
  * @returns 1 if node was removed, 0 if node was not found in graph
  */
-int remove_node(graph_t* graph, graph_node_t *node);
+int graph_remove_node(graph_t* graph, graph_node_t *node);
 
 /**
  * Finds a node in a graph
@@ -136,14 +135,14 @@ int remove_node(graph_t* graph, graph_node_t *node);
  * @par id id of the searched node
  * @returns pointer to graph_node_t structure or NULL if node was not found
  */
-graph_node_t* find_node(graph_t* graph, uint64_t id);
+graph_node_t* graph_find_node(graph_t* graph, uint64_t id);
 /**
  * Finds a first node in a graph with specified value
  * @par graph searched graph_t struture
  * @par value value of the searched node
  * @returns pointer to graph_node_t structure or NULL if node was not found
  */
-graph_node_t* find_node_by_value(graph_t* graph, int value);
+graph_node_t* graph_find_node_by_value(graph_t* graph, int value);
 
 /**
  * Adds edge to node
@@ -151,21 +150,21 @@ graph_node_t* find_node_by_value(graph_t* graph, int value);
  * @par to graph_node_t structure towards which the edge will point
  * @returns pointer to newly allocated graph_edge_t structure
  */
-graph_edge_t* add_edge(graph_node_t* from, graph_node_t *to);
+graph_edge_t* graph_node_add_edge(graph_node_t* from, graph_node_t *to);
 /**
  * Removes edge from node
  * @par from graph_node_t structure from which the edge originates
  * @par edge pointer to edge to be removed
  * @returns 1 if edge was removed, 0 if edge was not found
  */
-int remove_edge(graph_node_t *from, graph_edge_t *edge);
+int graph_node_remove_edge(graph_node_t *from, graph_edge_t *edge);
 /**
  * Removes edge from node
  * @par from graph_node_t structure from which the edge originates
  * @par to graph_node_t structure to which the edge points
  * @returns 1 if edge was removed, 0 if edge was not found
  */
-int remove_edge(graph_node_t* from, graph_node_t* to);
+int graph_node_remove_edge_by_to_node(graph_node_t* from, graph_node_t* to);
 
 /**
  * Add edge to graph
@@ -174,7 +173,7 @@ int remove_edge(graph_node_t* from, graph_node_t* to);
  * @par to graph_node_t structure towards which the edge will point
  * @returns Pointer towards newly allocated graph_edge_t structure or NULL if from or to nodes are not part of graph
  */
-graph_edge_t* add_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
+graph_edge_t* graph_add_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
 /**
  * Add edge to graph
  * @par graph graph_t structure where the node is added
@@ -182,7 +181,7 @@ graph_edge_t* add_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
  * @par to_id id of node towards which the edge will point
  * @returns Pointer towards newly allocated graph_edge_t structure or NULL if from_id or to_id nodes are not part of graph
  */
-graph_edge_t* add_edge(graph_t* graph, uint64_t from_id, uint64_t to_id);
+graph_edge_t* graph_add_edge_by_id(graph_t* graph, uint64_t from_id, uint64_t to_id);
 /**
  * Removes edge from graph
  * @par graph graph_t structure where the edge is located
@@ -190,7 +189,7 @@ graph_edge_t* add_edge(graph_t* graph, uint64_t from_id, uint64_t to_id);
  * @par to graph_node_t structure towards which the edge will point
  * @returns 1 if edge was removed, 0 if edge was not found
  */
-int remove_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
+int graph_remove_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
 /**
  * Removes edge from graph
  * @par graph graph_t structure where the edge is located
@@ -198,7 +197,7 @@ int remove_edge(graph_t* graph, graph_node_t *from, graph_node_t *to);
  * @par to_id id of node towards which the edge will point
  * @returns 1 if edge was removed, 0 if edge was not found
  */
-int remove_edge(graph_t* graph, uint64_t from_id, uint64_t to_id);
+int graph_remove_edge_by_id(graph_t* graph, uint64_t from_id, uint64_t to_id);
 
 /**
  * Finds edge
@@ -206,21 +205,21 @@ int remove_edge(graph_t* graph, uint64_t from_id, uint64_t to_id);
  * @par to graph_node_t structure towards which the edge points
  * @returns pointer to graph_edge_t structure or NULL if edge is not found
  */
-graph_edge_t* find_edge(graph_node_t* from, graph_node_t *to);
+graph_edge_t* graph_node_find_edge(graph_node_t* from, graph_node_t *to);
 /**
  * Finds edge
  * @par from graph_node_t structure from which the edge originates
  * @par value value of the searched edge
  * @returns pointer to graph_edge_t structure or NULL if edge is not found
  */
-graph_edge_t* find_edge_by_value(graph_node_t* from, int value);
+graph_edge_t* graph_node_find_edge_by_value(graph_node_t* from, int value);
 
 /**
  * Creates a complete graph
  * @par number_of_nodes number of nodes the complete graph will contain
  * @returns pointer towards newly allocated graph_t structure
  */
-graph_t * make_complete_graph(size_t number_of_nodes);
+graph_t* make_complete_graph(size_t number_of_nodes);
 
 /**
  * Returns 1 if node belong to the graph
