@@ -22,11 +22,12 @@ int graph_node_make_descriptor(type_info_t *info)
     graph_node_t measure;
     
     info->size = sizeof(graph_node_t);
-    info->number_of_references = 1;
-    info->references = (ptr_info_t*)malloc(sizeof(ptr_info_t));
+    info->number_of_references = 2;
+    info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));
     info->references[0].offset = (uint64_t)((art_ptr_t)&measure.edges - (art_ptr_t)&measure);
     ptr_info_set_type(&info->references[0], TYPE_GRAPH_EDGE_T);
-    ptr_info_set_is_array(&info->references[0], 1);
+    info->references[1].offset = (uint64_t)((art_ptr_t)&measure.next - (art_ptr_t)&measure);
+    ptr_info_set_type(&info->references[1], TYPE_GRAPH_NODE_T);
 }
 /**
  * Makes descriptor for the graph edge structure
@@ -39,11 +40,13 @@ int graph_edge_make_descriptor(type_info_t *info)
     
     info->size = sizeof(graph_edge_t);
     info->number_of_references = 2;
-    info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));
+    info->references = (ptr_info_t*)malloc(3 * sizeof(ptr_info_t));
     info->references[0].offset = (uint64_t)((art_ptr_t)&measure.from - (art_ptr_t)&measure);
     ptr_info_set_type(&info->references[0], TYPE_GRAPH_NODE_T);
     info->references[1].offset = (uint64_t)((art_ptr_t)&measure.to - (art_ptr_t)&measure);
-    ptr_info_set_type(&info->references[1], TYPE_GRAPH_EDGE_T);
+    ptr_info_set_type(&info->references[1], TYPE_GRAPH_NODE_T);
+    info->references[2].offset = (uint64_t)((art_ptr_t)&measure.next - (art_ptr_t)&measure);
+    ptr_info_set_type(&info->references[2], TYPE_GRAPH_EDGE_T);
 }
 /**
  * Makes descriptor for the graph struture
@@ -56,10 +59,9 @@ int graph_make_descriptor(type_info_t *info)
     
     info->size = sizeof(graph_t);
     info->number_of_references = 1;
-    info->references = (ptr_info_t*)malloc(sizeof(ptr_info_t));
+    info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));
     info->references[0].offset = (uint64_t)((art_ptr_t)&measure.nodes - (art_ptr_t)&measure);
     ptr_info_set_type(&info->references[0], TYPE_GRAPH_NODE_T);
-    ptr_info_set_is_array(&info->references[0], 1);
 }
 
 /**
@@ -94,54 +96,47 @@ graph_t* make_empty_graph()
 }
 
 /**
- * Fixes the edges in the nodes so all will be pointing inside the array
- * @par nodes array of graph_node_t structures
- * @par size size of the array
- * @returns pointer to nodes
+ * Gets pointer to the last empty node pointer in graph
+ * @par graph searched graph
+ * @returns pointer to graph_node_t pointer
  */
-graph_node_t* fix_edges(graph_node_t* nodes, size_t size)
+graph_node_t **__graph_last_node(graph_t *graph)
 {
-    size_t i, j, k;
-    
-    for(i = 0; i < size; i++)
+    graph_node_t *node;
+    if(graph->nodes == NULL)
     {
-        for(j = 0; j < nodes[i].edge_count; j++)
-        {
-            uint64_t id;
-            
-            nodes[i].edges[j].from = &nodes[i];
-            id = nodes[i].edges[j].to->id;
-            
-            for(k = 0; k < size; k++)
-            {
-                if(nodes[k].id == id)
-                {
-                    nodes[i].edges[j].to = &nodes[k];
-                    break;
-                }
-            }
-        }
+        return &graph->nodes;
     }
     
-    return nodes;
+    node = graph->nodes;
+    while(node->next != NULL)
+    {
+        node = node->next;
+    }
+    
+    return &node->next;
 }
 
 /**
- * Moves one array of graph_nodes_t to other. The original array is invalidated (destroyed) in the process
- * @par src source array
- * @par dst destination array
- * @par array_size number of nodes that will be moved
- * @returns dst pointer
+ * Gets pointer to the last empty edge pointer in node
+ * @par node searched node
+ * @returns pointer to graph_edge_t pointer
  */
-graph_node_t* graph_node_array_deep_move(graph_node_t *src, graph_node_t *dst, size_t array_size)
+graph_edge_t **__node_last_edge(graph_node_t *node)
 {
-    size_t i, j, k;
-    memcpy(dst, src, array_size * sizeof(graph_node_t));
+    graph_edge_t *edge;
+    if(node->edges == NULL)
+    {
+        return &node->edges;
+    }
     
-    //Fix edges
-    fix_edges(dst, array_size);
+    edge = node->edges;
+    while(edge->next != NULL)
+    {
+        edge = edge->next;
+    }
     
-    return dst;
+    return &edge->next;
 }
 
 /**
@@ -151,42 +146,19 @@ graph_node_t* graph_node_array_deep_move(graph_node_t *src, graph_node_t *dst, s
  */
 graph_node_t* graph_add_node(graph_t *graph)
 {
-    size_t 
-        new_node_count,
-        new_node_index;
-    graph_node_t* nodes;
+    graph_node_t *node, **insetion_point;
+    node = gc_malloc(graph_node_t);
+    node->value = 0;
+    node->edges = NULL;
+    node->next = NULL;    
     
-    new_node_count = graph->node_count + 1;
-    nodes = gc_malloc_array(graph_node_t, graph->node_count + 1);
+    insetion_point = __graph_last_node(graph);
     
-    if(graph->nodes != NULL)
-    {
-        graph_node_array_deep_move(graph->nodes, nodes, graph->node_count);
-    }
+    *insetion_point = node;
     
-    new_node_index = new_node_count - 1;
-    
-    nodes[new_node_index].id = graph->next_id;
-    graph->next_id++;
-    nodes[new_node_index].value = 0;
-    nodes[new_node_index].edge_count = 0;
-    nodes[new_node_index].edges = NULL;
-    
-    graph->node_count = new_node_count;
-    graph->nodes = nodes;
-    
-    return &nodes[new_node_index];
+    return node;
 }
-/**
- * removes node and all edges from and to it from the graph
- * @par graph graph_t structure where node is located
- * @par id id of the removed node
- * @returns 1 if node was removed, 0 if node was not found in graph
- */
-int graph_remove_node_by_id(graph_t* graph, uint64_t id)
-{
-    return graph_remove_node(graph, graph_find_node(graph, id));
-}
+
 /**
  * removes node and all edges from and to it from the graph
  * @par graph graph_t structure where node is located
@@ -195,61 +167,34 @@ int graph_remove_node_by_id(graph_t* graph, uint64_t id)
  */
 int graph_remove_node(graph_t* graph, graph_node_t *node)
 {
-    size_t i, new_node_count, deleted_index;
-    graph_node_t *nodes;
+    graph_node_t *prev, *tmp;
     
-    if(!is_graph_node(graph, node))
+    tmp = graph->nodes;
+    do
     {
-        return 0;
-    }
+        graph_node_remove_edge_by_to_node(tmp, node);
+        tmp = tmp->next;
+    }while(tmp != NULL);
     
-    if(graph->node_count == 1)
+    if(graph->nodes == node)
     {
-        graph->node_count = 0;
-        graph->nodes = NULL;
+        graph->nodes = node->next;
         return 1;
     }
-    
-    deleted_index = (size_t)(((art_ptr_t)node - (art_ptr_t)graph->nodes)/sizeof(graph_node_t));
-    
-    //Remove invalid edges
-    for(i = 0; i < graph->node_count; i++)
+    prev = graph->nodes;
+    while(prev->next != node)
     {
-        graph_node_remove_edge_by_to_node(&graph->nodes[i], node);
+        if(prev->next = NULL)
+        {
+            return 0;
+        }
+        prev = prev->next;
     }
     
-    //Remove the node
-    new_node_count = graph->node_count - 1;
-    nodes = gc_malloc_array(graph_node_t, new_node_count);
-    
-    memcpy(nodes, graph->nodes, (size_t)((art_ptr_t)node - (art_ptr_t)graph->nodes));
-    memcpy(&nodes[deleted_index], &graph->nodes[deleted_index + 1], (graph->node_count - deleted_index - 1) * sizeof(graph_node_t));
-    
-    fix_edges(nodes, new_node_count);
-    graph->nodes = nodes;
-    graph->node_count = new_node_count;
-    
-    return 1;
+    prev->next = node->next;
+    return 1; 
 }
 
-/**
- * Finds a node in a graph
- * @par graph searched graph_t struture
- * @par id id of the searched node
- * @returns pointer to graph_node_t structure or NULL if node was not found
- */
-graph_node_t* graph_find_node(graph_t* graph, uint64_t id)
-{
-    size_t i;
-    for(i = 0; i < graph->node_count; i++)
-    {
-        if(graph->nodes[i].id == id)
-        {
-            return &graph->nodes[i];
-        }
-    }
-    return NULL;
-}
 /**
  * Finds a first node in a graph with specified value
  * @par graph searched graph_t struture
@@ -258,15 +203,14 @@ graph_node_t* graph_find_node(graph_t* graph, uint64_t id)
  */
 graph_node_t* graph_find_node_by_value(graph_t* graph, int value)
 {
-    size_t i;
-    for(i = 0; i < graph->node_count; i++)
+    graph_node_t *node;
+    node = graph->nodes;
+    while(  node != NULL
+        &&  node->value != value)
     {
-        if(graph->nodes[i].value == value)
-        {
-            return &graph->nodes[i];
-        }
+        node = node->next;
     }
-    return NULL;
+    return node;
 }
 
 /**
@@ -277,22 +221,15 @@ graph_node_t* graph_find_node_by_value(graph_t* graph, int value)
  */
 graph_edge_t* graph_node_add_edge(graph_node_t* from, graph_node_t *to)
 {
-    size_t new_edge_count, new_edge_index;
-    graph_edge_t *edges;
+    graph_edge_t *edge, **point_of_insert;
+    edge = gc_malloc(graph_edge_t);
+    edge->from = from;
+    edge->to = to;
+    edge->value = 0;
     
-    new_edge_count = from->edge_count + 1;
-    edges = gc_malloc_array(graph_edge_t, new_edge_count);
-    memcpy(edges, from->edges, from->edge_count * sizeof(graph_edge_t));
-    
-    new_edge_index = new_edge_count - 1;
-    edges[new_edge_index].value = 0;
-    edges[new_edge_index].from = from;
-    edges[new_edge_index].to = to;
-    
-    from->edges = edges;
-    from->edge_count = new_edge_count;
-    
-    return &edges[new_edge_index];
+    point_of_insert = __node_last_edge(from);
+    *point_of_insert = edge;
+    return edge;
 }
 /**
  * Removes edge from node
@@ -302,29 +239,29 @@ graph_edge_t* graph_node_add_edge(graph_node_t* from, graph_node_t *to)
  */
 int graph_node_remove_edge(graph_node_t *from, graph_edge_t *edge)
 {
-    size_t deleted_index, new_edge_count;
-    graph_edge_t* edges;
-    if(!is_node_edge(from, edge))
+    graph_edge_t *prev;
+    
+    if(edge == NULL)
     {
         return 0;
     }
-    if(from->edge_count == 1)
+    
+    if(from->edges == edge)
     {
-        from->edge_count = 0;
-        from->edges = NULL;
+        from->edges = edge->next;
         return 1;
     }
     
-    deleted_index = (size_t)(((art_ptr_t)edge - (art_ptr_t)from->edges)/sizeof(graph_edge_t));
-    new_edge_count = from->edge_count - 1;
-    edges = gc_malloc_array(graph_edge_t, new_edge_count);
-    
-    memcpy(edges, from->edges, (size_t)((art_ptr_t)edge - (art_ptr_t)from->edges));
-    memcpy(&edges[deleted_index], &from->edges[deleted_index+1], (from->edge_count - deleted_index - 1) * sizeof(graph_edge_t));
-    
-    from->edges = edges;
-    from->edge_count = new_edge_count;
-    
+    prev = from->edges;
+    while(prev->next != edge)
+    {
+        if(prev->next == NULL)
+        {
+            return 0;
+        }
+        prev = prev->next;
+    }
+    prev->next = edge->next;
     return 1;
 }
 /**
@@ -356,17 +293,6 @@ graph_edge_t* graph_add_edge(graph_t* graph, graph_node_t *from, graph_node_t *t
     return graph_node_add_edge(from, to);
 }
 /**
- * Add edge to graph
- * @par graph graph_t structure where the node is added
- * @par from_id id of node from which the edge will originate
- * @par to_id id of node towards which the edge will point
- * @returns Pointer towards newly allocated graph_edge_t structure or NULL if from_id or to_id nodes are not part of graph
- */
-graph_edge_t* graph_add_edge_by_id(graph_t* graph, uint64_t from_id, uint64_t to_id)
-{
-    return graph_add_edge(graph, graph_find_node(graph, from_id), graph_find_node(graph, to_id));
-}
-/**
  * Removes edge from graph
  * @par graph graph_t structure where the edge is located
  * @par from graph_node_t structure from which the edge will originate
@@ -383,17 +309,6 @@ int graph_remove_edge(graph_t* graph, graph_node_t *from, graph_node_t *to)
     
     return graph_node_remove_edge_by_to_node(from, to);
 }
-/**
- * Removes edge from graph
- * @par graph graph_t structure where the edge is located
- * @par from_id id of node from which the edge will originate
- * @par to_id id of node towards which the edge will point
- * @returns 1 if edge was removed, 0 if edge was not found
- */
-int graph_remove_edge_by_id(graph_t* graph, uint64_t from_id, uint64_t to_id)
-{
-    return graph_remove_edge(graph, graph_find_node(graph, from_id), graph_find_node(graph, to_id));
-}
 
 /**
  * Finds edge
@@ -403,16 +318,14 @@ int graph_remove_edge_by_id(graph_t* graph, uint64_t from_id, uint64_t to_id)
  */
 graph_edge_t* graph_node_find_edge(graph_node_t* from, graph_node_t *to)
 {
-    size_t i;
-    for(i = 0; i < from->edge_count; i++)
+    graph_edge_t *edge;
+    edge = from->edges;
+    while(  edge != NULL
+        &&  edge->to != to)
     {
-        if(from->edges[i].to == to)
-        {
-            return &from->edges[i];
-        }
+        edge = edge->next;
     }
-    
-    return NULL;
+    return edge;
 }
 /**
  * Finds edge
@@ -422,16 +335,14 @@ graph_edge_t* graph_node_find_edge(graph_node_t* from, graph_node_t *to)
  */
 graph_edge_t* graph_node_find_edge_by_value(graph_node_t* from, int value)
 {
-    size_t i;
-    for(i = 0; i < from->edge_count; i++)
+    graph_edge_t *edge;
+    edge = from->edges;
+    while(  edge != NULL
+        &&  edge->value != value)
     {
-        if(from->edges[i].value == value)
-        {
-            return &from->edges[i];
-        }
+        edge = edge->next;
     }
-    
-    return NULL;
+    return edge;
 }
 
 /**
@@ -473,7 +384,17 @@ graph_t* make_complete_graph(size_t number_of_nodes)
  */
 int is_graph_node(graph_t *graph, graph_node_t *node)
 {
-    return node > graph->nodes && (node < (graph_node_t*)((art_ptr_t)graph->nodes + (graph->node_count * sizeof(graph_node_t))));
+    graph_node_t *tmp = graph->nodes;
+    while(tmp != NULL)
+    {
+        if(tmp == node)
+        {
+            return 1;
+        }
+        tmp = tmp->next;
+    }
+    
+    return 0;
 }
 /**
  * Returns 1 if edge belong to the graph node
@@ -483,7 +404,16 @@ int is_graph_node(graph_t *graph, graph_node_t *node)
  */
 int is_node_edge(graph_node_t *node, graph_edge_t *edge)
 {
-    return edge > node->edges && (edge < (graph_edge_t*)((art_ptr_t)node->edges + (node->edge_count * sizeof(graph_edge_t))));
+    graph_edge_t *tmp = node->edges;
+    while(tmp != NULL)
+    {
+        if(tmp == edge)
+        {
+            return 1;
+        }
+        tmp = tmp->next;
+    }
+    return 0;
 }
 
 #define REPORT_VALUE(val, print_symbol) printf("\t " #val " = " #print_symbol "\n", val)
@@ -497,8 +427,8 @@ int test_graphs()
     int rslt, r;
     size_t i;
     graph_t *graph, *graph2;
-    graph_node_t *node, *node2;
-    graph_edge_t *edge;
+    graph_node_t *node, *node2, *node3, *node4;
+    graph_edge_t *edge, *edge2, *edge3, *edge4;
     
     rslt = 1;
     
@@ -515,15 +445,12 @@ int test_graphs()
     
     if(     node == NULL
         ||  graph->nodes == NULL
-        ||  graph->node_count != 1
-        ||  &graph->nodes[0] != node)
+        ||  graph->nodes != node)
     {
         rslt = 0;
         printf("Error: add_node(graph) failed\n");
         REPORT_VALUE(node, %p);
         REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE(graph->node_count, %zu);
-        REPORT_VALUE(&graph->nodes[0], %p);
         printf("\n");
     }
     
@@ -531,333 +458,253 @@ int test_graphs()
     
     if(     node2 == NULL
         ||  graph->nodes == NULL
-        ||  graph->node_count != 2
-        ||  &graph->nodes[1] != node2)
+        ||  graph->nodes->next != node2)
     {
         rslt = 0;
         printf("Error: add_node(graph) (2) failed\n");
         REPORT_VALUE(node2, %p);
         REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE(graph->node_count, %zu);
-        REPORT_VALUE(&graph->nodes[1], %p);
+        REPORT_VALUE(graph->nodes->next, %p);
         printf("\n");
     }
     
     //ADD EDGE
-    graph_add_node(graph);    
-    edge = graph_node_add_edge(&graph->nodes[0], &graph->nodes[1]);
+    node3 = graph_add_node(graph);    
+    edge = graph_node_add_edge(node, node2);
     if(     edge == NULL
-        ||  graph->nodes[0].edges == NULL
-        ||  graph->nodes[0].edges[0].to != &graph->nodes[1]
-        ||  graph->nodes[0].edges[0].from != &graph->nodes[0])
+        ||  node->edges == NULL
+        ||  node->edges->from != node
+        ||  node->edges->to != node2)
     {
         rslt = 0;
-        printf("Eroor: add_edge(&graph->nodes[0], &graph->nodes[1]);\n");
+        printf("Error: graph_node_add_edge(node, node2);\n");
         REPORT_VALUE(edge, %p);
-        REPORT_VALUE(graph->nodes[0].edges, %p);
-        REPORT_VALUE(graph->nodes[0].edges[0].to, %p);
-        REPORT_VALUE(&graph->nodes[1], %p);
-        REPORT_VALUE(graph->nodes[0].edges[0].from, %p);
-        REPORT_VALUE(&graph->nodes[0], %p);
+        REPORT_VALUE(node->edges, %p);
+        REPORT_VALUE(node->edges->from, %p);
+        REPORT_VALUE(node, %p);
+        REPORT_VALUE(node->edges->to, %p);
+        REPORT_VALUE(node2, %p);
         printf("\n");
     }
     
-    edge = graph_add_edge(graph, &graph->nodes[1], &graph->nodes[2]);
+    edge = graph_add_edge(graph, node2, node3);
     if(     edge == NULL
-        ||  graph->nodes[1].edges == NULL
-        ||  graph->nodes[1].edges[0].to != &graph->nodes[2]
-        ||  graph->nodes[1].edges[0].from != &graph->nodes[1])
+        ||  node2->edges == NULL
+        ||  node2->edges->from != node2
+        ||  node2->edges->to != node3)
     {
         rslt = 0;
-        printf("Error: add_edge((graph, &graph->nodes[1], &graph->nodes[2]);\n");
+        printf("Error: graph_add_edge(graph, node2, node3);\n");
         REPORT_VALUE(edge, %p);
-        REPORT_VALUE(graph->nodes[1].edges, %p);
-        REPORT_VALUE(graph->nodes[1].edges[0].to, %p);
-        REPORT_VALUE(&graph->nodes[2], %p);
-        REPORT_VALUE(graph->nodes[1].edges[0].from, %p);
-        REPORT_VALUE(&graph->nodes[1], %p);
-        printf("\n");
-    }
-    
-    edge = graph_add_edge_by_id(graph, graph->nodes[0].id, graph->nodes[2].id);
-    if(     edge == NULL
-        ||  graph->nodes[0].edges == NULL
-        ||  graph->nodes[0].edges[1].to != &graph->nodes[2]
-        ||  graph->nodes[0].edges[1].from != &graph->nodes[0])
-    {
-        rslt = 0;
-        printf("Error: add_edge(graph, &graph->node[0], graph->nodes[2].id);\n");
-        REPORT_VALUE(edge, %p);
-        REPORT_VALUE(graph->nodes[0].edges, %p);
-        REPORT_VALUE(graph->nodes[0].edges[1].to, %p);
-        REPORT_VALUE(&graph->nodes[2], %p);
-        REPORT_VALUE(graph->nodes[0].edges[1].from, %p);
-        REPORT_VALUE(&graph->nodes[0], %p);
+        REPORT_VALUE(node2->edges->from, %p);
+        REPORT_VALUE(node2, %p);
+        REPORT_VALUE(node2->edges->to, %p);
+        REPORT_VALUE(node3, %p);
         printf("\n");
     }
     
     //IS GRAPH NODE
     graph2 = make_empty_graph();
-    graph_add_node(graph2);
-    graph_add_node(graph2);
+    node4 = graph_add_node(graph2);
     
-    r = is_graph_node(graph, &graph->nodes[1]);
+    r = is_graph_node(graph, node2);
     if(r != 1)
     {
         rslt = 0;
-        printf("Error: is_graph_node(graph, &graph->node[1]) failed\n");
+        printf("Error: is_graph_node(graph, node2) failed\n");
         REPORT_VALUE(r, %d);
         REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE((graph_node_t*)((art_ptr_t)graph->nodes + (graph->node_count * sizeof(graph_node_t))), %p);
-        REPORT_VALUE(&graph->nodes[1], %p);
+        REPORT_VALUE(node2, %p);
         printf("\n");
     }
     
-    r = is_graph_node(graph, &graph2->nodes[1]);
+    r = is_graph_node(graph, node4);
     if(r != 0)
     {
         rslt = 0;
-        printf("Error: is_graph_node(graph, &graph2->nodes[1]); failed\n");
+        printf("Error: is_graph_node(graph, node4) failed\n");
         REPORT_VALUE(r, %d);
         REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE((graph_node_t*)((art_ptr_t)graph->nodes + (graph->node_count * sizeof(graph_node_t))), %p);
-        REPORT_VALUE(&graph2->nodes[1], %p);
+        REPORT_VALUE(node4, %p);
         printf("\n");
     }
     
-    //IS GRAPH NODE
-    graph_add_edge(graph2, &graph2->nodes[0], &graph2->nodes[1]);
-    graph_add_edge(graph2, &graph2->nodes[1], &graph2->nodes[0]);
+    //IS NODE EDGE
+    edge = node->edges;
+    edge2 = node->edges->next;
+    edge3 = graph_add_edge(graph2, graph2->nodes, graph2->nodes->next);
+    edge4 = graph_add_edge(graph2, graph2->nodes->next, graph2->nodes);
     
-    r = is_node_edge(&graph->nodes[0], &graph->nodes[0].edges[0]);
+    r = is_node_edge(node, edge);
     if(r != 1)
     {
         rslt = 0;
-        printf("Error: is_node_edge(&graph->nodes[0], &graph->nodes[0].edges[0]) failed\n");
+        printf("Error: is_node_edge(node, edge) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(&graph->nodes[0].edges[0], %p);
-        REPORT_VALUE(graph->nodes[0].edges, %p);
-        REPORT_VALUE((graph_edge_t*)((art_ptr_t)graph->nodes[0].edges + (graph->nodes[0].edge_count * sizeof(graph_edge_t))), %p);
+        REPORT_VALUE(node, %p);
+        REPORT_VALUE(node->edges, %p);
+        REPORT_VALUE(edge, %p);
         printf("\n");
     }
     
-    r = is_node_edge(&graph->nodes[0], &graph2->nodes[0].edges[0]);
+    r = is_node_edge(node, edge3);
     if(r != 0)
     {
         rslt = 0;
-        printf("Error: is_node_edge(&graph->nodes[0], &graph2->nodes[0].edges[0]) failed\n");
+        printf("Error: is_node_edge(node, edge3) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(&graph2->nodes[0].edges[0], %p);
-        REPORT_VALUE(graph->nodes[0].edges, %p);
-        REPORT_VALUE((graph_edge_t*)((art_ptr_t)graph->nodes[0].edges + (graph->nodes[0].edge_count * sizeof(graph_edge_t))), %p);
+        REPORT_VALUE(node, %p);
+        REPORT_VALUE(node->edges, %p);
+        REPORT_VALUE(edge3, %p);
         printf("\n");
     }
     
     //FIND NODE
-    node = graph_find_node(graph, (uint64_t)50); //Nonexistant id
-    if(node != NULL)
+    node->value = 42;
+    node2 = graph_find_node_by_value(graph, -1); //Nonexistant value
+    if(node2 != NULL)
     {
         rslt = 0;
-        printf("Error: find_node(graph, (uint64_t)50) failed\n");
+        printf("Error: graph_find_node_by_value(graph, -1) failed\n");
         printf("\n");
     }
     
-    node = graph_find_node_by_value(graph, (int)50); //Nonexistant value
-    if(node != NULL)
+    node2 = graph_find_node_by_value(graph, 42);
+    if(node2 != node)
     {
         rslt = 0;
-        printf("Error: find_node_by_value(graph, (int)50) failed\n");
+        printf("Error: graph_find_node_by_value(graph, 42) failed\n");
         printf("\n");
     }
-    
-    node = graph_find_node(graph, graph->nodes[1].id);
-    if(node != &graph->nodes[1])
-    {
-        rslt = 0;
-        printf("Error: find_node(graph, graph->nodes[1].id) failed\n");
-        printf("\n");
-    }
-    
-    graph->nodes[1].value = 42;
-    node = graph_find_node_by_value(graph, graph->nodes[1].value);
-    if(node != &graph->nodes[1])
-    {
-        rslt = 0;
-        printf("Error: find_node_by_value(graph, graph->nodes[1].value) failed\n");
-        printf("\n");
-    }
+    node2 = graph->nodes->next;
     
     //FIND EDGE
-    edge = graph_node_find_edge(&graph->nodes[0], &graph->nodes[0]); //Nonexistant edge
-    if(edge != NULL)
+    edge2 = graph_node_find_edge(node, node); //Nonexistant edge
+    if(edge2 != NULL)
     {
         rslt = 0;
-        printf("Error: find_edge(&graph->nodes[0], &graph->nodes[0]) failed\n");
+        printf("Error: graph_node_find_edge(node, node) failed\n");
         printf("\n");
     }
     
-    edge = graph_node_find_edge_by_value(&graph->nodes[0], 50); //Nonexistant value
-    if(edge != NULL)
+    edge2 = graph_node_find_edge_by_value(node, -1); //Nonexistant value
+    if(edge2 != NULL)
     {
         rslt = 0;
-        printf("Error: find_edge_by_value(&graph->nodes[0], 50) failed\n");
+        printf("Error: graph_node_find_edge_by_value(node, -1) failed\n");
         printf("\n");
     }
     
-    edge = graph_node_find_edge(&graph->nodes[0], &graph->nodes[1]);
-    if(edge != &graph->nodes[0].edges[0])
+    edge2 = graph_node_find_edge(node, node2);
+    if(edge2 != edge)
     {
         rslt = 0;
-        printf("Error: find_edge(&graph->nodes[0], &graph->nodes[1]) failed\n");
+        printf("Error: graph_node_find_edge(node, node2) failed\n");
         printf("\n");
     }
     
-    graph->nodes[0].edges[1].value = 42;    
-    edge = graph_node_find_edge_by_value(&graph->nodes[0], graph->nodes[0].edges[1].value);
-    if(edge != &graph->nodes[0].edges[1])
+    graph->nodes->edges->value = 42;
+    edge2 = graph_node_find_edge_by_value(node, 42);
+    if(edge2 != graph->nodes->edges)
     {
         rslt = 0;
-        printf("Error: find_edge_by_value(&graph->nodes[0], graph->nodes[0].edges[1].value) failed\n");
+        printf("Error: graph_node_find_edge_by_value(node, 42) failed\n");
         printf("\n");
     }
+    edge2 = node->edges->next;
     
     //REMOVE EDGE
-    graph_add_edge(graph, &graph->nodes[1], &graph->nodes[0]);
+    edge3 = graph_add_edge(graph, node2, node);
     
-    r = graph_node_remove_edge(&graph->nodes[0], &graph2->nodes[0].edges[0]);
+    r = graph_node_remove_edge(node, edge3);
     if(r != 0)
     {
         rslt = 0;
-        printf("Error: remove_edge(&graph->nodes[0], &graph2->nodes[0].edges[0]) failed\n");
+        printf("Error: graph_node_remove_edge(node, edge3) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(&graph2->nodes[0].edges[0], %p);
-        REPORT_VALUE(graph->nodes[0].edges, %p);
-        REPORT_VALUE((graph_node_t*)((art_ptr_t)graph->nodes[0].edges + (graph->nodes[0].edge_count * sizeof(graph_edge_t))), %p);
+        REPORT_VALUE(edge, %p);
+        REPORT_VALUE(node->edges, %p);
         printf("\n");
     }
     
-    r = graph_node_remove_edge_by_to_node(&graph->nodes[0], &graph2->nodes[0]);
+    r = graph_node_remove_edge_by_to_node(node, node3);
     if(r != 0)
     {
         rslt = 0;
-        printf("Error: remove_edge(&graph->node[0], &graph2->nodes[0]) failed\n");
+        printf("Error: graph_node_remove_edge_by_to_node(node, node3) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(&graph2->nodes[0], %p);
-        REPORT_VALUE(&graph->nodes[0].edges, %p);
-        REPORT_VALUE((graph_node_t*)((art_ptr_t)graph->nodes[0].edges + (graph->nodes[0].edge_count * sizeof(graph_edge_t))), %p);
+        REPORT_VALUE(node, %p);
+        REPORT_VALUE(node3, %p);
+        REPORT_VALUE(node->edges, %p);
         printf("\n");
     }
     
-    r = graph_remove_edge(graph, &graph->nodes[0], &graph2->nodes[0]);
+    r = graph_remove_edge(graph, node, node3);
     if(r != 0)
     {
         rslt = 0;
-        printf("Error: remove_edge(graph, @graph->nodes[0], graph2->nodes[0]) failed\n");
+        printf("Error: graph_remove_edge(graph, node, node3) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(&graph2->nodes[0], %p);
-        REPORT_VALUE(&graph->nodes, %p);
-        REPORT_VALUE((graph_node_t*)((art_ptr_t)&graph->nodes + (graph->node_count * sizeof(graph_node_t))), %p);
+        REPORT_VALUE(graph, %p);
+        REPORT_VALUE(node, %p);
+        REPORT_VALUE(node3, %p);
         printf("\n");
     }
     
-    r = graph_remove_edge_by_id(graph, graph->nodes[0].id, 50); //Nonexistant id
-    if(r != 0)
-    {
-        rslt = 0;
-        printf("Error: remove_edge(graph, graph->nodes[0].id, 50) failed\n");
-        REPORT_VALUE(r, %d);
-        printf("\n");
-    }
-    
-    r = graph_node_remove_edge(&graph->nodes[0], &graph->nodes[0].edges[1]);
+    r = graph_node_remove_edge(node, edge);
     if(r != 1)
     {
         rslt = 0;
-        printf("Error: remove_edge(&graph->nodes[0], &graph->nodes[0].edges[1]) failed\n");
+        printf("Error: graph_node_remove_edge(node, edge) failed\n");
         printf("\n");
     }
     
-    r = graph_node_remove_edge_by_to_node(&graph->nodes[0], &graph->nodes[1]);
+    r = graph_node_remove_edge_by_to_node(node2, node);
     if(r != 1)
     {
         rslt = 0;
-        printf("Error: remove_edge(&graph->nodes[0], &graph->nodes[1]) failed\n");
+        printf("Error: graph_node_remove_edge_by_to_node(node2, node) failed\n");
         printf("\n");
     }
     
-    r = graph_remove_edge(graph2, &graph2->nodes[0], &graph2->nodes[1]);
+    r = graph_remove_edge(graph2, node3, node4);
     if(r != 1)
     {
         rslt = 0;
-        printf("Error: remove_edge(graph2, &graph2->nodes[0], &graph2->nodes[1]) failed\n");
-        printf("\n");
-    }
-    
-    r = graph_remove_edge_by_id(graph2, graph->nodes[1].id, graph->nodes[0].id);
-    if(r != 1)
-    {
-        rslt = 0;
-        printf("Error: remove_edge(graph2, &graph->nodes[1].id, &graph->nodes[0].id) failed\n");
+        printf("Error: graph_remove_edge(graph2, node3, node4) failed\n");
         printf("\n");
     }
     
     //REMOVE NODE
-    graph_node_add_edge(&graph->nodes[0], &graph->nodes[1]);
-    graph_add_edge(graph, &graph->nodes[1], &graph->nodes[2]);
-    graph_add_edge_by_id(graph, graph->nodes[0].id, graph->nodes[2].id);
-    graph_add_edge(graph, &graph->nodes[1], &graph->nodes[0]);
-    r = graph_remove_node_by_id(graph, 50); //Nonexistant ID
-    if(r != 0)
+    graph_node_add_edge(node, node2);
+    node3 = node2->next;
+    graph_add_edge(graph, node2, node3);
+    graph_add_edge(graph, node, node3);
+    graph_add_edge(graph, node2, node);
+    
+    r = graph_remove_node(graph, node);
+    if(r != 1)
     {
         rslt = 0;
-        printf("Error: remove_node(graph, 50) failed\n");
+        printf("Error: graph_remove_node(graph, node) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(graph->nodes, %p);
         printf("\n");
     }
     
-    r = graph_remove_node(graph, &graph->nodes[0]);
-    if(     r != 1
-        ||  graph->node_count != 1)
+    r = graph_remove_node(graph, node2);
+    if(r != 1)
     {
         rslt = 0;
-        printf("Error: remove_node(graph, &graph->node[0]); failed\n");
+        printf("Error: graph_remove_node(graph, node2) failed\n");
         REPORT_VALUE(r, %d);
-        REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE(graph->nodes[0].id, %zu);
-        printf("\n");
-    }
-    
-    r = graph_remove_node_by_id(graph, graph->nodes[1].id);
-    if(     r != 1
-        ||  graph->node_count != 1)
-    {
-        rslt = 0;
-        printf("Error: remove_node(graph, graph->nodes[0].id) failed\n");
-        REPORT_VALUE(r, %d);
-        REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE(graph->node_count, %zu);
-        printf("\n");
-    }
-    
-    r = graph_remove_node(graph, &graph->nodes[0]);
-    if(     r != 1
-        ||  graph->node_count != 0
-        ||  graph->nodes != NULL)
-    {
-        rslt = 0;
-        printf("Error: remove_node(graph, &graph->nodes[0]); (2) failed\n");
-        REPORT_VALUE(r, %d);
-        REPORT_VALUE(graph->nodes, %p);
-        REPORT_VALUE(graph->node_count, %zu);
         printf("\n");
     }
     
     //MAKE COMPLETE GRAPH
-    graph = make_complete_graph(12);
+    graph = make_complete_graph(25);
     
     r = 1;
-    if(graph->node_count != 12)
+    if(graph->node_count != 25)
     {
         r = 0;
     }
