@@ -199,7 +199,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "s:t:g:h:q:m:o:a:c:e")) != -1)
+    while ((c = getopt (argc, argv, "s:t:g:h:q:m:o:a:c:e:")) != -1)
     {
         arg = NULL;
         err_ptr = NULL;
@@ -292,7 +292,14 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
         case '?':
             if (    optopt == 's'
                 ||  optopt == 't'
-                ||  optopt == 'g')
+                ||  optopt == 'g'
+                ||  optopt == 'q'
+                ||  optopt == 'a'
+                ||  optopt == 'c'
+                ||  optopt == 'm'
+                ||  optopt == 'a'
+                ||  optopt == 'o'
+                ||  optopt == 'e')
             {
                 fprintf(stderr, "Option -%c requires an argument.\n", optopt);
             }
@@ -351,8 +358,7 @@ int sub_main(unsigned test_num, unsigned seed)
             //After generating the root set will stay constant
             //test_long_lived(TEST_SIZE, 10, 15, 0.0);
             //break;
-        //case TEST_LARGE_STRUCTURE:
-            //TODO determine parameters
+        case TEST_LARGE_STRUCTURE:
             //test_large_structure(TEST_SIZE, 10, 0.01, 100);
             test_large_structure(__test_size, __max_structure_size, __chance_to_replace, __entanglement_buff_size);
             break;
