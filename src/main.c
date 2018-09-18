@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "test.h"
 #include "graph.h"
+#include "gc_cheney_base.h"
 
 #define GC_CLEANUP_ERR 0x1
 #define TYPE_CLEANUP_ERR 0x2
@@ -192,14 +193,13 @@ int cleanup()
  */
 int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char *gc)
 {
-    char *cvalue = NULL;
     int index;
     int c;
     char *arg, *err_ptr;
     
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "s:t:g:h")) != -1)
+    while ((c = getopt (argc, argv, "s:t:g:h:q:m:o:a:c:e")) != -1)
     {
         arg = NULL;
         err_ptr = NULL;
@@ -231,6 +231,60 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
                 return 1;
             }
             break;
+        case 'q':
+            arg = optarg;
+            __test_size = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -q requires an integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
+        case 'a':
+            arg = optarg;
+            __max_structure_size = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -a requires an integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
+        case 'c':
+            arg = optarg;
+            __chance_to_replace = strtod(arg, &err_ptr);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -c requires an integer argument\n");
+                return 1;
+            }
+            break;
+        case 'm':
+            arg = optarg;
+            __semispace_size = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -m requires a integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
+        case 'o':
+            arg = optarg;
+            __old_pool_size = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -o requires a integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
+        case 'e':
+            arg = optarg;
+            __entanglement_buff_size = strtol(arg, &err_ptr, 0);
+            if(arg == err_ptr)
+            {
+                fprintf(stderr, "Option -e requires a integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
         case 'h':
             print_help_str();
             return 1;
@@ -257,8 +311,6 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
 #define NUMINTS  (1000)
 #define FILESIZE (NUMINTS * sizeof(int))
 
-#define TEST_SIZE 10000
-
 /**
  * Main executed function
  * @par test_num test to be executed
@@ -281,25 +333,31 @@ int sub_main(unsigned test_num, unsigned seed)
             mem_dump(stdout);
             break;
         case TEST_SHORT_LIVED:
-            test_short_lived(TEST_SIZE, 100);
+            //test_short_lived(__test_size, 100);
+            test_short_lived(__test_size, __max_structure_size);
             break;
         case TEST_LONG_LIVED:
             //Testing on 8192 bytes of memory, worst case of 15 root trees of size 10 will take only 4800 bytes 
             //enough space for additional junk and replacements
-            test_long_lived(TEST_SIZE, 10, 15, 0.01); 
+            //test_long_lived(TEST_SIZE, 10, 15, 0.01); 
+            test_long_lived(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace); 
             break;
-        case TEST_LONG_LIVED_ALMOST_FULL:
+        //case TEST_LONG_LIVED_ALMOST_FULL:
             //Testing on 8192 bytes of memory, worst case of 25 root trees of size 10 will take maximum of 8000 bytes 
             //only little space for additional garbage - more collections
-            test_long_lived(TEST_SIZE, 10, 25, 0.01);
-            break;
-        case TEST_LONG_LIVED_NO_REPLACE:
+            //test_long_lived(TEST_SIZE, 10, 25, 0.01);
+            //break;
+        //case TEST_LONG_LIVED_NO_REPLACE:
             //After generating the root set will stay constant
-            test_long_lived(TEST_SIZE, 10, 15, 0.0);
-            break;
-        case TEST_LARGE_STRUCTURE:
+            //test_long_lived(TEST_SIZE, 10, 15, 0.0);
+            //break;
+        //case TEST_LARGE_STRUCTURE:
             //TODO determine parameters
-            test_large_structure(TEST_SIZE, 10, 0.01, 100);
+            //test_large_structure(TEST_SIZE, 10, 0.01, 100);
+            test_large_structure(__test_size, __max_structure_size, __chance_to_replace, __entanglement_buff_size);
+            break;
+        case TEST_GRAPH:
+            test_complete_graphs(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
             break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());

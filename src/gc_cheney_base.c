@@ -10,6 +10,11 @@
 #include <syslog.h>
 
 /**
+ * Parameter governing size of a semispace
+ */
+size_t __semispace_size = DEFAULT_SEMISPACE_SIZE;
+
+/**
  * from space heap (active heap)
  */
 block_t *gc_cheney_base_from_space;

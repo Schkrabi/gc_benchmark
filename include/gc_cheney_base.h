@@ -21,6 +21,13 @@ typedef struct
     int is_array;
 } root_ptr;
 
+#define DEFAULT_SEMISPACE_SIZE 8192
+
+/**
+ * Parameter governing size of a semispace
+ */
+extern size_t __semispace_size;
+
 /**
  * from space heap (active heap)
  */

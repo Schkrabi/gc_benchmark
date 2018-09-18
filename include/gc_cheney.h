@@ -11,31 +11,6 @@
 #include "gc_types.h"
 #include "gc_cheney_base.h"
 
-//TODO remove
-/**
- * from space heap (active heap)
- */
-// extern block_t *from_space;
-/**
- * to space heap (copy heap)
- */
-// extern block_t *to_space;
-
-/**
- * Block containing remaining memory in active semispace
- */
-// extern block_t *remaining_block;
-
-/**
- * Roots used for automatic garbage collection
- */
-// extern void **gc_roots;
-
-/**
- * Number of roots in gc_roots
- */
-// extern size_t gc_roots_count;
-
 /**
  * Initializes the Garbage Collector objects
  * @return If everything went well 0, otherwise error code
@@ -47,22 +22,6 @@ int gc_cheney_init();
  * @return If everything went well 0, otherwise error code
  */
 int gc_cheney_cleanup();
-
-//TODO remove
-/**
- * Returns pointer right after the end of semispace
- * @par semispace_ptr pointer to the start of a semispace
- * @return pointer right after end of semispace
- */
-// void* semispace_end(void *semispace_ptr);
-
-//TODO remove
-/**
- * Allocates a block of given size
- * @par size size of the new block
- * @return pointer to the memory block
- */
-// block_t *alloc_block_of_size(size_t size);
 
 /**
  * Allocates memory for single (non-array) value

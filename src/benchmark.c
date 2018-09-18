@@ -17,6 +17,28 @@
 #include <cdouble_list.h>
 #include "garbage_collector.h"
 #include "large_structure.h"
+#include "graph.h"
+
+/**
+ * User specified arugment for test size
+ */
+size_t __test_size = __DEFAULT_TEST_SIZE;
+/**
+ * User specified arugment for maximal structure size (where applicable)
+ */
+size_t __max_structure_size = __DEFAULT_MAX_STRUCTURE_SIZE;
+/**
+ * User specified arugment for size of old pool (where applicable)
+ */
+size_t __old_pool_size = __DEFAULT_OLD_POOL_SIZE;
+/**
+ * User specified arugment for chance to replace structure in old pool (where applicable)
+ */
+double __chance_to_replace = __DEFAULT_CHANCE_TO_REPLACE;
+/**
+ * User specified arugment for entanglement buffer size (test large structure only)
+ */
+size_t __entanglement_buff_size = __DEFAULT_ENTANGLEMENT_BUFF_SIZE;
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
 #define XTEST_TOSTR(name, num) case num: return #name;
@@ -202,4 +224,44 @@ int test_large_structure(size_t test_size, size_t old_pool, double chance_to_rep
     }
     
     return 1;
+}
+
+/**
+ * Tests behaviour of grabage collector with complete graph long living objects
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */ 
+int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace)
+{
+    size_t i;
+    
+    gc_cheney_base_roots_count = old_pool;
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
+    
+    for(i = 0; i < test_size; i++)
+    {
+        graph_t *graph;
+        size_t size, j;
+        
+        graph = NULL;
+        
+        size = rand()%max_graph_size;
+        
+        graph = make_complete_graph(size);        
+        
+        if(i < old_pool)
+        {
+            gc_cheney_base_roots[i].ptr = graph;
+            gc_cheney_base_roots[i].is_array = 0;
+        }
+        else
+        {
+            if(rand()%100 < chance_to_replace*100)
+            {
+                gc_cheney_base_roots[rand()%old_pool].ptr = graph;
+            }
+        }
+    }
 }

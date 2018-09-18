@@ -4,7 +4,52 @@
  * This file contains headers and definitions for benchmarking functions of gc_benchmark
  */
 
+#ifndef BENCHMARK_H
+#define BENCHMARK_H
 #include <stdlib.h>
+
+/**
+ * Default value for __test_size
+ */
+#define __DEFAULT_TEST_SIZE 10000
+/**
+ * Default value for __max_structure_size
+ */
+#define __DEFAULT_MAX_STRUCTURE_SIZE 10
+/**
+ * Default value form __old_pool_size
+ */
+#define __DEFAULT_OLD_POOL_SIZE 15
+/**
+ * Default value for __chance_to_replace
+ */
+#define __DEFAULT_CHANCE_TO_REPLACE 0.01
+/**
+ * Default value for __entanglement_buff_size
+ */
+#define __DEFAULT_ENTANGLEMENT_BUFF_SIZE 100
+
+/**
+ * User specified arugment for test size
+ */
+extern size_t __test_size;
+/**
+ * User specified arugment for maximal structure size (where applicable)
+ */
+extern size_t __max_structure_size;
+/**
+ * User specified arugment for size of old pool (where applicable)
+ */
+extern size_t __old_pool_size;
+/**
+ * User specified arugment for chance to replace structure in old pool (where applicable)
+ */
+extern double __chance_to_replace;
+/**
+ * User specified arugment for entanglement buffer size (test large structure only)
+ */
+extern size_t __entanglement_buff_size;
+
 
 /**
   * Parses argument specified from the command line
@@ -46,3 +91,13 @@ int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, dou
  * @par entanglement_buff_size maximal number of objects to choose for entangling the structures
  */
 int test_large_structure(size_t test_size, size_t old_pool, double chance_to_replace, size_t entanglement_buff_size);
+
+/**
+ * Tests behaviour of grabage collector with complete graph long living objects
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */ 
+int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace);
+#endif

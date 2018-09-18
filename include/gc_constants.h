@@ -19,7 +19,7 @@
 /**
  * Size of the semispace in bytes if applicable
  */
-#define SEMISPACE_SIZE 8192//1048576 //1MB
+#define SEMISPACE_SIZE __semispace_size//8192//1048576 //1MB
 
 /******************************************************************************
  *                              GARBAGE COLLECTORS                            *
@@ -123,12 +123,14 @@
 #define TEST_LARGE_STRUCTURE 3
 #define TEST_LONG_LIVED_ALMOST_FULL 4
 #define TEST_LONG_LIVED_NO_REPLACE 5
+#define TEST_GRAPH 6
 
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
                         x(short_lived, TEST_SHORT_LIVED) \
                         x(long_lived, TEST_LONG_LIVED)  \
                         x(large_structure, TEST_LARGE_STRUCTURE) \
                         x(long_lived_almost_full, TEST_LONG_LIVED_ALMOST_FULL) \
-                        x(long_lived_no_replace, TEST_LONG_LIVED_NO_REPLACE)
+                        x(long_lived_no_replace, TEST_LONG_LIVED_NO_REPLACE) \
+                        x(graph, TEST_GRAPH)
 
 #endif
