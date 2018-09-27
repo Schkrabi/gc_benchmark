@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     
     //Default
     seed = time(0);
-    test_num = TEST_SHORT_LIVED;
+    test_num = TEST_SUBSYSTEM;
     used_gc = CHENEY_GC;
     
     //Set by arguments
@@ -199,7 +199,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "s:t:g:h:q:m:o:a:c:e:")) != -1)
+    while ((c = getopt (argc, argv, "s:t:g:q:m:o:a:c:h")) != -1)
     {
         arg = NULL;
         err_ptr = NULL;
@@ -276,15 +276,6 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
                 return 1;
             }
             break;
-        case 'e':
-            arg = optarg;
-            __entanglement_buff_size = strtol(arg, &err_ptr, 0);
-            if(arg == err_ptr)
-            {
-                fprintf(stderr, "Option -e requires a integer argument (decimal, hexadecimal or octal)\n");
-                return 1;
-            }
-            break;
         case 'h':
             print_help_str();
             return 1;
@@ -339,28 +330,14 @@ int sub_main(unsigned test_num, unsigned seed)
             test_graphs();
             mem_dump(stdout);
             break;
-        case TEST_SHORT_LIVED:
-            //test_short_lived(__test_size, 100);
-            test_short_lived(__test_size, __max_structure_size);
+        case TEST_LIST:
+            test_list(__test_size, __max_structure_size);
             break;
-        case TEST_LONG_LIVED:
-            //Testing on 8192 bytes of memory, worst case of 15 root trees of size 10 will take only 4800 bytes 
-            //enough space for additional junk and replacements
-            //test_long_lived(TEST_SIZE, 10, 15, 0.01); 
-            test_long_lived(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace); 
+        case TEST_BINARY_TREE:
+            test_binary_tree(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace); 
             break;
-        //case TEST_LONG_LIVED_ALMOST_FULL:
-            //Testing on 8192 bytes of memory, worst case of 25 root trees of size 10 will take maximum of 8000 bytes 
-            //only little space for additional garbage - more collections
-            //test_long_lived(TEST_SIZE, 10, 25, 0.01);
-            //break;
-        //case TEST_LONG_LIVED_NO_REPLACE:
-            //After generating the root set will stay constant
-            //test_long_lived(TEST_SIZE, 10, 15, 0.0);
-            //break;
         case TEST_LARGE_STRUCTURE:
-            //test_large_structure(TEST_SIZE, 10, 0.01, 100);
-            test_large_structure(__test_size, __max_structure_size, __chance_to_replace, __entanglement_buff_size);
+            test_large_structure(__test_size, __max_structure_size, __chance_to_replace, __old_pool_size);
             break;
         case TEST_GRAPH:
             test_complete_graphs(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
@@ -385,4 +362,9 @@ int print_help_str()
     printf("\t-s <number>\tSets the <number> as random number generator seed\n");
     printf("\t-t <name>\tSets the test to run. Available options are: " __XCONCAT_OPTIONS(XTEST_TABLE) "\n");
     printf("\t-g <name>\tSets used garbage collector. Available options are: %s\n", __XCONCAT_OPTIONS(XCOLLECTOR_TABLE));
+    printf("\t-q <number>\tSets the number of objects generated in test\n");
+    printf("\t-a <number>\tSets the maximal size (number of nodes in list/tree/graph) for each individual object in test\n");
+    printf("\t-c <decimal>\tSets chance of new object in thest to replace one of the long living object\n");
+    printf("\t-m <number>\tSets size (in bytes) of one semispace for the garbage collector (each collector uses two semispaces!)\n");
+    printf("\t-o <number>\tSets number of long living objects in tests\n");
 }

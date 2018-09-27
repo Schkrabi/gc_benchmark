@@ -35,10 +35,6 @@ size_t __old_pool_size = __DEFAULT_OLD_POOL_SIZE;
  * User specified arugment for chance to replace structure in old pool (where applicable)
  */
 double __chance_to_replace = __DEFAULT_CHANCE_TO_REPLACE;
-/**
- * User specified arugment for entanglement buffer size (test large structure only)
- */
-size_t __entanglement_buff_size = __DEFAULT_ENTANGLEMENT_BUFF_SIZE;
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
 #define XTEST_TOSTR(name, num) case num: return #name;
@@ -77,7 +73,7 @@ const char* testnum_to_str(int test_num)
  * @par max_list_len maximal magnitude to which the one object can grow before discarted 
  * @warning If max_list_len is set too large it might lead to the overall memory depletion!
  */
-int test_short_lived(size_t test_size, size_t max_list_len)
+int test_list(size_t test_size, size_t max_list_len)
 {
     size_t i;
     
@@ -107,7 +103,7 @@ int test_short_lived(size_t test_size, size_t max_list_len)
  * @par chance_to_replace a chance for a new object to replace an old object in old_pool
  * @warning If max_tree_size is set too large it might lead to the overall memory depletion!
  */
-int test_long_lived(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace)
+int test_binary_tree(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace)
 {
     size_t i;
     

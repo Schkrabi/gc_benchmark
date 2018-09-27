@@ -118,16 +118,14 @@
  ******************************************************************************/
 #define TEST_INVALID -1
 #define TEST_SUBSYSTEM 0
-#define TEST_SHORT_LIVED 1
-#define TEST_LONG_LIVED 2
+#define TEST_LIST 1
+#define TEST_BINARY_TREE 2
 #define TEST_LARGE_STRUCTURE 3
-//#define TEST_LONG_LIVED_ALMOST_FULL 4
-//#define TEST_LONG_LIVED_NO_REPLACE 5
 #define TEST_GRAPH 6
 
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
-                        x(short_lived, TEST_SHORT_LIVED) \
-                        x(long_lived, TEST_LONG_LIVED)  \
+                        x(list, TEST_LIST) \
+                        x(binary_tree, TEST_BINARY_TREE)  \
                         x(large_structure, TEST_LARGE_STRUCTURE) \
                         x(graph, TEST_GRAPH)
 
