@@ -84,7 +84,8 @@ int test_list(size_t test_size, size_t max_list_len)
         
         list = NULL;
         clist_insert(&list, rand()%UINT_MAX);
-        len = (rand()%max_list_len) - 1;
+        //len = (rand()%max_list_len) - 1;
+        len = max_list_len - 1;
         
         for(j = 0; j < max_list_len; j++)
         {
@@ -119,7 +120,8 @@ int test_binary_tree(size_t test_size, size_t max_tree_size, size_t old_pool, do
         
         btree_insert(&btree, rand()%UINT_MAX);
         
-        size = rand()%max_tree_size;
+        //size = rand()%max_tree_size;
+        size = max_btree_size - 1;
         j = 0; 
         while(j < size)
         {
@@ -243,7 +245,8 @@ int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_poo
         
         graph = NULL;
         
-        size = rand()%max_graph_size;
+        //size = rand()%max_graph_size;
+        size = max_graph_size;
         
         graph = make_complete_graph(size);        
         
