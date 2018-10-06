@@ -1,15 +1,23 @@
 #!/bin/bash
 
-file=../archive/masterResults$(date +%Y-%m-%d:%H:%M:%S).csv
+gcs=(cheney custom generated)
+tests=(BinTreeI BinTreeII BinTreeIII BinTreeIV GraphI GraphII GraphIII GraphIV)
 
-echo GARBAGE_COLLECTOR\;MEAN_rdtsc\;MEDIAN_rdtsc\;MEAN_clock\;MEDIAN_clock > $file
-
-for dir in ../archive/*/
+for gc in ${gcs[@]};
 do
-    echo ${dir} | sed -e "s/\.\.\/archive\///" >> $file
-    for f in ${dir}result_*
+    #file=../archive/aggResults_${gc}_$(date +%Y-%m-%d:%H:%M:%S).csv
+    for test in ${tests[@]};
     do
-        gc=$(echo $f | grep -Eo 'cheney|generated|custom')
-        cat $f | tr ' ' ';' | sed -e "s/^/$gc;/" >> $file
+        file=../archive/aggResults_${test}_${gc}.csv
+        echo GARBAGE_COLLECTOR\;MEAN_rdtsc\;MEDIAN_rdtsc\;MEAN_clock\;MEDIAN_clock\;VAR | tr ';' '\t' > $file
+        for dir in ../archive/${test}_*/
+        do
+            #echo ${dir} | sed -e "s/\.\.\/archive\///" >> $file
+            for f in ${dir}result_${gc}*
+            do
+                #gc=$(echo $f | grep -Eo 'cheney|generated|custom')
+                cat $f | tr ' ' '\t' | sed -e "s/^/$gc\t/" >> $file
+            done
+        done
     done
 done

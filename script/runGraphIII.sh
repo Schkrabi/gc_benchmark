@@ -21,6 +21,7 @@ M=$((2**e))
 
 #Replacing test
 for CP in {1..75}
+#for CP in {1..3} #TODO REMOVE
 do        
     Y=10
     X=$(((M/(Y*32))*100))
@@ -50,8 +51,8 @@ do
     for gc in ${gcs[@]}; 
     do
         dataFile=${dataDir}${gc}_${testId}.csv
-        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END > $dataFile
-        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/'  >> $dataFile
+        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
+        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$CP/" >> $dataFile
         rsltFile=../results/result_${gc}_${testName}_C=${CP}
         Rscript doStatistics.R $dataFile $rsltFile
     done

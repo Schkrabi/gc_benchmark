@@ -18,6 +18,7 @@ rm -rf ${dataDir}*
 
 #Memory test
 for e in {13..23} #Iterate memory over 2**13 to 2**23 bytes
+#for e in {13..14} #TODO REMOVE  
 do
     M=$((2**e))
     
@@ -49,8 +50,8 @@ do
     for gc in ${gcs[@]}; 
     do
         dataFile=${dataDir}${gc}_${testId}.csv
-        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END > $dataFile
-        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/'  >> $dataFile
+        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
+        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$M/" >> $dataFile
         rsltFile=../results/result_${gc}_${testName}_M=${M}
         Rscript doStatistics.R $dataFile $rsltFile
     done

@@ -23,6 +23,7 @@ M=$((2**e))
 #Amplitude test
 Y_MAX=$(echo "($M/32)*0.5" | bc)
 Y_MAX=$(round $Y_MAX 0)
+#Y_MAX=2 #TODO REMOVE
 echo $Y_MAX
 Y=1
 while [ "$Y" -ne $Y_MAX ];
@@ -55,8 +56,8 @@ do
     for gc in ${gcs[@]}; 
     do
         dataFile=${dataDir}${gc}_${testId}.csv
-        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END > $dataFile
-        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/'  >> $dataFile
+        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
+        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$Y/"  >> $dataFile
         rsltFile=../results/result_${gc}_${testName}_Y=${Y}
         Rscript doStatistics.R $dataFile $rsltFile
     done

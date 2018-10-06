@@ -121,7 +121,7 @@ int test_binary_tree(size_t test_size, size_t max_tree_size, size_t old_pool, do
         btree_insert(&btree, rand()%UINT_MAX);
         
         //size = rand()%max_tree_size;
-        size = max_btree_size - 1;
+        size = max_tree_size - 1;
         j = 0; 
         while(j < size)
         {

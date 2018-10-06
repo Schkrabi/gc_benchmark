@@ -28,5 +28,6 @@ umean = mean(data[,"UNIT_DIFF"])
 umedian = median(data[,"UNIT_DIFF"])
 cmean = mean(data[,"CLOCK_DIFF"])
 cmedian = median(data[,"CLOCK_DIFF"])
+var = min(data[, "VAR"])
 
-write(c(umean, umedian, cmean, cmedian), args[2]);
+write(c(umean, umedian, cmean, cmedian, var), args[2]);
