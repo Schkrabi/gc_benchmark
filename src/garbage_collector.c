@@ -23,7 +23,7 @@
  */
 //#define LOG_ALLOCATION
 #define LOG_COLLECTION
-#define LOG_MEM_DUMP
+//#define LOG_MEM_DUMP
 
  /**
  * Byte indicating which garbage collector is used

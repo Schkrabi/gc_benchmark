@@ -16,21 +16,26 @@ archiveDir=../archive/
 rm -rf ${logDir}*
 rm -rf ${dataDir}*
 
-e=13
-M=$((2**e))
+#e=13
+#M=$((2**e))
 
 #Amplitude test
-Y_MAX=$(echo "(8 + sqrt(-(64 - (160 * (($M * 0.5) + 32)))))/80" | bc -l)
-Y_MAX=$(round $Y_MAX 0)
+#Y_MAX=$(echo "(8 + sqrt(-(64 - (160 * (($M * 0.5) + 32)))))/80" | bc -l)
+#Y_MAX=$(round $Y_MAX 0)
 #Y_MAX=2 #TODO REMOVE
-Y=1
-while [ "$Y" -ne $Y_MAX ];
-do        
+#Y=1
+O=15
+
+#while [ "$Y" -ne $Y_MAX ];
+for Y in {1..32}
+do
+    M=$(($O * (32 + ($Y * 32) + (Y * ((Y-1) * 40)))))
+    
     X=$(((M/(Y*32))*100))
     C=0.01
-    O=$(echo "((($M/(32 + ($Y * 32) + (($Y-1)*40)))/100)*50)" | bc -l)
-    O=$(round $O 0)
-    O=$(($O>1 ? $O : 1))
+    #O=$(echo "((($M/(32 + ($Y * 32) + (($Y-1)*40)))/100)*50)" | bc -l)
+    #O=$(round $O 0)
+    #O=$(($O>1 ? $O : 1))
     
     testId=${testName}_Y=${Y}
     echo $testId
@@ -69,5 +74,5 @@ do
     mv ${dataDir}* ${evacuateDir}
     mv ../results/* ${evacuateDir}
     
-    Y=$((Y+1))
+    #Y=$((Y+1))
 done

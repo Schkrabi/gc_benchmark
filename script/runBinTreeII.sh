@@ -17,24 +17,25 @@ rm -rf ${logDir}*
 rm -rf ${dataDir}*
 
 #Run the experiment
-e=13
-M=$((2**e))
+#e=13
+#M=$((2**e))
 
 #Amplitude test
-Y_MAX=$(echo "($M/32)*0.5" | bc)
-Y_MAX=$(round $Y_MAX 0)
+O=15
+#Y_MAX=$(echo "($M/32)*0.5" | bc)
+#Y_MAX=$(round $Y_MAX 0)
 #Y_MAX=2 #TODO REMOVE
 echo $Y_MAX
-Y=1
-while [ "$Y" -ne $Y_MAX ];
-do
-    echo $Y
-    
+#Y=1
+#while [ "$Y" -ne $Y_MAX ];
+for Y in {8..64}
+do    
+    M=$(($Y*$O*2*32))
     X=$(((M/(Y*32))*100))
     C=0.01
-    O=$(echo "((($M/($Y*32))/100)*50)" | bc -l)
-    O=$(round $O 0)
-    O=$(($O>1 ? $O : 1))
+    #O=$(echo "((($M/($Y*32))/100)*50)" | bc -l)
+    #O=$(round $O 0)
+    #O=$(($O>1 ? $O : 1))
     
     testId=${testName}_Y=${Y}
     echo $testId
@@ -73,5 +74,5 @@ do
     mv ${dataDir}* ${evacuateDir}
     mv ../results/* ${evacuateDir}
     
-    Y=$((Y+1))
+    #Y=$((Y+1))
 done

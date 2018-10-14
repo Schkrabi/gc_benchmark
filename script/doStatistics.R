@@ -22,12 +22,14 @@ data[,"UNIT_DIFF"] <- mapply(unitDiff, data[,"UNIT_END"], data[,"UNIT_START"])
 # data[,"NSEC_DIFF"] <- (1e9 * data[,"SEC_START"] + data[,"NSEC_END"]) - (1e9 * data[,"SEC_START"] + data[,"NSEC_START"])
 data[,"CLOCK_DIFF"] <- data[,"CLOCK_END"] - data[,"CLOCK_START"]
 
-# nmean = mean(data[,"NSEC_DIFF"])
-# nmedian = median(data[,"NSEC_DIFF"])
-umean = mean(data[,"UNIT_DIFF"])
-umedian = median(data[,"UNIT_DIFF"])
-cmean = mean(data[,"CLOCK_DIFF"])
-cmedian = median(data[,"CLOCK_DIFF"])
+#Remove 10% of extreme upper values from dataset
+u = data[data[,"UNIT_DIFF"] < quantile(data[,"UNIT_DIFF"], 0.90), "UNIT_DIFF"]
+c = data[data[,"CLOCK_DIFF"] < quantile(data[,"CLOCK_DIFF"], 0.90), "CLOCK_DIFF"]
+
+umean = mean(u)
+umedian = median(u)
+cmean = mean(c)
+cmedian = median(c)
 var = min(data[, "VAR"])
 
 write(c(umean, umedian, cmean, cmedian, var), args[2]);

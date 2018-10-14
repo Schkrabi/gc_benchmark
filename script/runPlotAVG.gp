@@ -2,5 +2,7 @@
 
 set term pdf
 set output ARG4
+set ylabel "rdtsc"
+set xlabel ARG5
 
-plot ARG1 using 2:6 lt rgb "red" with lp title "Cheney AVG", ARG2 using 2:6 lt rgb "blue" with lp title "Custom AVG", ARG3 using 2:6 lt rgb "green" with lp title "Generated AVG"
+plot ARG1 using 6:2 lt rgb "red" title "Cheney AVG", ARG2 using 6:2 lt rgb "blue" title "Custom AVG", ARG3 using 6:2 lt rgb "green" title "Generated AVG"

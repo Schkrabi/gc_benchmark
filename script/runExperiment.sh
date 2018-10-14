@@ -9,3 +9,4 @@
 ./runGraphIII.sh $1
 ./runGraphIV.sh $1
 ./aggregateResults.sh
+./makePlots.sh
