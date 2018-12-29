@@ -7,6 +7,8 @@
 #ifndef GC_CONSTANTS_H
 #define GC_CONSTANTS_H
 
+#include "generated_types.h"
+
 /******************************************************************************
  *                              GENERAL CONSTANTS                             *
  ******************************************************************************/
@@ -59,7 +61,7 @@
 /**
  * Overall number of types recognized by GC
  */
-#define TYPE_COUNT 14
+#define TYPE_COUNT 16
 
 /**
  * Type offsets into a type table
@@ -111,7 +113,7 @@
                         x(graph_edge_t, TYPE_GRAPH_EDGE_T)\
                         x(graph_edge_t*, TYPE_PTR)\
                         x(graph_t, TYPE_GRAPH_T)\
-                        x(graph_t*, TYPE_PTR)   
+                        x(graph_t*, TYPE_PTR)
 
 /******************************************************************************
  *                                  TESTS                                     *
@@ -121,12 +123,16 @@
 #define TEST_LIST 1
 #define TEST_BINARY_TREE 2
 #define TEST_LARGE_STRUCTURE 3
+#define TEST_BINARY_TREE_MULTITYPE 4
+#define TEST_GRAPH_MULTITYPE 5
 #define TEST_GRAPH 6
 
 #define XTEST_TABLE(x)  x(subsystem, TEST_SUBSYSTEM) \
                         x(list, TEST_LIST) \
                         x(binary_tree, TEST_BINARY_TREE)  \
                         x(large_structure, TEST_LARGE_STRUCTURE) \
-                        x(graph, TEST_GRAPH)
+                        x(graph, TEST_GRAPH) \
+                        x(binary_tree_multitype, TEST_BINARY_TREE_MULTITYPE) \
+                        x(graph_tree_multitype, TEST_GRAPH_MULTITYPE)
 
 #endif

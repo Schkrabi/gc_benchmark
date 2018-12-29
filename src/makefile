@@ -1,11 +1,11 @@
 CC=gcc
-#CFLAGS=-I../include/ -I./myjit/ -O0 -g -pg
-CFLAGS=-I../include/ -I./myjit/ -O2 
-#LFLAGS=-O0 -g -pg
-LFLAGS=-O2
+CFLAGS=-I../include/ -I./myjit/ -O0 -g -pg
+#CFLAGS=-I../include/ -I./myjit/ -O2 
+LFLAGS=-O0 -g -pg
+#LFLAGS=-O2
 JITFLAGS=-c -g -Winline -Wall -std=c99 -pedantic -D_XOPEN_SOURCE=600
-DEPS=gc_shared.h gc_cheney.h gc_util.h gc_types.h gc_constants.h garbage_collector.h binary_tree.h cyclic_list.h cdouble_list.h test.h benchmark.h gc_cheney_base.h gc_custom.h tarray.h large_structure.h gc_generated.h graph.h
-OBJ=gc_shared.o main.o gc_util.o gc_cheney.o gc_types.o garbage_collector.o binary_tree.o cyclic_list.o cdouble_list.o test.o benchmark.o gc_cheney_base.o gc_custom.o tarray.o large_structure.o gc_generated.o graph.o
+DEPS=gc_shared.h gc_cheney.h gc_util.h gc_types.h gc_constants.h garbage_collector.h binary_tree.h cyclic_list.h cdouble_list.h test.h benchmark.h gc_cheney_base.h gc_custom.h tarray.h large_structure.h gc_generated.h graph.h generated_types.h
+OBJ=gc_shared.o main.o gc_util.o gc_cheney.o gc_types.o garbage_collector.o binary_tree.o cyclic_list.o cdouble_list.o test.o benchmark.o gc_cheney_base.o gc_custom.o tarray.o large_structure.o gc_generated.o graph.o generated_types.o
 
 recompile: clean gc_benchmark
 

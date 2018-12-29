@@ -96,4 +96,13 @@ int test_large_structure(size_t test_size, size_t old_pool, double chance_to_rep
  * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
  */ 
 int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace);
+
+/**
+ * Tests behaviour of garbage collector with large number of binary tree types
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */
+int test_binary_tree_multitype(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace);
 #endif

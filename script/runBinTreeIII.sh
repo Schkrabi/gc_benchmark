@@ -22,7 +22,8 @@ M=$((2**e))
 
 #Replacing test
 Y=1
-for CP in {1..75}
+#for CP in {1..75}
+for CP in {32..75} #TODO remove
 #for CP in {1..3}
 do        
     Y=10

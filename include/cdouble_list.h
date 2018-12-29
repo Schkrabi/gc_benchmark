@@ -9,11 +9,11 @@
 
 #include "gc_shared.h"
 
-typedef struct
+typedef struct cdlist
 {
     long value;
-    void *prev;
-    void *next;
+    struct cdlist *prev;
+    struct cdlist *next;
 } cdlist_node_t, cdlist_t;
 
 /**

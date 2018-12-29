@@ -13,14 +13,11 @@
  /**
   * Structure for binary tree and binary tree node
   */
- typedef struct
+ typedef struct btree
  {
     long value;
-    void *lchild, *rchild;
+    struct btree *lchild, *rchild;
  } btree_node_t, btree_t;
- 
-//TODO obsolete remove
-extern type_info_t *btree_descriptor;
  
 /**
  * Makes and sets the binary tree structure descriptor to the given descriptor pointer

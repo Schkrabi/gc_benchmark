@@ -57,7 +57,7 @@ int large_structure_entangle(large_structure_t *q, large_structure_t **pool, siz
  * @return Pointer from pool or NULL
  * @see CHANCE_FOR_NULL, large_structure_roll_ptr, large_structure_roll_uniform_ptr
  **/ 
-struct large_structure_t* large_structure_roll_ptr(large_structure_t **pool, size_t pool_size)
+large_structure_t* large_structure_roll_ptr(large_structure_t **pool, size_t pool_size)
 {
     size_t roll;
     
@@ -78,7 +78,7 @@ struct large_structure_t* large_structure_roll_ptr(large_structure_t **pool, siz
  * @return Pointer from pool
  * @see CHANCE_FOR_NULL, large_structure_roll_ptr, large_structure_roll_uniform_ptr
  **/ 
-struct large_structure_t* large_structure_roll_uniform_ptr(large_structure_t **pool, size_t pool_size)
+large_structure_t* large_structure_roll_uniform_ptr(large_structure_t **pool, size_t pool_size)
 {
-    return (struct large_structure_t*)pool[rand()%pool_size];
+    return pool[rand()%pool_size];
 } 

@@ -9,9 +9,10 @@
 
 #include "gc_shared.h"
 
-typedef struct {
+typedef struct clist
+{
     long value;
-    void *next;
+    struct clist *next;
 } clist_node_t, clist_t;
 
 /**

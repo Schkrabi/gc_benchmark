@@ -18,6 +18,7 @@
 #include "garbage_collector.h"
 #include "large_structure.h"
 #include "graph.h"
+#include "generated_types.h"
 
 /**
  * User specified arugment for test size
@@ -261,6 +262,64 @@ int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_poo
             {
                 gc_cheney_base_roots[rand()%old_pool].ptr = graph;
             }
+        }
+    }
+}
+
+/**
+ * Tests behaviour of garbage collector with large number of binary tree types
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */
+int test_binary_tree_multitype(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace)
+{
+    size_t i;
+    
+    uint64_t used_type = GEN_BTREE_NUM_MIN;
+    
+    gc_cheney_base_roots_count = old_pool;
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
+    
+    for(i = 0; i < test_size; i++)
+    {
+        void *btree;
+        size_t size, j;
+        
+        btree = NULL;
+        
+        gen_btree_insert(&btree, rand()%UINT_MAX, used_type);
+        
+        //size = rand()%max_tree_size;
+        size = max_tree_size - 1;
+        j = 0; 
+        while(j < size)
+        {
+            if(gen_btree_insert(&btree, rand()%UINT_MAX, used_type) == 0)
+            {
+                continue;
+            }
+            j++;
+        }
+        
+        if(i < old_pool)
+        {
+            gc_cheney_base_roots[i].ptr = btree;
+            gc_cheney_base_roots[i].is_array = 0;
+        }
+        else
+        {
+            if(rand()%100 < chance_to_replace*100)
+            {
+                gc_cheney_base_roots[rand()%old_pool].ptr = btree;
+            }
+        }
+        
+        used_type++;
+        if(used_type > GEN_BTREE_NUM_MAX)
+        {
+            used_type = GEN_BTREE_NUM_MIN;
         }
     }
 }

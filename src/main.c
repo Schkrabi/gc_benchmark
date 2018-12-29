@@ -342,6 +342,12 @@ int sub_main(unsigned test_num, unsigned seed)
         case TEST_GRAPH:
             test_complete_graphs(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
             break;
+        case TEST_BINARY_TREE_MULTITYPE:
+            test_binary_tree_multitype(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
+            break;
+        case TEST_GRAPH_MULTITYPE:
+            //TODO
+            break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());
     

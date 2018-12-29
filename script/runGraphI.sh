@@ -21,7 +21,7 @@ e=13
 M=$((2**e))
 #Old pool test
 for Z in {1..95} #iterate 1 to 95%
-#for Z in {1..3} #TODO REMOVE
+#for Z in {80..95} #TODO REMOVE
 do
     Y=5
     X=$(((M/(32 + (Y * 32) + ((Y-1)*40)))*100))

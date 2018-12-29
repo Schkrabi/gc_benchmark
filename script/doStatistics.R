@@ -23,8 +23,8 @@ data[,"UNIT_DIFF"] <- mapply(unitDiff, data[,"UNIT_END"], data[,"UNIT_START"])
 data[,"CLOCK_DIFF"] <- data[,"CLOCK_END"] - data[,"CLOCK_START"]
 
 #Remove 10% of extreme upper values from dataset
-u = data[data[,"UNIT_DIFF"] < quantile(data[,"UNIT_DIFF"], 0.90), "UNIT_DIFF"]
-c = data[data[,"CLOCK_DIFF"] < quantile(data[,"CLOCK_DIFF"], 0.90), "CLOCK_DIFF"]
+u = data[data[,"UNIT_DIFF"] < quantile(data[,"UNIT_DIFF"], 0.97), "UNIT_DIFF"]
+c = data[data[,"CLOCK_DIFF"] < quantile(data[,"CLOCK_DIFF"], 0.97), "CLOCK_DIFF"]
 
 umean = mean(u)
 umedian = median(u)

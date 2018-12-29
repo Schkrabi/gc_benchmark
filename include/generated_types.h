@@ -28,7 +28,7 @@
  * @par NUM nomber constant for btree type
  */
 #define MAKE_BTREE_HEADER(SUFFIX, FIELDS, NUM)                                                          \
-    extern int GEN_BTREE_NUM(SUFFIX);                                                                   \
+    extern uint64_t GEN_BTREE_NUM(SUFFIX);                                                              \
     typedef struct GEN_BTREE_NAME(SUFFIX) {                                                             \
         long value;                                                                                     \
         struct GEN_BTREE_NAME(SUFFIX) *lchild, *rchild;                                                 \
@@ -47,7 +47,7 @@
  * @par NUM nomber constant for btree type
  */
 #define MAKE_BTREE_SRC(SUFFIX, FIELDS, NUM)                                                                                     \
-    int GEN_BTREE_NUM(SUFFIX) = NUM;                                                                                            \
+    uint64_t GEN_BTREE_NUM(SUFFIX) = NUM;                                                                                       \
     int btree ## SUFFIX ## _make_descriptor(type_info_t *info)                                                                  \
     {                                                                                                                           \
         GEN_BTREE_NODE_TYPE(SUFFIX) measure;                                                                                    \
@@ -147,7 +147,7 @@
 #define GEN_BTREE_NUM_MAX 15
 
 /**
- * xmacro for type definition
+ * xmacro for btree type definition
  */
 #define XGENERATE_TYPES_BTREE(X) \
     X(IF, int a; float aa;, 14) \
@@ -163,8 +163,70 @@ XGENERATE_TYPES_BTREE(MAKE_BTREE_HEADER)
  */
 int gen_btree_insert(void **btree, long value, uint64_t used_type);
 
+#define GEN_GRAPH_EDGE_NAME(SUFFIX) graph ## SUFFIX ## _edge
+#define GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _edge_t
+#define GEN_GRAPH_EDGE_NUM(SUFFIX) TYPE_GRAPH_EDGE_ ## SUFFIX ## _T
+
+#define GEN_GRAPH_NODE_NAME(SUFFIX) graph ## SUFFIX ## _node
+#define GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _node_t
+#define GEN_GRAPH_NODE_NUM(SUFFIX) TYPE_GRAPH_NODE_ ## SUFFIX ## _T
+
+#define GEN_GRAPH_NAME(SUFFIX) graph ## SUFFIX
+#define GEN_GRAPH_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _t
+#define GEN_GRAPH_NUM(SUFFIX) TYPE_GRAPH_ ## SUFFIX ## _T
+
+#define MAKE_GRAPH_HEADER(SUFFIX, FIELDS, NUM) \
+    extern uint64_t GEN_GRAPH_EDGE_NUM(SUFFIX); \
+    extern uint64_t GEN_GRAPH_NODE_NUM(SUFFIX); \
+    extern uint64_t GEN_GRAPH_NUM(SUFFIX); \
+    struct GEN_GRAPH_EDGE_NAME(SUFFIX); \
+    typedef struct GRAPH_NODE_NAME(SUFFIX) \
+    {\
+        int value;\
+        struct GEN_GRAPH_EDGE_NAME(SUFFIX) *edges;\
+        struct GRAPH_NODE_NAME(SUFFIX) *next;\
+        FIELDS \
+    } GEN_GRAPH_NODE_TYPE_NAME(SUFFIX); \
+    typedef struct GRAPH_EDGE_NAME(SUFFIX) \
+    {\
+        int value;\
+        struct GRAPH_NODE_NAME(SUFFIX) *from, *to;\
+        struct GEN_GRAPH_EDGE_NAME(SUFFIX) *next;\
+        FIELDS\
+    } GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX);\
+    typedef struct GEN_GRAPH_NAME(SUFFIX) \
+    {\
+        uint64_t next_id;\
+        size_t node_count;\
+        struct GRAPH_NODE_NAME(SUFFIX) *nodes;\
+        FIELDS\
+    } GEN_GRAPH_TYPE_NAME(SUFFIX);\
+    int graph ## SUFFIX ## _node_make_descriptor(type_info_t *info);\
+    int graph ## SUFFIX ## _edge_make_descriptor(type_info_t *info);\
+    int graph ## SUFFIX ## _make_descriptor(type_info_t *info);\
+    GEN_GRAPH_TYPE_NAME(SUFFIX)* make_empty_graph ## SUFFIX ## ();\
+    GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _add_node(GEN_GRAPH_TYPE_NAME(SUFFIX) *graph);\
+    int graph ## SUFFIX ## _remove_node(GEN_GRAPH_TYPE_NAME(SUFFIX)* graph, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *node);\
+    GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _find_node(GEN_GRAPH_TYPE_NAME(SUFFIX)* graph, uint64_t id);\
+    GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _find_node_by_value(GEN_GRAPH_TYPE_NAME(SUFFIX)* graph, int value);\
+    GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _node_add_edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *to);\
+    int graph ## SUFFIX ## _node_remove_edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *from, GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) *edge);\
+    int graph ## SUFFIX ## _node_remove_edge_by_to_node(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* to);\
+    GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _add_edge(GEN_GRAPH_TYPE_NAME(SUFFIX)* graph, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *to);\
+    int graph ## SUFFIX ## _remove_edge(GEN_GRAPH_TYPE_NAME(SUFFIX)* graph, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *to);\
+    GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _node_find_edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *to);\
+    GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _node_find_edge_by_value(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* from, int value);\
+    GEN_GRAPH_TYPE_NAME(SUFFIX)* make_complete_graph ## SUFFIX ## (size_t number_of_nodes);\
+    int is_graph ## SUFFIX ## _node(GEN_GRAPH_TYPE_NAME(SUFFIX) *graph, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *node);\
+    int is_node ## SUFFIX ## _edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *node, GEN_GRAPH_EDGE_TYPE_NAME(SUFFX) *edge);
+
+/**
+ * xmacro for graph type definition
+ */
 #define XGENERATE_TYPES_GRAPH(X) \
     X(IF, int a; float aa;, 16)  \
     X(CD, char aaa; double aaaa;, 17)
+    
+XGENERATE_TYPES_GRAPH(MAKE_GRAPH_HEADER)
 
 #endif

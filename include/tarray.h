@@ -12,7 +12,7 @@
 /**
  * Testing array struct
  */
-typedef struct
+typedef struct tarray
 {
     size_t size;
     int *data;

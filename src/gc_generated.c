@@ -191,6 +191,15 @@ size_t atom_alloc_size(type_info_t *info)
  */
 int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, jit_op *current, jit_op **next, jit_op **end)
 {
+    //Input
+    // R_TYPE
+    // R_PTR
+    //Used
+    // R_BLOCK
+    // R_LOOP
+    // R_IF
+    // R_IS_ARRAY
+    
     if(info->number_of_references > 0)
     {        
         //Patch the current switch label and forwared declare the next        
@@ -236,6 +245,10 @@ int make_gc_walk_array_per_type(struct jit *p, type_info_t *info, int type_num, 
  **/
 int make_gc_walk_array(struct jit *p, type_info_t type_table[], size_t type_count)
 {
+    //Used
+    // R_TYPE
+    // R_BLOCK
+    // R_IF
 	int i;
 	jit_op 	*current, 
 		*next, 

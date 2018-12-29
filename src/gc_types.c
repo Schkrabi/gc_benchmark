@@ -13,6 +13,7 @@
 #include "tarray.h"
 #include "large_structure.h"
 #include "graph.h"
+#include "generated_types.h"
 
 type_info_t type_table[TYPE_COUNT];
 
@@ -104,6 +105,8 @@ int init_type_table()
     large_structure_make_descriptor(&type_table[TYPE_LARGE_STRUCTURE_T]);
     graph_framework_make_descriptors(&type_table[TYPE_GRAPH_T], &type_table[TYPE_GRAPH_NODE_T], &type_table[TYPE_GRAPH_EDGE_T]);
     
+    XGENERATE_TYPES_BTREE(GEN_INIT_TYPE_TABLE)
+    
     return 0;
 }
 
@@ -119,6 +122,12 @@ int cleanup_type_table()
     free(type_table[TYPE_CLIST_T].references);
     free(type_table[TYPE_CDLIST_T].references);
     free(type_table[TYPE_TARRAY_T].references);
+    free(type_table[TYPE_LARGE_STRUCTURE_T].references);
+    free(type_table[TYPE_GRAPH_T].references);
+    free(type_table[TYPE_GRAPH_NODE_T].references);
+    free(type_table[TYPE_GRAPH_EDGE_T].references);
+    
+    XGENERATE_TYPES_BTREE(GEN_FREE_TYPE_TABLE)
     
     return 0;
 }
