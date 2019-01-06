@@ -36,6 +36,14 @@ size_t __old_pool_size = __DEFAULT_OLD_POOL_SIZE;
  * User specified arugment for chance to replace structure in old pool (where applicable)
  */
 double __chance_to_replace = __DEFAULT_CHANCE_TO_REPLACE;
+/**
+ * User specified argument for number of generated binary tree types
+ */
+int __binary_tree_types = __DEFAULT_BINARY_TREE_TYPES;
+/**
+ * User specified argument for number of generated graph types
+ */
+int __graph_types = __DEFAULT_GRAPH_TYPES;
 
 #define XTEST_COMPARE(name, num) if(strcmp(arg, #name) == 0) return num;
 #define XTEST_TOSTR(name, num) case num: return #name;
@@ -320,6 +328,53 @@ int test_binary_tree_multitype(size_t test_size, size_t max_tree_size, size_t ol
         if(used_type > GEN_BTREE_NUM_MAX)
         {
             used_type = GEN_BTREE_NUM_MIN;
+        }
+    }
+}
+
+/**
+ * Tests behaviour of grabage collector with complete graph long living objects
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */ 
+int test_complete_graphs_multitype(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace)
+{
+    size_t i;
+    uint64_t used_type = GEN_GRAPH_NUM_MIN;
+    
+    gc_cheney_base_roots_count = old_pool;
+    gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
+    
+    for(i = 0; i < test_size; i++)
+    {
+        graph_t *graph;
+        size_t size, j;
+        
+        graph = NULL;
+        
+        //size = rand()%max_graph_size;
+        size = max_graph_size;
+        
+        graph = gen_graph_make_complete_graph(size, used_type);        
+        
+        if(i < old_pool)
+        {
+            gc_cheney_base_roots[i].ptr = graph;
+            gc_cheney_base_roots[i].is_array = 0;
+        }
+        else
+        {
+            if(rand()%100 < chance_to_replace*100)
+            {
+                gc_cheney_base_roots[rand()%old_pool].ptr = graph;
+            }
+        }
+        used_type += 3;
+        if(used_type > GEN_GRAPH_NUM_MAX)
+        {
+            used_type = GEN_GRAPH_NUM_MIN;
         }
     }
 }

@@ -199,7 +199,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "s:t:g:q:m:o:a:c:h")) != -1)
+    while ((c = getopt (argc, argv, "s:t:g:q:m:o:a:c:j:k:h")) != -1)
     {
         arg = NULL;
         err_ptr = NULL;
@@ -263,7 +263,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
             __semispace_size = strtol(arg, &err_ptr, 0);
             if(arg == err_ptr)
             {
-                fprintf(stderr, "Option -m requires a integer argument (decimal, hexadecimal or octal)\n");
+                fprintf(stderr, "Option -m requires an integer argument (decimal, hexadecimal or octal)\n");
                 return 1;
             }
             break;
@@ -272,7 +272,29 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
             __old_pool_size = strtol(arg, &err_ptr, 0);
             if(arg == err_ptr)
             {
-                fprintf(stderr, "Option -o requires a integer argument (decimal, hexadecimal or octal)\n");
+                fprintf(stderr, "Option -o requires an integer argument (decimal, hexadecimal or octal)\n");
+                return 1;
+            }
+            break;
+        case 'j':
+            arg = optarg;
+            __binary_tree_types = strtol(arg, &err_ptr, 0);
+            if(     arg == err_ptr
+                ||  __binary_tree_types > GEN_BTREE_TYPES_NUM
+                ||  __binary_tree_types < 0)
+            {
+                fprintf(stderr, "Option -j requires an iteger argument ranging from %d to %d\n", 0, GEN_BTREE_TYPES_NUM);
+                return 1;
+            }
+            break;
+        case 'k':
+            arg = optarg;
+            __graph_types = strtol(arg, &err_ptr, 0);
+            if(     arg == err_ptr
+                ||  __graph_types > GEN_GRAPH_TYPES_NUM
+                ||  __graph_types < 0)
+            {
+                fprintf(stderr, "Option -k requires an iteger argument ranging from %d to %d\n", 0, GEN_GRAPH_TYPES_NUM);
                 return 1;
             }
             break;
@@ -346,7 +368,7 @@ int sub_main(unsigned test_num, unsigned seed)
             test_binary_tree_multitype(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
             break;
         case TEST_GRAPH_MULTITYPE:
-            //TODO
+            test_complete_graphs_multitype(__test_size, __max_structure_size, __old_pool_size, __chance_to_replace);
             break;
     }
     gc_log(LOG_INFO, "test end %u", (unsigned)clock());

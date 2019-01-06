@@ -61,7 +61,7 @@
 /**
  * Overall number of types recognized by GC
  */
-#define TYPE_COUNT 16
+#define TYPE_COUNT (14 + __binary_tree_types + __graph_types)
 
 /**
  * Type offsets into a type table
@@ -133,6 +133,6 @@
                         x(large_structure, TEST_LARGE_STRUCTURE) \
                         x(graph, TEST_GRAPH) \
                         x(binary_tree_multitype, TEST_BINARY_TREE_MULTITYPE) \
-                        x(graph_tree_multitype, TEST_GRAPH_MULTITYPE)
+                        x(graph_multitype, TEST_GRAPH_MULTITYPE)
 
 #endif

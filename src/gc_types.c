@@ -15,7 +15,7 @@
 #include "graph.h"
 #include "generated_types.h"
 
-type_info_t type_table[TYPE_COUNT];
+type_info_t type_table[3000];
 
 /**
  * Xmacro to create a type to int function
@@ -70,6 +70,8 @@ const char* typenum_to_string(int arg)
  */
 int init_type_table()
 {
+    //type_table = (type_info_t*)malloc(TYPE_COUNT * sizeof(type_info_t));
+    
     test_struct_t test_instance;
     
     type_table[TYPE_UNDEFINED].size = 1;
@@ -105,7 +107,10 @@ int init_type_table()
     large_structure_make_descriptor(&type_table[TYPE_LARGE_STRUCTURE_T]);
     graph_framework_make_descriptors(&type_table[TYPE_GRAPH_T], &type_table[TYPE_GRAPH_NODE_T], &type_table[TYPE_GRAPH_EDGE_T]);
     
-    XGENERATE_TYPES_BTREE(GEN_INIT_TYPE_TABLE)
+    //Initialization of generated types
+    gen_init_generated_types_constants();    
+    XGENERATE_TYPES_BTREE(GEN_BTREE_INIT_TYPE_TABLE)
+    XGENERATE_TYPES_GRAPH(GEN_GRAPH_INIT_TYPE_TABLE)
     
     return 0;
 }
@@ -127,8 +132,10 @@ int cleanup_type_table()
     free(type_table[TYPE_GRAPH_NODE_T].references);
     free(type_table[TYPE_GRAPH_EDGE_T].references);
     
-    XGENERATE_TYPES_BTREE(GEN_FREE_TYPE_TABLE)
+    XGENERATE_TYPES_BTREE(GEN_BTREE_FREE_TYPE_TABLE)
+    XGENERATE_TYPES_GRAPH(GEN_GRAPH_FREE_TYPE_TABLE)
     
+    //free(type_table);
     return 0;
 }
 

@@ -28,6 +28,14 @@
  * Default value for __entanglement_buff_size
  */
 #define __DEFAULT_ENTANGLEMENT_BUFF_SIZE 100
+/**
+ * Default value for __binary_tree_types
+ */
+#define __DEFAULT_BINARY_TREE_TYPES 0
+/**
+ * Default value for __graph_types
+ */
+#define __DEFAULT_GRAPH_TYPES 0
 
 /**
  * User specified arugment for test size
@@ -45,7 +53,14 @@ extern size_t __old_pool_size;
  * User specified arugment for chance to replace structure in old pool (where applicable)
  */
 extern double __chance_to_replace;
-
+/**
+ * User specified argument for number of generated binary tree types
+ */
+extern int __binary_tree_types;
+/**
+ * User specified argument for number of generated graph types
+ */
+extern int __graph_types;
 
 /**
   * Parses argument specified from the command line
@@ -105,4 +120,13 @@ int test_complete_graphs(size_t test_size, size_t max_graph_size, size_t old_poo
  * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
  */
 int test_binary_tree_multitype(size_t test_size, size_t max_tree_size, size_t old_pool, double chance_to_replace);
+
+/**
+ * Tests behaviour of grabage collector with complete graph long living objects
+ * @par test_size overall number of objects created in the test
+ * @par max_graph_size maximal number of nodes that single complete graph structure can have
+ * @par old_pool number of roots for garbage collection
+ * @par chance_to_replace a chace (between 0.0 and 1.0) for a newly allocated object to become root instead of old one
+ */ 
+int test_complete_graphs_multitype(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace);
 #endif
