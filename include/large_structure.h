@@ -21,6 +21,23 @@ typedef struct large_structure
     struct large_structure *ptr11, *ptr12, *ptr13;
 } large_structure_t;
 
+#define __large_structure_t_scan_struct\
+    case TYPE_LARGE_STRUCTURE_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(136, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(144, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(152, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(160, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(168, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(176, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(240, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(248, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(256, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(264, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(328, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(336, large_structure_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(144, large_structure_t)\
+        break;
+
 /**
  * Makes and sets the large structure descriptor to the given descriptor pointer
  * @par info pointer to the initialized descriptor structure

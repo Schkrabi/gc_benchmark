@@ -1,6 +1,7 @@
+#CC=gcc
 CC=gcc
 #CFLAGS=-I../include/ -I./myjit/ -O0 -g -pg
-CFLAGS=-I../include/ -I./myjit/ -O2 
+CFLAGS=-I../include/ -I./myjit/ -O2
 #LFLAGS=-O0 -g -pg
 LFLAGS=-O2
 JITFLAGS=-c -g -Winline -Wall -std=c99 -pedantic -D_XOPEN_SOURCE=600

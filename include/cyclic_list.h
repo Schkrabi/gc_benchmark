@@ -15,6 +15,11 @@ typedef struct clist
     struct clist *next;
 } clist_node_t, clist_t;
 
+#define __clist_t_scan_struct\
+    case TYPE_CLIST_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(8, clist_node_t)\
+        break;
+
 /**
  * Makes and sets the cyclic list structure descriptor to the given descriptor pointer
  * @par info pointer to the initialized descriptor structure

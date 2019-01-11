@@ -16,6 +16,12 @@ typedef struct cdlist
     struct cdlist *next;
 } cdlist_node_t, cdlist_t;
 
+#define __cdlist_t_scan_struct\
+    case TYPE_CDLIST_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(8, cdlist_node_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(16, cdlist_node_t)\
+        break;
+
 /**
  * Makes and sets the cyclic double linked list descriptor to the given descriptor structure pointer
  * @par info pointer to the allocated descriptor structure

@@ -12,6 +12,23 @@
 #include "gc_util.h"
 #include <syslog.h>
 #include "gc_cheney_base.h"
+#include "graph.h"
+#include "binary_tree.h"
+#include "cyclic_list.h"
+#include "cdouble_list.h"
+#include "large_structure.h"
+#include "tarray.h"
+#include "generated_types.h"
+
+#define __XGC_CUSTOM_TYPES(x)\
+        x(TYPE_BTREE_T, btree_t)\
+        x(TYPE_CLIST_T, clist_t)\
+        x(TYPE_CDLIST_T, cdlist_t)\
+        x(TYPE_TARRAY_T, tarray_t)\
+        x(TYPE_LARGE_STRUCTURE_T, large_structure_t)\
+        x(TYPE_GRAPH_NODE_T, graph_node_t)\
+        x(TYPE_GRAPH_EDGE_T, graph_edge_t)\
+        x(TYPE_GRAPH_T, graph_t)
 
 /**
  * Initializes the Garbage Collector objects
@@ -160,6 +177,7 @@ int gc_custom_walk_block(block_t *block)
     switch(block_get_type(block))
     {
         case TYPE_UNDEFINED:
+        case TYPE_FORWARD:
         case TYPE_INT:
         case TYPE_DOUBLE:
             return 0;
@@ -187,6 +205,19 @@ int64_t gc_custom_remaining_space()
     return gc_cheney_base_remaining_space();
 }
 
+#define __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(NUM, TYPE)\
+    case NUM:\
+        byte_size = block_get_array_size(block) * sizeof(TYPE);\
+        dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);\
+        memcpy(dst, block, byte_size + 16);\
+        break;
+
+#define __GC_CUSTOM_SCAN_PTR_PER_TYPE(NUM, TYPE)\
+    case NUM:\
+        dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, sizeof(TYPE) - 8);\
+        memcpy(dst, block, sizeof(TYPE) + 8);\
+        break;
+
 void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array)
 {
 	block_t *block;
@@ -201,105 +232,32 @@ void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array)
 						size_t byte_size;
 						switch(block_get_type(block))
 						{
-						case 4:
-							byte_size = block_get_array_size(block) * 8;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 7:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 8:
-							byte_size = block_get_array_size(block) * 16;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 9:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 5:
-							byte_size = block_get_array_size(block) * 8;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 2:
-							byte_size = block_get_array_size(block) * 4;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 6:
-							byte_size = block_get_array_size(block) * 24;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 10:
-							byte_size = block_get_array_size(block) * 16;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
-						case 11:
-							byte_size = block_get_array_size(block) * 352;
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-							memcpy(dst, block, byte_size + 16);
-							break;
+                        __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(TYPE_PTR, void*)
+                        __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(TYPE_DOUBLE, double)
+                        __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(TYPE_INT, int)
+                        
+                        __XGC_CUSTOM_TYPES(__GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE)
+                        
+                        XGENERATE_TYPES_BTREE(__GC_CUSTOM_GEN_BTREE_SCAN_ARRAY_PTR_PER_TYPE)
+                        XGENERATE_TYPES_GRAPH(__GC_CUSTOM_GEN_GRAPH_SCAN_ARRAY_PTR_PER_TYPE)
 						default:
-						{
-							size_t block_size = block_get_size(block);
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-							memcpy(dst, block, block_size);
-						}
+                            fprintf(stderr, "Unrecognized type %u in gc_custom_scan_ptr\n", (unsigned)block_get_type(block));
 						}
 					}
 					else
 					{
 						switch(block_get_type(block))
 						{
-						case 4:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 7:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 8:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-							memcpy(dst, block, 24);
-							break;
-						case 9:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 5:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 2:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-							memcpy(dst, block, 16);
-							break;
-						case 6:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-							memcpy(dst, block, 32);
-							break;
-						case 10:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-							memcpy(dst, block, 24);
-							break;
-						case 11:
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-							memcpy(dst, block, 360);
-							break;
+						__GC_CUSTOM_SCAN_PTR_PER_TYPE(TYPE_PTR, void*)
+                        __GC_CUSTOM_SCAN_PTR_PER_TYPE(TYPE_DOUBLE, double)
+                        __GC_CUSTOM_SCAN_PTR_PER_TYPE(TYPE_INT, int)
+                        
+                        __XGC_CUSTOM_TYPES(__GC_CUSTOM_SCAN_PTR_PER_TYPE)
+                        
+                        XGENERATE_TYPES_BTREE(__GC_CUSTOM_GEN_BTREE_SCAN_PTR_PER_TYPE)
+                        XGENERATE_TYPES_GRAPH(__GC_CUSTOM_GEN_GRAPH_SCAN_PTR_PER_TYPE)
 						default:
-						{
-							size_t block_size = block_get_size(block);
-							dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, block_size - sizeof(block_t));
-							memcpy(dst, block, block_size);
-						}
+                            fprintf(stderr, "Unrecognized type %u\n", (unsigned)block_get_type(block));
 						}
 					}
 					block_set_forward(block, dst);
@@ -309,382 +267,70 @@ void *gc_custom_scan_ptr(void *ptr, uint64_t type, int is_array)
 	return NULL;
 }
 
+#define __GC_CUSTOM_SCAN_STRUCT_TYPE(OFFSET, TYPE)\
+    scanned = (void**)((art_ptr_t)ptr + OFFSET);\
+    if(gc_cheney_base_is_old_mem(*scanned)){\
+        block = (block_t*)((art_ptr_t)*scanned - 8);\
+        if(block_has_forward(block)){\
+            *scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));\
+        }\
+        else{\
+            dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, sizeof(TYPE) - 8);\
+            memcpy(dst, block, sizeof(TYPE) + 8);\
+            block_set_forward(block, dst);\
+            *scanned = dst + 8;\
+        }\
+    }
+    
+#define __GC_CUSTOM_SCAN_STRUCT_ARRAY_TYPE(OFFSET, TYPE)\
+    scanned = (void**)((art_ptr_t)ptr + OFFSET);\
+    if(gc_cheney_base_is_old_mem(*scanned)) {\
+        block = (block_t*)((art_ptr_t)*scanned - 16);\
+        if(block_has_forward(block)){\
+            *scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));\
+        }\
+        else{\
+            size_t byte_size = block_get_array_size(block) * sizeof(TYPE);\
+            dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);\
+            memcpy(dst, block, byte_size + 16);\
+            block_set_forward(block, dst);\
+            *scanned = dst + 16;\
+        }\
+    }\
+    break;
+    
+#define __void_scan_struct\
+    case TYPE_PTR:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(0, void*)\
+        break;\
+        
+#define __MAKE_GC_CUSTOM_SCAN_STRUCT_PER_TYPE(NUM, TYPE) __ ## TYPE ## _scan_struct
+
 int gc_custom_scan_struct(void *ptr, int type)
 {
 	block_t *block;
 	void *dst, **scanned;
 	switch(type)
 	{
-	case 4:
-		scanned = (void**)((art_ptr_t)ptr + 0);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-				memcpy(dst, block, 16);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
-	case 7:
-		scanned = (void**)((art_ptr_t)ptr + 8);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-				memcpy(dst, block, 32);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 16);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-				memcpy(dst, block, 32);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
-	case 8:
-		scanned = (void**)((art_ptr_t)ptr + 8);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 8);
-				memcpy(dst, block, 24);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
-	case 9:
-		scanned = (void**)((art_ptr_t)ptr + 8);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-				memcpy(dst, block, 32);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 16);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 16);
-				memcpy(dst, block, 32);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
-	case 6:
-		scanned = (void**)((art_ptr_t)ptr + 8);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-				memcpy(dst, block, 16);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 16);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 0);
-				memcpy(dst, block, 16);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
-	case 10:
-		scanned = (void**)((art_ptr_t)ptr + 8);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 16);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				size_t byte_size = block_get_array_size(block) * 4;
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, byte_size);
-				memcpy(dst, block, byte_size + 16);
-				block_set_forward(block, dst);
-				*scanned = dst + 16;
-			}
-		}
-		break;
-	case 11:
-		scanned = (void**)((art_ptr_t)ptr + 136);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 144);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 152);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 160);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 168);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 176);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 240);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 248);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 256);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 264);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 328);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 336);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		scanned = (void**)((art_ptr_t)ptr + 344);
-		if(gc_cheney_base_is_old_mem(*scanned))
-		{
-			block = (block_t*)((art_ptr_t)*scanned - 8);
-			if(block_has_forward(block))
-			{
-				*scanned = gc_cheney_base_get_forwarding_addr(*scanned, block, block_get_forward(block));
-			}
-			else
-			{
-				dst = gc_cheney_base_get_mem((void**)&gc_cheney_base_remaining_to_space, 344);
-				memcpy(dst, block, 360);
-				block_set_forward(block, dst);
-				*scanned = dst + 8;
-			}
-		}
-		break;
+	__void_scan_struct
+	
+	__XGC_CUSTOM_TYPES(__MAKE_GC_CUSTOM_SCAN_STRUCT_PER_TYPE)
+	
+	XGENERATE_TYPES_BTREE(__GC_CUSTOM_GEN_BTREE_MAKE_GC_SCAN_STRUCT_PER_TYPE)
+    XGENERATE_TYPES_GRAPH(__GC_CUSTOM_GEN_GRAPH_MAKE_GC_SCAN_STRUCT_PER_TYPE)
+    default:
+        fprintf(stderr, "Unrecognized type %u in gc_custom_scan_struct\n", (unsigned)block_get_type(block));
+            
 	}
 	return 0;
 }
+
+//Use X macro?
+#define __GC_CUSTOM_WALK_ARRAY_PER_TYPE(NUM, TYPE)\
+    case NUM:\
+        for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += sizeof(TYPE))\
+            gc_custom_scan_struct(ptr, NUM);\
+        break;
 
 int gc_custom_walk_array(block_t *block)
 {
@@ -695,34 +341,15 @@ int gc_custom_walk_array(block_t *block)
 		type = block_get_type(block);
 		switch(type)
 		{
-		case 4:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 8)
-				gc_custom_scan_struct(ptr, 4);
-			break;
-		case 7:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_custom_scan_struct(ptr, 7);
-			break;
-		case 8:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
-				gc_custom_scan_struct(ptr, 8);
-			break;
-		case 9:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_custom_scan_struct(ptr, 9);
-			break;
-		case 6:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 24)
-				gc_custom_scan_struct(ptr, 6);
-			break;
-		case 10:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 16)
-				gc_custom_scan_struct(ptr, 10);
-			break;
-		case 11:
-			for(ptr = get_data_start(block); ptr < get_data_end(block); ptr += 352)
-				gc_custom_scan_struct(ptr, 11);
-			break;
+        __GC_CUSTOM_WALK_ARRAY_PER_TYPE(TYPE_PTR, void*)
+        
+        __XGC_CUSTOM_TYPES(__GC_CUSTOM_WALK_ARRAY_PER_TYPE)
+        
+        XGENERATE_TYPES_BTREE(__GC_CUSTOM_GEN_BTREE_WALK_ARRAY_PER_TYPE)
+        XGENERATE_TYPES_GRAPH(__GC_CUSTOM_GEN_GRAPH_WALK_ARRAY_PER_TYPE)
+        default:
+            fprintf(stderr, "Unrecognized type %u in gc_custom_walk_array\n", (unsigned)block_get_type(block));
 		}
 	}
+	return 0;
 }

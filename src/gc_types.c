@@ -72,8 +72,6 @@ int init_type_table()
 {
     //type_table = (type_info_t*)malloc(TYPE_COUNT * sizeof(type_info_t));
     
-    test_struct_t test_instance;
-    
     type_table[TYPE_UNDEFINED].size = 1;
     type_table[TYPE_UNDEFINED].number_of_references = 0;
     type_table[TYPE_UNDEFINED].references = NULL;
@@ -92,14 +90,6 @@ int init_type_table()
     type_table[TYPE_DOUBLE].number_of_references = 0;
     type_table[TYPE_DOUBLE].references = NULL;
     
-    type_table[TYPE_TEST_STRUCT_T].size = sizeof(test_struct_t);
-    type_table[TYPE_TEST_STRUCT_T].number_of_references = 2;
-    type_table[TYPE_TEST_STRUCT_T].references = malloc(2*sizeof(ptr_info_t));
-    type_table[TYPE_TEST_STRUCT_T].references[0].offset = (unsigned long)&test_instance.ptr1 - (unsigned long)&test_instance;
-    ptr_info_set_type(&type_table[TYPE_TEST_STRUCT_T].references[0], TYPE_PTR);
-    type_table[TYPE_TEST_STRUCT_T].references[1].offset = (unsigned long)&test_instance.ptr2 - (unsigned long)&test_instance;
-    ptr_info_set_type(&type_table[TYPE_TEST_STRUCT_T].references[1], TYPE_PTR);
-    
     btree_make_descriptor(&type_table[TYPE_BTREE_T]);
     clist_make_descriptor(&type_table[TYPE_CLIST_T]);
     cdlist_make_descriptor(&type_table[TYPE_CDLIST_T]);  
@@ -107,8 +97,7 @@ int init_type_table()
     large_structure_make_descriptor(&type_table[TYPE_LARGE_STRUCTURE_T]);
     graph_framework_make_descriptors(&type_table[TYPE_GRAPH_T], &type_table[TYPE_GRAPH_NODE_T], &type_table[TYPE_GRAPH_EDGE_T]);
     
-    //Initialization of generated types
-    gen_init_generated_types_constants();    
+    //Initialization of generated types 
     XGENERATE_TYPES_BTREE(GEN_BTREE_INIT_TYPE_TABLE)
     XGENERATE_TYPES_GRAPH(GEN_GRAPH_INIT_TYPE_TABLE)
     
@@ -122,7 +111,7 @@ int init_type_table()
 int cleanup_type_table()
 {
     free(type_table[TYPE_PTR].references);
-    free(type_table[TYPE_TEST_STRUCT_T].references);
+    
     free(type_table[TYPE_BTREE_T].references);
     free(type_table[TYPE_CLIST_T].references);
     free(type_table[TYPE_CDLIST_T].references);

@@ -73,7 +73,7 @@
 #define TYPE_GRAPH_NODE_T 3 
 #define TYPE_PTR 4
 #define TYPE_DOUBLE 5
-#define TYPE_TEST_STRUCT_T 6
+
 #define TYPE_BTREE_T 7
 #define TYPE_CLIST_T 8
 #define TYPE_CDLIST_T 9
@@ -90,8 +90,6 @@
                         x(int*, TYPE_PTR) \
                         x(double*, TYPE_PTR) \
                         x(double, TYPE_DOUBLE) \
-                        x(test_struct_t, TYPE_TEST_STRUCT_T) \
-                        x(test_struct_t, TYPE_PTR) \
                         x(btree_t, TYPE_BTREE_T) \
                         x(btree_node_t, TYPE_BTREE_T) \
                         x(btree_t*, TYPE_PTR) \

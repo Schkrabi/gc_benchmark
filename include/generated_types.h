@@ -6,10 +6,15 @@
 #include <stdio.h>
 
 #define GEN_BTREE_TYPES_NUM 1000
+#define GEN_GRAPH_TYPES_NUM 400
+
+///////////////////////////////////////////////////////////////////////////////
+//                  GENERATED BINARY_TREES                                   //
+///////////////////////////////////////////////////////////////////////////////
 #define GEN_BTREE_TYPES_NUM_OFFSET 14
 
 #define GEN_BTREE_NUM_MIN GEN_BTREE_TYPES_NUM_OFFSET
-#define GEN_BTREE_NUM_MAX GEN_BTREE_TYPES_NUM_OFFSET + __binary_tree_types - 1
+#define GEN_BTREE_NUM_MAX GEN_BTREE_TYPES_NUM_OFFSET + GEN_BTREE_TYPES_NUM - 1
 
 /**
  * Macro generating btree struct name from suffix
@@ -26,7 +31,7 @@
 /**
  * Macro generating btree type constant from suffix
  */
-#define GEN_BTREE_NUM(SUFFIX) TYPE_BTREE_ ## SUFFIX ## _T
+#define GEN_BTREE_NUM(NUM) NUM + GEN_BTREE_TYPES_NUM_OFFSET
 
 /**
  * Macro generating headers for btree types
@@ -35,7 +40,6 @@
  * @par NUM nomber constant for btree type
  */
 #define MAKE_BTREE_HEADER(SUFFIX, FIELDS, NUM)                                                          \
-    extern uint64_t GEN_BTREE_NUM(SUFFIX);                                                              \
     typedef struct GEN_BTREE_NAME(SUFFIX) {                                                             \
         long value;                                                                                     \
         struct GEN_BTREE_NAME(SUFFIX) *lchild, *rchild;                                                 \
@@ -54,7 +58,6 @@
  * @par NUM nomber constant for btree type
  */
 #define MAKE_BTREE_SRC(SUFFIX, FIELDS, NUM)                                                                                     \
-    uint64_t GEN_BTREE_NUM(SUFFIX);                                                                                             \
     int btree ## SUFFIX ## _make_descriptor(type_info_t *info)                                                                  \
     {                                                                                                                           \
         GEN_BTREE_NODE_TYPE(SUFFIX) measure;                                                                                    \
@@ -62,15 +65,15 @@
         info->number_of_references = 2;                                                                                         \
         info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));                                                         \
         info->references[0].offset = (uint64_t)((art_ptr_t)&measure.lchild - (art_ptr_t)&measure);                              \
-        ptr_info_set_type(&info->references[0], GEN_BTREE_NUM(SUFFIX));                                                         \
+        ptr_info_set_type(&info->references[0], GEN_BTREE_NUM(NUM));                                                         \
         info->references[1].offset = (uint64_t)((art_ptr_t)&measure.rchild - (art_ptr_t)&measure);                              \
-        ptr_info_set_type(&info->references[1], GEN_BTREE_NUM(SUFFIX));                                                         \
+        ptr_info_set_type(&info->references[1], GEN_BTREE_NUM(NUM));                                                         \
     }                                                                                                                           \
     int btree ## SUFFIX ## _insert(GEN_BTREE_TYPE(SUFFIX) **root, long value)                                                   \
     {                                                                                                                           \
         if(*root == NULL)                                                                                                       \
         {                                                                                                                       \
-            *root = __gc_malloc(GEN_BTREE_NUM(SUFFIX));                                                                                           \
+            *root = __gc_malloc(GEN_BTREE_NUM(NUM));                                                                                           \
             (*root)->value = value;                                                                                             \
             (*root)->lchild = NULL;                                                                                             \
             (*root)->rchild = NULL;                                                                                             \
@@ -148,40 +151,45 @@
     }
     
 #define GEN_BTREE_INIT_TYPE_TABLE(SUFFIX, TYPES, NUM)\
-    if(NUM < __binary_tree_types){\
-        btree ## SUFFIX ## _make_descriptor(&type_table[GEN_BTREE_NUM(SUFFIX)]);\
-    }
+        btree ## SUFFIX ## _make_descriptor(&type_table[GEN_BTREE_NUM(NUM)]);
+        
 #define GEN_BTREE_FREE_TYPE_TABLE(SUFFIX, TYPES, NUM)\
-    if(NUM < __binary_tree_types){\
-        free(type_table[GEN_BTREE_NUM(SUFFIX)].references);\
-    }
+        free(type_table[GEN_BTREE_NUM(NUM)].references);
+    
+#define __GC_CUSTOM_GEN_BTREE_SCAN_ARRAY_PTR_PER_TYPE(SUFFIX, TYPES, NUM) __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(GEN_BTREE_NUM(NUM), GEN_BTREE_TYPE(SUFFIX))
+#define __GC_CUSTOM_GEN_BTREE_SCAN_PTR_PER_TYPE(SUFFIX, TYPES, NUM)  __GC_CUSTOM_SCAN_PTR_PER_TYPE(GEN_BTREE_NUM(NUM), GEN_BTREE_TYPE(SUFFIX))
+
+#define __GC_CUSTOM_GEN_BTREE_MAKE_GC_SCAN_STRUCT_PER_TYPE(SUFFIX, TYPES, NUM)\
+    case GEN_BTREE_NUM(NUM):\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(8, GEN_BTREE_TYPE(SUFFIX))\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(16, GEN_BTREE_TYPE(SUFFIX))\
+        break;
+
+#define __GC_CUSTOM_GEN_BTREE_WALK_ARRAY_PER_TYPE(SUFFIX, TYPES, NUM) __GC_CUSTOM_WALK_ARRAY_PER_TYPE(GEN_BTREE_NUM(NUM), GEN_BTREE_TYPE(SUFFIX))
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                  GRAPHS                                   //
 ///////////////////////////////////////////////////////////////////////////////
 
-#define GEN_GRAPH_TYPES_NUM 400
-#define GEN_GRAPH_TYPES_NUM_OFFSET GEN_BTREE_TYPES_NUM_OFFSET + __binary_tree_types
+#define GEN_GRAPH_TYPES_NUM_OFFSET GEN_BTREE_TYPES_NUM_OFFSET + GEN_BTREE_TYPES_NUM
 
 #define GEN_GRAPH_NUM_MIN GEN_GRAPH_TYPES_NUM_OFFSET
-#define GEN_GRAPH_NUM_MAX GEN_GRAPH_TYPES_NUM_OFFSET + (3*__graph_types) - 1
+
+#define GEN_GRAPH_NUM_MAX GEN_GRAPH_TYPES_NUM_OFFSET + (3*GEN_GRAPH_TYPES_NUM) - 1
 
 #define GEN_GRAPH_EDGE_NAME(SUFFIX) graph ## SUFFIX ## _edge
 #define GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _edge_t
-#define GEN_GRAPH_EDGE_NUM(SUFFIX) TYPE_GRAPH_EDGE_ ## SUFFIX ## _T
+#define GEN_GRAPH_EDGE_NUM(NUM) (3 * NUM) + GEN_GRAPH_TYPES_NUM_OFFSET
 
 #define GEN_GRAPH_NODE_NAME(SUFFIX) graph ## SUFFIX ## _node
 #define GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _node_t
-#define GEN_GRAPH_NODE_NUM(SUFFIX) TYPE_GRAPH_NODE_ ## SUFFIX ## _T
+#define GEN_GRAPH_NODE_NUM(NUM) (3 * NUM) + GEN_GRAPH_TYPES_NUM_OFFSET + 1
 
 #define GEN_GRAPH_NAME(SUFFIX) graph ## SUFFIX
 #define GEN_GRAPH_TYPE_NAME(SUFFIX) graph ## SUFFIX ## _t
-#define GEN_GRAPH_NUM(SUFFIX) TYPE_GRAPH_ ## SUFFIX ## _T
+#define GEN_GRAPH_NUM(NUM) (3 * NUM) + GEN_GRAPH_TYPES_NUM_OFFSET + 2
 
 #define MAKE_GRAPH_HEADER(SUFFIX, FIELDS, NUM) \
-    extern uint64_t GEN_GRAPH_EDGE_NUM(SUFFIX); \
-    extern uint64_t GEN_GRAPH_NODE_NUM(SUFFIX); \
-    extern uint64_t GEN_GRAPH_NUM(SUFFIX); \
     struct GEN_GRAPH_EDGE_NAME(SUFFIX); \
     typedef struct GEN_GRAPH_NODE_NAME(SUFFIX){\
         int value;\
@@ -221,18 +229,15 @@
     int is_node ## SUFFIX ## _edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *node, GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) *edge);
     
 #define MAKE_GRAPH_SRC(SUFFIX, FIELDS, NUM) \
-    uint64_t GEN_GRAPH_EDGE_NUM(SUFFIX); \
-    uint64_t GEN_GRAPH_NODE_NUM(SUFFIX); \
-    uint64_t GEN_GRAPH_NUM(SUFFIX); \
     int graph ## SUFFIX ## _node_make_descriptor(type_info_t *info){\
         GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) measure;\
         info->size = sizeof(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX));\
         info->number_of_references = 2;\
         info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));\
         info->references[0].offset = (uint64_t)((art_ptr_t)&measure.edges - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[0], GEN_GRAPH_EDGE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[0], GEN_GRAPH_EDGE_NUM(NUM));\
         info->references[1].offset = (uint64_t)((art_ptr_t)&measure.next - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[1], GEN_GRAPH_NODE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[1], GEN_GRAPH_NODE_NUM(NUM));\
     }\
     int graph ## SUFFIX ## _edge_make_descriptor(type_info_t *info){\
         GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) measure;\
@@ -240,11 +245,11 @@
         info->number_of_references = 2;\
         info->references = (ptr_info_t*)malloc(3 * sizeof(ptr_info_t));\
         info->references[0].offset = (uint64_t)((art_ptr_t)&measure.from - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[0], GEN_GRAPH_NODE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[0], GEN_GRAPH_NODE_NUM(NUM));\
         info->references[1].offset = (uint64_t)((art_ptr_t)&measure.to - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[1], GEN_GRAPH_NODE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[1], GEN_GRAPH_NODE_NUM(NUM));\
         info->references[2].offset = (uint64_t)((art_ptr_t)&measure.next - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[2], GEN_GRAPH_EDGE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[2], GEN_GRAPH_EDGE_NUM(NUM));\
     }\
     int graph ## SUFFIX ## _make_descriptor(type_info_t *info){\
         GEN_GRAPH_TYPE_NAME(SUFFIX) measure;\
@@ -252,11 +257,11 @@
         info->number_of_references = 1;\
         info->references = (ptr_info_t*)malloc(2 * sizeof(ptr_info_t));\
         info->references[0].offset = (uint64_t)((art_ptr_t)&measure.nodes - (art_ptr_t)&measure);\
-        ptr_info_set_type(&info->references[0], GEN_GRAPH_NODE_NUM(SUFFIX));\
+        ptr_info_set_type(&info->references[0], GEN_GRAPH_NODE_NUM(NUM));\
     }\
     GEN_GRAPH_TYPE_NAME(SUFFIX)* make_empty_graph ## SUFFIX (){\
         GEN_GRAPH_TYPE_NAME(SUFFIX) *graph;\
-        graph = __gc_malloc(GEN_GRAPH_NUM(SUFFIX));\
+        graph = __gc_malloc(GEN_GRAPH_NUM(NUM));\
         graph->next_id = 0;\
         graph->node_count = 0;\
         graph->nodes = NULL;\
@@ -290,7 +295,7 @@
     }\
     GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _add_node(GEN_GRAPH_TYPE_NAME(SUFFIX) *graph){\
         GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *node, **insetion_point;\
-        node = __gc_malloc(GEN_GRAPH_NODE_NUM(SUFFIX));\
+        node = __gc_malloc(GEN_GRAPH_NODE_NUM(NUM));\
         node->value = 0;\
         node->edges = NULL;\
         node->next = NULL;\
@@ -335,7 +340,7 @@
     }\
     GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX)* graph ## SUFFIX ## _node_add_edge(GEN_GRAPH_NODE_TYPE_NAME(SUFFIX)* from, GEN_GRAPH_NODE_TYPE_NAME(SUFFIX) *to){\
         GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX) *edge, **point_of_insert;\
-        edge = __gc_malloc(GEN_GRAPH_EDGE_NUM(SUFFIX));\
+        edge = __gc_malloc(GEN_GRAPH_EDGE_NUM(NUM));\
         edge->from = from;\
         edge->to = to;\
         edge->value = 0;\
@@ -451,24 +456,50 @@
     }\
     
 #define GEN_GRAPH_INIT_TYPE_TABLE(SUFFIX, TYPES, NUM)\
-    if(NUM < __graph_types){\
-        graph ## SUFFIX ## _node_make_descriptor(&type_table[GEN_GRAPH_NODE_NUM(SUFFIX)]);\
-        graph ## SUFFIX ## _edge_make_descriptor(&type_table[GEN_GRAPH_EDGE_NUM(SUFFIX)]);\
-        graph ## SUFFIX ## _make_descriptor(&type_table[GEN_GRAPH_NUM(SUFFIX)]);\
-    }
+        graph ## SUFFIX ## _node_make_descriptor(&type_table[GEN_GRAPH_NODE_NUM(NUM)]);\
+        graph ## SUFFIX ## _edge_make_descriptor(&type_table[GEN_GRAPH_EDGE_NUM(NUM)]);\
+        graph ## SUFFIX ## _make_descriptor(&type_table[GEN_GRAPH_NUM(NUM)]);
 
 
 #define GEN_GRAPH_FREE_TYPE_TABLE(SUFFIX, TYPES, NUM)\
-    if(NUM < __graph_types){\
-        free(type_table[GEN_GRAPH_EDGE_NUM(SUFFIX)].references);\
-        free(type_table[GEN_GRAPH_NODE_NUM(SUFFIX)].references);\
-        free(type_table[GEN_GRAPH_NUM(SUFFIX)].references);\
-    }
+        free(type_table[GEN_GRAPH_EDGE_NUM(NUM)].references);\
+        free(type_table[GEN_GRAPH_NODE_NUM(NUM)].references);\
+        free(type_table[GEN_GRAPH_NUM(NUM)].references);\
+    
+#define __GC_CUSTOM_GEN_GRAPH_SCAN_ARRAY_PTR_PER_TYPE(SUFFIX, TYPES, NUM)\
+    __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(GEN_GRAPH_NUM(NUM), GEN_GRAPH_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(GEN_GRAPH_EDGE_NUM(NUM), GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_SCAN_ARRAY_PTR_PER_TYPE(GEN_GRAPH_NODE_NUM(NUM), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))
+    
+    
+#define __GC_CUSTOM_GEN_GRAPH_SCAN_PTR_PER_TYPE(SUFFIX, TYPES, NUM)\
+    __GC_CUSTOM_SCAN_PTR_PER_TYPE(GEN_GRAPH_NUM(NUM), GEN_GRAPH_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_SCAN_PTR_PER_TYPE(GEN_GRAPH_NODE_NUM(NUM), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_SCAN_PTR_PER_TYPE(GEN_GRAPH_EDGE_NUM(NUM), GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX))
+
+#define __GC_CUSTOM_GEN_GRAPH_MAKE_GC_SCAN_STRUCT_PER_TYPE(SUFFIX, TYPES, NUM)\
+    case GEN_GRAPH_NUM(NUM):\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(uint64_t) + sizeof(size_t), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+        break;\
+    case GEN_GRAPH_NODE_NUM(NUM):\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int), GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX))\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + sizeof(graph_edge_t*), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+        break;\
+    case GEN_GRAPH_EDGE_NUM(NUM):\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + sizeof(graph_node_t*), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + 2*sizeof(graph_node_t*), GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX))\
+        break;
+
+#define __GC_CUSTOM_GEN_GRAPH_WALK_ARRAY_PER_TYPE(SUFFIX, TYPES, NUM)\
+    __GC_CUSTOM_WALK_ARRAY_PER_TYPE(GEN_GRAPH_NUM(NUM), GEN_GRAPH_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_WALK_ARRAY_PER_TYPE(GEN_GRAPH_NODE_NUM(NUM), GEN_GRAPH_NODE_TYPE_NAME(SUFFIX))\
+    __GC_CUSTOM_WALK_ARRAY_PER_TYPE(GEN_GRAPH_EDGE_NUM(NUM), GEN_GRAPH_EDGE_TYPE_NAME(SUFFIX))
 
 /**
  * xmacro for btree type definition
  */
-#define XGENERATE_TYPES_BTREE(X) \
+#define XGENERATE_TYPES_BTREE(X)\
     X(C, char a;, 0)\
     X(D, double a;, 1)\
     X(F, float a;, 2)\
@@ -1468,7 +1499,7 @@
     X(DSDF, double a; size_t aa; double aaa; float aaaa;, 996)\
     X(DSDI, double a; size_t aa; double aaa; int aaaa;, 997)\
     X(DSDL, double a; size_t aa; double aaa; long aaaa;, 998)\
-    X(DSDS, double a; size_t aa; double aaa; size_t aaaa;, 999)\
+    X(DSDS, double a; size_t aa; double aaa; size_t aaaa;, 999)
 
 
     
@@ -1896,10 +1927,4 @@ int gen_btree_insert(void **btree, long value, uint64_t used_type);
  * @returns pointer newly created complete graph of given type
  */
 void *gen_graph_make_complete_graph(size_t number_of_nodes, uint64_t used_type);
-
-/**
- * Initializes type num constants for generated types
- */
-int gen_init_generated_types_constants();
-
 #endif

@@ -19,6 +19,12 @@
     struct btree *lchild, *rchild;
  } btree_node_t, btree_t;
  
+#define __btree_t_scan_struct\
+    case TYPE_BTREE_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(8, btree_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(16, btree_t)\
+        break;
+ 
 /**
  * Makes and sets the binary tree structure descriptor to the given descriptor pointer
  * Also fills variable btree_descriptor necessary for algorithms

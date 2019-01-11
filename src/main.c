@@ -199,7 +199,7 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
     
     opterr = 0;
 
-    while ((c = getopt (argc, argv, "s:t:g:q:m:o:a:c:j:k:h")) != -1)
+    while ((c = getopt (argc, argv, "s:t:g:q:m:o:a:c:b:x:h")) != -1)
     {
         arg = NULL;
         err_ptr = NULL;
@@ -276,25 +276,25 @@ int parse_args(int argc, char *argv[], unsigned *seed, unsigned *test_num, char 
                 return 1;
             }
             break;
-        case 'j':
+        case 'b':
             arg = optarg;
             __binary_tree_types = strtol(arg, &err_ptr, 0);
             if(     arg == err_ptr
                 ||  __binary_tree_types > GEN_BTREE_TYPES_NUM
                 ||  __binary_tree_types < 0)
             {
-                fprintf(stderr, "Option -j requires an iteger argument ranging from %d to %d\n", 0, GEN_BTREE_TYPES_NUM);
+                fprintf(stderr, "Option -b requires an integer argument ranging from %d to %d\n", 0, GEN_BTREE_TYPES_NUM);
                 return 1;
             }
             break;
-        case 'k':
+        case 'x':
             arg = optarg;
             __graph_types = strtol(arg, &err_ptr, 0);
             if(     arg == err_ptr
                 ||  __graph_types > GEN_GRAPH_TYPES_NUM
                 ||  __graph_types < 0)
             {
-                fprintf(stderr, "Option -k requires an iteger argument ranging from %d to %d\n", 0, GEN_GRAPH_TYPES_NUM);
+                fprintf(stderr, "Option -x requires an integer argument ranging from %d to %d\n", 0, GEN_GRAPH_TYPES_NUM);
                 return 1;
             }
             break;

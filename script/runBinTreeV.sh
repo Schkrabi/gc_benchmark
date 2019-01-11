@@ -6,8 +6,8 @@ round()
 };
 
 gcs=(cheney custom generated)
-testName=BinTreeIV
-test=binary_tree
+testName=BinTreeI
+test=binary_tree_multitype
 logDir=../log/
 dataDir=../data/
 archiveDir=../archive/
@@ -16,22 +16,20 @@ archiveDir=../archive/
 rm -rf ${logDir}*
 rm -rf ${dataDir}*
 
-#Memory test
-for e in {13..23} #TODO REMOVE
-#for e in {13..14}
-do  
-    M=$((2**e))
+#Run the experiment
+O=15
+e=13
+M=$((2**e))
+#type table test
+for B in {200..1000..25} #iterate 1 to 95%
+do
     Y=10
     X=$(((M/(Y*32))*100))
-    O=$(echo "((($M/($Y*32))/100)*50)" | bc -l)
-    O=$(round $O 0)
-    O=$(($O>1 ? $O : 1))
-    
     C=0.01
     
-    testId=${testName}_C=${CP}
+    testId=${testName}_B=${B}
     echo $testId
-    
+
     it=0
     while [ "$it" -ne ${1-"1"} ];
     do
@@ -40,7 +38,7 @@ do
         for gc in ${gcs[@]};
         do
             #echo ../bin/gc_benchmark -s $seed -t $test -g $gc -m $M -q $X -a $Y -c $C -o $O
-            ../bin/gc_benchmark -s $seed -t $test -g $gc -m $M -q $X -a $Y -c $C -o $O
+            ../bin/gc_benchmark -s $seed -t $test -g $gc -m $M -q $X -a $Y -c $C -o $O -b $B
         done
         it=$((it+1))
     done    
@@ -50,14 +48,14 @@ do
     do
         dataFile=${dataDir}${gc}_${testId}.csv
         echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
-        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$M/" >> $dataFile
-        rsltFile=../results/result_${gc}_${testName}_C=${CP}
+        find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$Z/" >> $dataFile
+        rsltFile=../results/result_${gc}_${testName}_Z=${Z}
         Rscript doStatistics.R $dataFile $rsltFile
     done
     
     #Evacuate logs & data
     dateTime=$(date +%Y-%m-%d:%H:%M:%S)
-    evacuateDir=${archiveDir}${testName}_${M}B_C=${CP}_${dateTime}
+    evacuateDir=${archiveDir}${testName}_${M}B_B=${B}_${dateTime}
     if [ ! -d ${evacuateDir} ]; then
         mkdir -p ${evacuateDir};
     fi

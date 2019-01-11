@@ -18,6 +18,11 @@ typedef struct tarray
     int *data;
 } tarray_t;
 
+#define __tarray_t_scan_struct\
+    case TYPE_TARRAY_T:\
+        __GC_CUSTOM_SCAN_STRUCT_ARRAY_TYPE(8, int)\
+        break;  
+
 /**
  * Makes and sets the tarray_t structure descriptor to the given descriptor pointer
  * @par info pointer to the initialized descriptor structure

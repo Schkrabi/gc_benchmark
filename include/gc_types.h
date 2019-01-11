@@ -13,13 +13,6 @@
 #define ARRAY_BIT_MASK 0x8000000000000000
 #define ELEMENT_TYPE_BIT_MASK 0x7FFFFFFFFFFFFFFF
 
-//Obsolete, TODO remove
-typedef struct 
-{
-  int value;
-  void *ptr1, *ptr2;
-} test_struct_t;
-
 /**
  * Structure for storing information about pointers
  */

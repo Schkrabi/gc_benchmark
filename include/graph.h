@@ -41,6 +41,12 @@ typedef struct graph_node
     struct graph_node *next;
 } graph_node_t;
 
+#define __graph_node_t_scan_struct\
+    case TYPE_GRAPH_NODE_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int), graph_edge_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + sizeof(graph_edge_t*), graph_node_t)\
+        break;
+
 /**
  * Graph directed edge structure
  */
@@ -65,6 +71,13 @@ typedef struct graph_edge
     struct graph_edge *next;
 } graph_edge_t;
 
+#define __graph_edge_t_scan_struct\
+    case TYPE_GRAPH_EDGE_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int), graph_node_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + sizeof(graph_node_t*), graph_node_t)\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(int) + 2*sizeof(graph_node_t*), graph_edge_t)\
+        break;
+
 /**
  * Graph structure
  */
@@ -84,6 +97,10 @@ typedef struct graph
     struct graph_node *nodes;
 } graph_t;
 
+#define __graph_t_scan_struct\
+    case TYPE_GRAPH_T:\
+        __GC_CUSTOM_SCAN_STRUCT_TYPE(sizeof(uint64_t) + sizeof(size_t), graph_node_t)\
+        break;
 /**
  * Makes descriptor for the graph node structure
  * @par info type_info_t structure
