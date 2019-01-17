@@ -21,7 +21,7 @@ M=$((2**e))
 
 #Replacing test
 #for CP in {1..75}
-for CP in {53..75} #TODO REMOVE
+for CP in {1..52} #TODO REMOVE
 do        
     Y=10
     X=$(((M/(Y*32))*100))

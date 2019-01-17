@@ -342,7 +342,7 @@ int test_binary_tree_multitype(size_t test_size, size_t max_tree_size, size_t ol
 int test_complete_graphs_multitype(size_t test_size, size_t max_graph_size, size_t old_pool, double chance_to_replace)
 {
     size_t i;
-    uint64_t used_type = GEN_GRAPH_NUM_MIN;
+    uint64_t used_type = GEN_GRAPH_NUM_MIN + 2;
     
     gc_cheney_base_roots_count = old_pool;
     gc_cheney_base_roots = (root_ptr*)malloc(gc_cheney_base_roots_count*sizeof(root_ptr));
@@ -372,7 +372,7 @@ int test_complete_graphs_multitype(size_t test_size, size_t max_graph_size, size
             }
         }
         used_type += 3;
-        if(used_type > GEN_GRAPH_NUM_MAX)
+        if(used_type > GEN_GRAPH_NUM_MAX + 2)
         {
             used_type = GEN_GRAPH_NUM_MIN;
         }

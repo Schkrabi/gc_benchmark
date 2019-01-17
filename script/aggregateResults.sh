@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gcs=(cheney custom generated)
-tests=(BinTreeI BinTreeII BinTreeIII BinTreeIV GraphI GraphII GraphIII GraphIV)
+tests=(BinTreeI BinTreeII BinTreeIII BinTreeIV BinTreeV GraphI GraphII GraphIII GraphIV GraphV)
 
 for gc in ${gcs[@]};
 do

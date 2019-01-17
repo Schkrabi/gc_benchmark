@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tests=(BinTreeI BinTreeII BinTreeIII BinTreeIV GraphI GraphII GraphIII GraphIV)
+tests=(BinTreeI BinTreeII BinTreeIII BinTreeIV BinTreeV GraphI GraphII GraphIII GraphIV GraphV)
 
 for test in ${tests[@]};
 do
@@ -13,6 +13,9 @@ do
     elif ([ "$test" == "BinTreeIII" ] || [ "$test" == "GraphIII" ])
     then
         ylabel="chanceToReplace(%)"
+    elif ([ "$test" == "BinTreeV" ] || [ "$test" == "GraphV" ])
+    then
+        ylabel="number of types"
     else
         ylabel="memory(B)"
     fi

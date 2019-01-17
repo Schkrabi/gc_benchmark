@@ -5,7 +5,7 @@
 #include "benchmark.h"
 #include <stdio.h>
 
-#define GEN_BTREE_TYPES_NUM 1000
+#define GEN_BTREE_TYPES_NUM 0
 #define GEN_GRAPH_TYPES_NUM 400
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -499,8 +499,8 @@
 /**
  * xmacro for btree type definition
  */
-#define XGENERATE_TYPES_BTREE(X)\
-    X(C, char a;, 0)\
+#define XGENERATE_TYPES_BTREE(X)
+    /*X(C, char a;, 0)\
     X(D, double a;, 1)\
     X(F, float a;, 2)\
     X(I, int a;, 3)\
@@ -1400,7 +1400,7 @@
     X(DIDD, double a; int aa; double aaa; double aaaa;, 897)\
     X(DIDF, double a; int aa; double aaa; float aaaa;, 898)\
     X(DIDI, double a; int aa; double aaa; int aaaa;, 899)\
-    X(DIDL, double a; int aa; double aaa; long aaaa;, 900)\
+    /*X(DIDL, double a; int aa; double aaa; long aaaa;, 900)\
     X(DIDS, double a; int aa; double aaa; size_t aaaa;, 901)\
     X(DIDU, double a; int aa; double aaa; uint64_t aaaa;, 902)\
     X(DIFC, double a; int aa; float aaa; char aaaa;, 903)\
@@ -1499,14 +1499,14 @@
     X(DSDF, double a; size_t aa; double aaa; float aaaa;, 996)\
     X(DSDI, double a; size_t aa; double aaa; int aaaa;, 997)\
     X(DSDL, double a; size_t aa; double aaa; long aaaa;, 998)\
-    X(DSDS, double a; size_t aa; double aaa; size_t aaaa;, 999)
+    X(DSDS, double a; size_t aa; double aaa; size_t aaaa;, 999)*/
 
 
     
 /**
  * xmacro for graph type definition
  */
-#define XGENERATE_TYPES_GRAPH(X) \
+#define XGENERATE_TYPES_GRAPH(X)\
     X(C, char a;, 0)\
     X(D, double a;, 1)\
     X(F, float a;, 2)\
