@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define GEN_BTREE_TYPES_NUM 0
-#define GEN_GRAPH_TYPES_NUM 400
+#define GEN_GRAPH_TYPES_NUM 350
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  GENERATED BINARY_TREES                                   //
@@ -500,7 +500,7 @@
  * xmacro for btree type definition
  */
 #define XGENERATE_TYPES_BTREE(X)
-
+    
 /**
  * xmacro for graph type definition
  */
@@ -854,58 +854,7 @@
     X(SUI, size_t a; uint64_t aa; int aaa;, 346)\
     X(SUL, size_t a; uint64_t aa; long aaa;, 347)\
     X(SUS, size_t a; uint64_t aa; size_t aaa;, 348)\
-    X(SUU, size_t a; uint64_t aa; uint64_t aaa;, 349)\
-    X(UCC, uint64_t a; char aa; char aaa;, 350)\
-    X(UCD, uint64_t a; char aa; double aaa;, 351)\
-    X(UCF, uint64_t a; char aa; float aaa;, 352)\
-    X(UCI, uint64_t a; char aa; int aaa;, 353)\
-    X(UCL, uint64_t a; char aa; long aaa;, 354)\
-    X(UCS, uint64_t a; char aa; size_t aaa;, 355)\
-    X(UCU, uint64_t a; char aa; uint64_t aaa;, 356)\
-    X(UDC, uint64_t a; double aa; char aaa;, 357)\
-    X(UDD, uint64_t a; double aa; double aaa;, 358)\
-    X(UDF, uint64_t a; double aa; float aaa;, 359)\
-    X(UDI, uint64_t a; double aa; int aaa;, 360)\
-    X(UDL, uint64_t a; double aa; long aaa;, 361)\
-    X(UDS, uint64_t a; double aa; size_t aaa;, 362)\
-    X(UDU, uint64_t a; double aa; uint64_t aaa;, 363)\
-    X(UFC, uint64_t a; float aa; char aaa;, 364)\
-    X(UFD, uint64_t a; float aa; double aaa;, 365)\
-    X(UFF, uint64_t a; float aa; float aaa;, 366)\
-    X(UFI, uint64_t a; float aa; int aaa;, 367)\
-    X(UFL, uint64_t a; float aa; long aaa;, 368)\
-    X(UFS, uint64_t a; float aa; size_t aaa;, 369)\
-    X(UFU, uint64_t a; float aa; uint64_t aaa;, 370)\
-    X(UIC, uint64_t a; int aa; char aaa;, 371)\
-    X(UID, uint64_t a; int aa; double aaa;, 372)\
-    X(UIF, uint64_t a; int aa; float aaa;, 373)\
-    X(UII, uint64_t a; int aa; int aaa;, 374)\
-    X(UIL, uint64_t a; int aa; long aaa;, 375)\
-    X(UIS, uint64_t a; int aa; size_t aaa;, 376)\
-    X(UIU, uint64_t a; int aa; uint64_t aaa;, 377)\
-    X(ULC, uint64_t a; long aa; char aaa;, 378)\
-    X(ULD, uint64_t a; long aa; double aaa;, 379)\
-    X(ULF, uint64_t a; long aa; float aaa;, 380)\
-    X(ULI, uint64_t a; long aa; int aaa;, 381)\
-    X(ULL, uint64_t a; long aa; long aaa;, 382)\
-    X(ULS, uint64_t a; long aa; size_t aaa;, 383)\
-    X(ULU, uint64_t a; long aa; uint64_t aaa;, 384)\
-    X(USC, uint64_t a; size_t aa; char aaa;, 385)\
-    X(USD, uint64_t a; size_t aa; double aaa;, 386)\
-    X(USF, uint64_t a; size_t aa; float aaa;, 387)\
-    X(USI, uint64_t a; size_t aa; int aaa;, 388)\
-    X(USL, uint64_t a; size_t aa; long aaa;, 389)\
-    X(USS, uint64_t a; size_t aa; size_t aaa;, 390)\
-    X(USU, uint64_t a; size_t aa; uint64_t aaa;, 391)\
-    X(UUC, uint64_t a; uint64_t aa; char aaa;, 392)\
-    X(UUD, uint64_t a; uint64_t aa; double aaa;, 393)\
-    X(UUF, uint64_t a; uint64_t aa; float aaa;, 394)\
-    X(UUI, uint64_t a; uint64_t aa; int aaa;, 395)\
-    X(UUL, uint64_t a; uint64_t aa; long aaa;, 396)\
-    X(UUS, uint64_t a; uint64_t aa; size_t aaa;, 397)\
-    X(UUU, uint64_t a; uint64_t aa; uint64_t aaa;, 398)\
-    X(CCCC, char a; char aa; char aaa; char aaaa;, 399)
-
+    X(SUU, size_t a; uint64_t aa; uint64_t aaa;, 349)
 
 XGENERATE_TYPES_BTREE(MAKE_BTREE_HEADER)
 XGENERATE_TYPES_GRAPH(MAKE_GRAPH_HEADER)

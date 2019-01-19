@@ -5,8 +5,8 @@
 #include "benchmark.h"
 #include <stdio.h>
 
-#define GEN_BTREE_TYPES_NUM 0
-#define GEN_GRAPH_TYPES_NUM 400
+#define GEN_BTREE_TYPES_NUM 400
+#define GEN_GRAPH_TYPES_NUM 0
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  GENERATED BINARY_TREES                                   //
@@ -499,12 +499,7 @@
 /**
  * xmacro for btree type definition
  */
-#define XGENERATE_TYPES_BTREE(X)
-
-/**
- * xmacro for graph type definition
- */
-#define XGENERATE_TYPES_GRAPH(X)\
+#define XGENERATE_TYPES_BTREE(X)\
     X(C, char a;, 0)\
     X(D, double a;, 1)\
     X(F, float a;, 2)\
@@ -905,7 +900,11 @@
     X(UUS, uint64_t a; uint64_t aa; size_t aaa;, 397)\
     X(UUU, uint64_t a; uint64_t aa; uint64_t aaa;, 398)\
     X(CCCC, char a; char aa; char aaa; char aaaa;, 399)
-
+    
+/**
+ * xmacro for graph type definition
+ */
+#define XGENERATE_TYPES_GRAPH(X)
 
 XGENERATE_TYPES_BTREE(MAKE_BTREE_HEADER)
 XGENERATE_TYPES_GRAPH(MAKE_GRAPH_HEADER)

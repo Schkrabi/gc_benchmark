@@ -5,8 +5,8 @@
 #include "benchmark.h"
 #include <stdio.h>
 
-#define GEN_BTREE_TYPES_NUM 0
-#define GEN_GRAPH_TYPES_NUM 400
+#define GEN_BTREE_TYPES_NUM 700
+#define GEN_GRAPH_TYPES_NUM 0
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  GENERATED BINARY_TREES                                   //
@@ -499,12 +499,7 @@
 /**
  * xmacro for btree type definition
  */
-#define XGENERATE_TYPES_BTREE(X)
-
-/**
- * xmacro for graph type definition
- */
-#define XGENERATE_TYPES_GRAPH(X)\
+#define XGENERATE_TYPES_BTREE(X)\
     X(C, char a;, 0)\
     X(D, double a;, 1)\
     X(F, float a;, 2)\
@@ -904,8 +899,212 @@
     X(UUL, uint64_t a; uint64_t aa; long aaa;, 396)\
     X(UUS, uint64_t a; uint64_t aa; size_t aaa;, 397)\
     X(UUU, uint64_t a; uint64_t aa; uint64_t aaa;, 398)\
-    X(CCCC, char a; char aa; char aaa; char aaaa;, 399)
-
+    X(CCCC, char a; char aa; char aaa; char aaaa;, 399)\
+    X(CCCD, char a; char aa; char aaa; double aaaa;, 400)\
+    X(CCCF, char a; char aa; char aaa; float aaaa;, 401)\
+    X(CCCI, char a; char aa; char aaa; int aaaa;, 402)\
+    X(CCCL, char a; char aa; char aaa; long aaaa;, 403)\
+    X(CCCS, char a; char aa; char aaa; size_t aaaa;, 404)\
+    X(CCCU, char a; char aa; char aaa; uint64_t aaaa;, 405)\
+    X(CCDC, char a; char aa; double aaa; char aaaa;, 406)\
+    X(CCDD, char a; char aa; double aaa; double aaaa;, 407)\
+    X(CCDF, char a; char aa; double aaa; float aaaa;, 408)\
+    X(CCDI, char a; char aa; double aaa; int aaaa;, 409)\
+    X(CCDL, char a; char aa; double aaa; long aaaa;, 410)\
+    X(CCDS, char a; char aa; double aaa; size_t aaaa;, 411)\
+    X(CCDU, char a; char aa; double aaa; uint64_t aaaa;, 412)\
+    X(CCFC, char a; char aa; float aaa; char aaaa;, 413)\
+    X(CCFD, char a; char aa; float aaa; double aaaa;, 414)\
+    X(CCFF, char a; char aa; float aaa; float aaaa;, 415)\
+    X(CCFI, char a; char aa; float aaa; int aaaa;, 416)\
+    X(CCFL, char a; char aa; float aaa; long aaaa;, 417)\
+    X(CCFS, char a; char aa; float aaa; size_t aaaa;, 418)\
+    X(CCFU, char a; char aa; float aaa; uint64_t aaaa;, 419)\
+    X(CCIC, char a; char aa; int aaa; char aaaa;, 420)\
+    X(CCID, char a; char aa; int aaa; double aaaa;, 421)\
+    X(CCIF, char a; char aa; int aaa; float aaaa;, 422)\
+    X(CCII, char a; char aa; int aaa; int aaaa;, 423)\
+    X(CCIL, char a; char aa; int aaa; long aaaa;, 424)\
+    X(CCIS, char a; char aa; int aaa; size_t aaaa;, 425)\
+    X(CCIU, char a; char aa; int aaa; uint64_t aaaa;, 426)\
+    X(CCLC, char a; char aa; long aaa; char aaaa;, 427)\
+    X(CCLD, char a; char aa; long aaa; double aaaa;, 428)\
+    X(CCLF, char a; char aa; long aaa; float aaaa;, 429)\
+    X(CCLI, char a; char aa; long aaa; int aaaa;, 430)\
+    X(CCLL, char a; char aa; long aaa; long aaaa;, 431)\
+    X(CCLS, char a; char aa; long aaa; size_t aaaa;, 432)\
+    X(CCLU, char a; char aa; long aaa; uint64_t aaaa;, 433)\
+    X(CCSC, char a; char aa; size_t aaa; char aaaa;, 434)\
+    X(CCSD, char a; char aa; size_t aaa; double aaaa;, 435)\
+    X(CCSF, char a; char aa; size_t aaa; float aaaa;, 436)\
+    X(CCSI, char a; char aa; size_t aaa; int aaaa;, 437)\
+    X(CCSL, char a; char aa; size_t aaa; long aaaa;, 438)\
+    X(CCSS, char a; char aa; size_t aaa; size_t aaaa;, 439)\
+    X(CCSU, char a; char aa; size_t aaa; uint64_t aaaa;, 440)\
+    X(CCUC, char a; char aa; uint64_t aaa; char aaaa;, 441)\
+    X(CCUD, char a; char aa; uint64_t aaa; double aaaa;, 442)\
+    X(CCUF, char a; char aa; uint64_t aaa; float aaaa;, 443)\
+    X(CCUI, char a; char aa; uint64_t aaa; int aaaa;, 444)\
+    X(CCUL, char a; char aa; uint64_t aaa; long aaaa;, 445)\
+    X(CCUS, char a; char aa; uint64_t aaa; size_t aaaa;, 446)\
+    X(CCUU, char a; char aa; uint64_t aaa; uint64_t aaaa;, 447)\
+    X(CDCC, char a; double aa; char aaa; char aaaa;, 448)\
+    X(CDCD, char a; double aa; char aaa; double aaaa;, 449)\
+    X(CDCF, char a; double aa; char aaa; float aaaa;, 450)\
+    X(CDCI, char a; double aa; char aaa; int aaaa;, 451)\
+    X(CDCL, char a; double aa; char aaa; long aaaa;, 452)\
+    X(CDCS, char a; double aa; char aaa; size_t aaaa;, 453)\
+    X(CDCU, char a; double aa; char aaa; uint64_t aaaa;, 454)\
+    X(CDDC, char a; double aa; double aaa; char aaaa;, 455)\
+    X(CDDD, char a; double aa; double aaa; double aaaa;, 456)\
+    X(CDDF, char a; double aa; double aaa; float aaaa;, 457)\
+    X(CDDI, char a; double aa; double aaa; int aaaa;, 458)\
+    X(CDDL, char a; double aa; double aaa; long aaaa;, 459)\
+    X(CDDS, char a; double aa; double aaa; size_t aaaa;, 460)\
+    X(CDDU, char a; double aa; double aaa; uint64_t aaaa;, 461)\
+    X(CDFC, char a; double aa; float aaa; char aaaa;, 462)\
+    X(CDFD, char a; double aa; float aaa; double aaaa;, 463)\
+    X(CDFF, char a; double aa; float aaa; float aaaa;, 464)\
+    X(CDFI, char a; double aa; float aaa; int aaaa;, 465)\
+    X(CDFL, char a; double aa; float aaa; long aaaa;, 466)\
+    X(CDFS, char a; double aa; float aaa; size_t aaaa;, 467)\
+    X(CDFU, char a; double aa; float aaa; uint64_t aaaa;, 468)\
+    X(CDIC, char a; double aa; int aaa; char aaaa;, 469)\
+    X(CDID, char a; double aa; int aaa; double aaaa;, 470)\
+    X(CDIF, char a; double aa; int aaa; float aaaa;, 471)\
+    X(CDII, char a; double aa; int aaa; int aaaa;, 472)\
+    X(CDIL, char a; double aa; int aaa; long aaaa;, 473)\
+    X(CDIS, char a; double aa; int aaa; size_t aaaa;, 474)\
+    X(CDIU, char a; double aa; int aaa; uint64_t aaaa;, 475)\
+    X(CDLC, char a; double aa; long aaa; char aaaa;, 476)\
+    X(CDLD, char a; double aa; long aaa; double aaaa;, 477)\
+    X(CDLF, char a; double aa; long aaa; float aaaa;, 478)\
+    X(CDLI, char a; double aa; long aaa; int aaaa;, 479)\
+    X(CDLL, char a; double aa; long aaa; long aaaa;, 480)\
+    X(CDLS, char a; double aa; long aaa; size_t aaaa;, 481)\
+    X(CDLU, char a; double aa; long aaa; uint64_t aaaa;, 482)\
+    X(CDSC, char a; double aa; size_t aaa; char aaaa;, 483)\
+    X(CDSD, char a; double aa; size_t aaa; double aaaa;, 484)\
+    X(CDSF, char a; double aa; size_t aaa; float aaaa;, 485)\
+    X(CDSI, char a; double aa; size_t aaa; int aaaa;, 486)\
+    X(CDSL, char a; double aa; size_t aaa; long aaaa;, 487)\
+    X(CDSS, char a; double aa; size_t aaa; size_t aaaa;, 488)\
+    X(CDSU, char a; double aa; size_t aaa; uint64_t aaaa;, 489)\
+    X(CDUC, char a; double aa; uint64_t aaa; char aaaa;, 490)\
+    X(CDUD, char a; double aa; uint64_t aaa; double aaaa;, 491)\
+    X(CDUF, char a; double aa; uint64_t aaa; float aaaa;, 492)\
+    X(CDUI, char a; double aa; uint64_t aaa; int aaaa;, 493)\
+    X(CDUL, char a; double aa; uint64_t aaa; long aaaa;, 494)\
+    X(CDUS, char a; double aa; uint64_t aaa; size_t aaaa;, 495)\
+    X(CDUU, char a; double aa; uint64_t aaa; uint64_t aaaa;, 496)\
+    X(CFCC, char a; float aa; char aaa; char aaaa;, 497)\
+    X(CFCD, char a; float aa; char aaa; double aaaa;, 498)\
+    X(CFCF, char a; float aa; char aaa; float aaaa;, 499)\
+    X(CFCI, char a; float aa; char aaa; int aaaa;, 500)\
+    X(CFCL, char a; float aa; char aaa; long aaaa;, 501)\
+    X(CFCS, char a; float aa; char aaa; size_t aaaa;, 502)\
+    X(CFCU, char a; float aa; char aaa; uint64_t aaaa;, 503)\
+    X(CFDC, char a; float aa; double aaa; char aaaa;, 504)\
+    X(CFDD, char a; float aa; double aaa; double aaaa;, 505)\
+    X(CFDF, char a; float aa; double aaa; float aaaa;, 506)\
+    X(CFDI, char a; float aa; double aaa; int aaaa;, 507)\
+    X(CFDL, char a; float aa; double aaa; long aaaa;, 508)\
+    X(CFDS, char a; float aa; double aaa; size_t aaaa;, 509)\
+    X(CFDU, char a; float aa; double aaa; uint64_t aaaa;, 510)\
+    X(CFFC, char a; float aa; float aaa; char aaaa;, 511)\
+    X(CFFD, char a; float aa; float aaa; double aaaa;, 512)\
+    X(CFFF, char a; float aa; float aaa; float aaaa;, 513)\
+    X(CFFI, char a; float aa; float aaa; int aaaa;, 514)\
+    X(CFFL, char a; float aa; float aaa; long aaaa;, 515)\
+    X(CFFS, char a; float aa; float aaa; size_t aaaa;, 516)\
+    X(CFFU, char a; float aa; float aaa; uint64_t aaaa;, 517)\
+    X(CFIC, char a; float aa; int aaa; char aaaa;, 518)\
+    X(CFID, char a; float aa; int aaa; double aaaa;, 519)\
+    X(CFIF, char a; float aa; int aaa; float aaaa;, 520)\
+    X(CFII, char a; float aa; int aaa; int aaaa;, 521)\
+    X(CFIL, char a; float aa; int aaa; long aaaa;, 522)\
+    X(CFIS, char a; float aa; int aaa; size_t aaaa;, 523)\
+    X(CFIU, char a; float aa; int aaa; uint64_t aaaa;, 524)\
+    X(CFLC, char a; float aa; long aaa; char aaaa;, 525)\
+    X(CFLD, char a; float aa; long aaa; double aaaa;, 526)\
+    X(CFLF, char a; float aa; long aaa; float aaaa;, 527)\
+    X(CFLI, char a; float aa; long aaa; int aaaa;, 528)\
+    X(CFLL, char a; float aa; long aaa; long aaaa;, 529)\
+    X(CFLS, char a; float aa; long aaa; size_t aaaa;, 530)\
+    X(CFLU, char a; float aa; long aaa; uint64_t aaaa;, 531)\
+    X(CFSC, char a; float aa; size_t aaa; char aaaa;, 532)\
+    X(CFSD, char a; float aa; size_t aaa; double aaaa;, 533)\
+    X(CFSF, char a; float aa; size_t aaa; float aaaa;, 534)\
+    X(CFSI, char a; float aa; size_t aaa; int aaaa;, 535)\
+    X(CFSL, char a; float aa; size_t aaa; long aaaa;, 536)\
+    X(CFSS, char a; float aa; size_t aaa; size_t aaaa;, 537)\
+    X(CFSU, char a; float aa; size_t aaa; uint64_t aaaa;, 538)\
+    X(CFUC, char a; float aa; uint64_t aaa; char aaaa;, 539)\
+    X(CFUD, char a; float aa; uint64_t aaa; double aaaa;, 540)\
+    X(CFUF, char a; float aa; uint64_t aaa; float aaaa;, 541)\
+    X(CFUI, char a; float aa; uint64_t aaa; int aaaa;, 542)\
+    X(CFUL, char a; float aa; uint64_t aaa; long aaaa;, 543)\
+    X(CFUS, char a; float aa; uint64_t aaa; size_t aaaa;, 544)\
+    X(CFUU, char a; float aa; uint64_t aaa; uint64_t aaaa;, 545)\
+    X(CICC, char a; int aa; char aaa; char aaaa;, 546)\
+    X(CICD, char a; int aa; char aaa; double aaaa;, 547)\
+    X(CICF, char a; int aa; char aaa; float aaaa;, 548)\
+    X(CICI, char a; int aa; char aaa; int aaaa;, 549)\
+    X(CICL, char a; int aa; char aaa; long aaaa;, 550)\
+    X(CICS, char a; int aa; char aaa; size_t aaaa;, 551)\
+    X(CICU, char a; int aa; char aaa; uint64_t aaaa;, 552)\
+    X(CIDC, char a; int aa; double aaa; char aaaa;, 553)\
+    X(CIDD, char a; int aa; double aaa; double aaaa;, 554)\
+    X(CIDF, char a; int aa; double aaa; float aaaa;, 555)\
+    X(CIDI, char a; int aa; double aaa; int aaaa;, 556)\
+    X(CIDL, char a; int aa; double aaa; long aaaa;, 557)\
+    X(CIDS, char a; int aa; double aaa; size_t aaaa;, 558)\
+    X(CIDU, char a; int aa; double aaa; uint64_t aaaa;, 559)\
+    X(CIFC, char a; int aa; float aaa; char aaaa;, 560)\
+    X(CIFD, char a; int aa; float aaa; double aaaa;, 561)\
+    X(CIFF, char a; int aa; float aaa; float aaaa;, 562)\
+    X(CIFI, char a; int aa; float aaa; int aaaa;, 563)\
+    X(CIFL, char a; int aa; float aaa; long aaaa;, 564)\
+    X(CIFS, char a; int aa; float aaa; size_t aaaa;, 565)\
+    X(CIFU, char a; int aa; float aaa; uint64_t aaaa;, 566)\
+    X(CIIC, char a; int aa; int aaa; char aaaa;, 567)\
+    X(CIID, char a; int aa; int aaa; double aaaa;, 568)\
+    X(CIIF, char a; int aa; int aaa; float aaaa;, 569)\
+    X(CIII, char a; int aa; int aaa; int aaaa;, 570)\
+    X(CIIL, char a; int aa; int aaa; long aaaa;, 571)\
+    X(CIIS, char a; int aa; int aaa; size_t aaaa;, 572)\
+    X(CIIU, char a; int aa; int aaa; uint64_t aaaa;, 573)\
+    X(CILC, char a; int aa; long aaa; char aaaa;, 574)\
+    X(CILD, char a; int aa; long aaa; double aaaa;, 575)\
+    X(CILF, char a; int aa; long aaa; float aaaa;, 576)\
+    X(CILI, char a; int aa; long aaa; int aaaa;, 577)\
+    X(CILL, char a; int aa; long aaa; long aaaa;, 578)\
+    X(CILS, char a; int aa; long aaa; size_t aaaa;, 579)\
+    X(CILU, char a; int aa; long aaa; uint64_t aaaa;, 580)\
+    X(CISC, char a; int aa; size_t aaa; char aaaa;, 581)\
+    X(CISD, char a; int aa; size_t aaa; double aaaa;, 582)\
+    X(CISF, char a; int aa; size_t aaa; float aaaa;, 583)\
+    X(CISI, char a; int aa; size_t aaa; int aaaa;, 584)\
+    X(CISL, char a; int aa; size_t aaa; long aaaa;, 585)\
+    X(CISS, char a; int aa; size_t aaa; size_t aaaa;, 586)\
+    X(CISU, char a; int aa; size_t aaa; uint64_t aaaa;, 587)\
+    X(CIUC, char a; int aa; uint64_t aaa; char aaaa;, 588)\
+    X(CIUD, char a; int aa; uint64_t aaa; double aaaa;, 589)\
+    X(CIUF, char a; int aa; uint64_t aaa; float aaaa;, 590)\
+    X(CIUI, char a; int aa; uint64_t aaa; int aaaa;, 591)\
+    X(CIUL, char a; int aa; uint64_t aaa; long aaaa;, 592)\
+    X(CIUS, char a; int aa; uint64_t aaa; size_t aaaa;, 593)\
+    X(CIUU, char a; int aa; uint64_t aaa; uint64_t aaaa;, 594)\
+    X(CLCC, char a; long aa; char aaa; char aaaa;, 595)\
+    X(CLCD, char a; long aa; char aaa; double aaaa;, 596)\
+    X(CLCF, char a; long aa; char aaa; float aaaa;, 597)\
+    X(CLCI, char a; long aa; char aaa; int aaaa;, 598)\
+    X(CLCL, char a; long aa; char aaa; long aaaa;, 599)
+    
+/**
+ * xmacro for graph type definition
+ */
+#define XGENERATE_TYPES_GRAPH(X)
 
 XGENERATE_TYPES_BTREE(MAKE_BTREE_HEADER)
 XGENERATE_TYPES_GRAPH(MAKE_GRAPH_HEADER)
