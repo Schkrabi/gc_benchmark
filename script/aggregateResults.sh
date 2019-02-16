@@ -16,7 +16,7 @@ do
             for f in ${dir}result_${gc}*
             do
                 #gc=$(echo $f | grep -Eo 'cheney|generated|custom')
-                cat $f | tr ' ' '\t' | sed -e "s/^/$gc\t/" >> $file
+                cat $f | tr '\n' '\t'| sed -e "s/.*/&\n/"  -e "s/^/$gc\t/" >> $file                
             done
         done
     done

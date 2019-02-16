@@ -294,7 +294,10 @@ size_t timestamp(char *dst)
 //     dst[pos] = '\0';
 //     return pos;
     
-    return sprintf(dst, "%u", (unsigned)rdtsc());    
+    struct timespec time;
+    clock_gettime(CLOCK_MONOTONIC, &time);
+    
+    return sprintf(dst, "%" PRIx64 " %" PRIx64, (uint64_t)time.tv_sec, (uint64_t)time.tv_nsec);
 }
 
 /**

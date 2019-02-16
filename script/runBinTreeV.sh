@@ -16,15 +16,18 @@ archiveDir=../archive/
 rm -rf ${logDir}*
 rm -rf ${dataDir}*
 
+#constants
+tree_node_size=64
+
 #Run the experiment
-O=15
+O=10
 e=13
 M=$((2**e))
 #type table test
-for B in {100..1000..100} #iterate 1 to 95%
+for B in {100..1000..100}
 do
     Y=10
-    X=$(((M/(Y*32))*100))
+    X=$(((M/(Y*${tree_node_size}))*100))
     C=0.01
     
     testId=${testName}_B=${B}
@@ -47,7 +50,7 @@ do
     for gc in ${gcs[@]}; 
     do
         dataFile=${dataDir}${gc}_${testId}.csv
-        echo UNIT_START,ID,CLOCK_START,BYTES_START,UNIT_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
+        echo UNIT_START,NSEC_START,ID,CLOCK_START,BYTES_START,UNIT_END,NSEC_END,ID2,CLOCK_END,BYTES_END,VAR > $dataFile
         find ${logDir}log_${test}_${gc}* | xargs cat | grep -E *C[SE]* | sed -e 's/ C[SE] /,/' -e 's/ /,/g' | sed -e 'N;s/\n/,/' | sed -e "s/.*/&,$B/" >> $dataFile
         rsltFile=../results/result_${gc}_${testName}_B=${B}
         Rscript doStatistics.R $dataFile $rsltFile

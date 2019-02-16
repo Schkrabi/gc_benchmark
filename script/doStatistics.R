@@ -5,7 +5,7 @@ if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
 }
 
-data = read.csv(args[1], header=TRUE)
+data = read.csv(args[1], header=TRUE, colClasses="character")
 
 unitDiff <- function (x,y) {
                     d <- x - y
@@ -17,8 +17,16 @@ unitDiff <- function (x,y) {
                     }
                 }
 
+data[,"UNIT_START"] = as.integer(as.hexmode(data[,"UNIT_START"]))
+data[,"NSEC_START"] = as.integer(as.hexmode(data[,"NSEC_START"]))
+data[,"UNIT_END"] = as.integer(as.hexmode(data[,"UNIT_END"]))
+data[,"NSEC_END"] = as.integer(as.hexmode(data[,"NSEC_END"]))
+data[,"CLOCK_START"] = as.integer(data[, "CLOCK_START"])
+data[,"CLOCK_END"] = as.integer(data[, "CLOCK_END"])
+                
 #Compute diffs
-data[,"UNIT_DIFF"] <- mapply(unitDiff, data[,"UNIT_END"], data[,"UNIT_START"])
+#data[,"UNIT_DIFF"] <- mapply(unitDiff, data[,"UNIT_END"], data[,"UNIT_START"])
+data[,"UNIT_DIFF"] <- (as.integer(as.hexmode(data[,"UNIT_END"]))*1e9 + as.integer(as.hexmode(data[,"NSEC_END"]))) - (as.integer(as.hexmode(data[,"UNIT_START"]))*1e9 + as.integer(as.hexmode(data[, "NSEC_START"])))
 # data[,"NSEC_DIFF"] <- (1e9 * data[,"SEC_START"] + data[,"NSEC_END"]) - (1e9 * data[,"SEC_START"] + data[,"NSEC_START"])
 data[,"CLOCK_DIFF"] <- data[,"CLOCK_END"] - data[,"CLOCK_START"]
 

@@ -5,8 +5,8 @@
 #include "benchmark.h"
 #include <stdio.h>
 
-#define GEN_BTREE_TYPES_NUM 300
-#define GEN_GRAPH_TYPES_NUM 0
+#define GEN_BTREE_TYPES_NUM 0
+#define GEN_GRAPH_TYPES_NUM 80
 
 ///////////////////////////////////////////////////////////////////////////////
 //                  GENERATED BINARY_TREES                                   //
@@ -499,7 +499,12 @@
 /**
  * xmacro for btree type definition
  */
-#define XGENERATE_TYPES_BTREE(X)\
+#define XGENERATE_TYPES_BTREE(X)
+    
+/**
+ * xmacro for graph type definition
+ */
+#define XGENERATE_TYPES_GRAPH(X)\
     X(C, char a; char padding[31];, 0)\
     X(D, double a; char padding[24];, 1)\
     X(F, float a; char padding[28];, 2)\
@@ -579,232 +584,7 @@
     X(CFU, char a; float aa; uint64_t aaa; char padding[19];, 76)\
     X(CIC, char a; int aa; char aaa; char padding[26];, 77)\
     X(CID, char a; int aa; double aaa; char padding[19];, 78)\
-    X(CIF, char a; int aa; float aaa; char padding[23];, 79)\
-    X(CII, char a; int aa; int aaa; char padding[23];, 80)\
-    X(CIL, char a; int aa; long aaa; char padding[19];, 81)\
-    X(CIS, char a; int aa; size_t aaa; char padding[19];, 82)\
-    X(CIU, char a; int aa; uint64_t aaa; char padding[19];, 83)\
-    X(CLC, char a; long aa; char aaa; char padding[22];, 84)\
-    X(CLD, char a; long aa; double aaa; char padding[15];, 85)\
-    X(CLF, char a; long aa; float aaa; char padding[19];, 86)\
-    X(CLI, char a; long aa; int aaa; char padding[19];, 87)\
-    X(CLL, char a; long aa; long aaa; char padding[15];, 88)\
-    X(CLS, char a; long aa; size_t aaa; char padding[15];, 89)\
-    X(CLU, char a; long aa; uint64_t aaa; char padding[15];, 90)\
-    X(CSC, char a; size_t aa; char aaa; char padding[22];, 91)\
-    X(CSD, char a; size_t aa; double aaa; char padding[15];, 92)\
-    X(CSF, char a; size_t aa; float aaa; char padding[19];, 93)\
-    X(CSI, char a; size_t aa; int aaa; char padding[19];, 94)\
-    X(CSL, char a; size_t aa; long aaa; char padding[15];, 95)\
-    X(CSS, char a; size_t aa; size_t aaa; char padding[15];, 96)\
-    X(CSU, char a; size_t aa; uint64_t aaa; char padding[15];, 97)\
-    X(CUC, char a; uint64_t aa; char aaa; char padding[22];, 98)\
-    X(CUD, char a; uint64_t aa; double aaa; char padding[15];, 99)\
-    X(CUF, char a; uint64_t aa; float aaa; char padding[19];, 100)\
-    X(CUI, char a; uint64_t aa; int aaa; char padding[19];, 101)\
-    X(CUL, char a; uint64_t aa; long aaa; char padding[15];, 102)\
-    X(CUS, char a; uint64_t aa; size_t aaa; char padding[15];, 103)\
-    X(CUU, char a; uint64_t aa; uint64_t aaa; char padding[15];, 104)\
-    X(DCC, double a; char aa; char aaa; char padding[22];, 105)\
-    X(DCD, double a; char aa; double aaa; char padding[15];, 106)\
-    X(DCF, double a; char aa; float aaa; char padding[19];, 107)\
-    X(DCI, double a; char aa; int aaa; char padding[19];, 108)\
-    X(DCL, double a; char aa; long aaa; char padding[15];, 109)\
-    X(DCS, double a; char aa; size_t aaa; char padding[15];, 110)\
-    X(DCU, double a; char aa; uint64_t aaa; char padding[15];, 111)\
-    X(DDC, double a; double aa; char aaa; char padding[15];, 112)\
-    X(DDD, double a; double aa; double aaa; char padding[8];, 113)\
-    X(DDF, double a; double aa; float aaa; char padding[12];, 114)\
-    X(DDI, double a; double aa; int aaa; char padding[12];, 115)\
-    X(DDL, double a; double aa; long aaa; char padding[8];, 116)\
-    X(DDS, double a; double aa; size_t aaa; char padding[8];, 117)\
-    X(DDU, double a; double aa; uint64_t aaa; char padding[8];, 118)\
-    X(DFC, double a; float aa; char aaa; char padding[19];, 119)\
-    X(DFD, double a; float aa; double aaa; char padding[12];, 120)\
-    X(DFF, double a; float aa; float aaa; char padding[16];, 121)\
-    X(DFI, double a; float aa; int aaa; char padding[16];, 122)\
-    X(DFL, double a; float aa; long aaa; char padding[12];, 123)\
-    X(DFS, double a; float aa; size_t aaa; char padding[12];, 124)\
-    X(DFU, double a; float aa; uint64_t aaa; char padding[12];, 125)\
-    X(DIC, double a; int aa; char aaa; char padding[19];, 126)\
-    X(DID, double a; int aa; double aaa; char padding[12];, 127)\
-    X(DIF, double a; int aa; float aaa; char padding[16];, 128)\
-    X(DII, double a; int aa; int aaa; char padding[16];, 129)\
-    X(DIL, double a; int aa; long aaa; char padding[12];, 130)\
-    X(DIS, double a; int aa; size_t aaa; char padding[12];, 131)\
-    X(DIU, double a; int aa; uint64_t aaa; char padding[12];, 132)\
-    X(DLC, double a; long aa; char aaa; char padding[15];, 133)\
-    X(DLD, double a; long aa; double aaa; char padding[8];, 134)\
-    X(DLF, double a; long aa; float aaa; char padding[12];, 135)\
-    X(DLI, double a; long aa; int aaa; char padding[12];, 136)\
-    X(DLL, double a; long aa; long aaa; char padding[8];, 137)\
-    X(DLS, double a; long aa; size_t aaa; char padding[8];, 138)\
-    X(DLU, double a; long aa; uint64_t aaa; char padding[8];, 139)\
-    X(DSC, double a; size_t aa; char aaa; char padding[15];, 140)\
-    X(DSD, double a; size_t aa; double aaa; char padding[8];, 141)\
-    X(DSF, double a; size_t aa; float aaa; char padding[12];, 142)\
-    X(DSI, double a; size_t aa; int aaa; char padding[12];, 143)\
-    X(DSL, double a; size_t aa; long aaa; char padding[8];, 144)\
-    X(DSS, double a; size_t aa; size_t aaa; char padding[8];, 145)\
-    X(DSU, double a; size_t aa; uint64_t aaa; char padding[8];, 146)\
-    X(DUC, double a; uint64_t aa; char aaa; char padding[15];, 147)\
-    X(DUD, double a; uint64_t aa; double aaa; char padding[8];, 148)\
-    X(DUF, double a; uint64_t aa; float aaa; char padding[12];, 149)\
-    X(DUI, double a; uint64_t aa; int aaa; char padding[12];, 150)\
-    X(DUL, double a; uint64_t aa; long aaa; char padding[8];, 151)\
-    X(DUS, double a; uint64_t aa; size_t aaa; char padding[8];, 152)\
-    X(DUU, double a; uint64_t aa; uint64_t aaa; char padding[8];, 153)\
-    X(FCC, float a; char aa; char aaa; char padding[26];, 154)\
-    X(FCD, float a; char aa; double aaa; char padding[19];, 155)\
-    X(FCF, float a; char aa; float aaa; char padding[23];, 156)\
-    X(FCI, float a; char aa; int aaa; char padding[23];, 157)\
-    X(FCL, float a; char aa; long aaa; char padding[19];, 158)\
-    X(FCS, float a; char aa; size_t aaa; char padding[19];, 159)\
-    X(FCU, float a; char aa; uint64_t aaa; char padding[19];, 160)\
-    X(FDC, float a; double aa; char aaa; char padding[19];, 161)\
-    X(FDD, float a; double aa; double aaa; char padding[12];, 162)\
-    X(FDF, float a; double aa; float aaa; char padding[16];, 163)\
-    X(FDI, float a; double aa; int aaa; char padding[16];, 164)\
-    X(FDL, float a; double aa; long aaa; char padding[12];, 165)\
-    X(FDS, float a; double aa; size_t aaa; char padding[12];, 166)\
-    X(FDU, float a; double aa; uint64_t aaa; char padding[12];, 167)\
-    X(FFC, float a; float aa; char aaa; char padding[23];, 168)\
-    X(FFD, float a; float aa; double aaa; char padding[16];, 169)\
-    X(FFF, float a; float aa; float aaa; char padding[20];, 170)\
-    X(FFI, float a; float aa; int aaa; char padding[20];, 171)\
-    X(FFL, float a; float aa; long aaa; char padding[16];, 172)\
-    X(FFS, float a; float aa; size_t aaa; char padding[16];, 173)\
-    X(FFU, float a; float aa; uint64_t aaa; char padding[16];, 174)\
-    X(FIC, float a; int aa; char aaa; char padding[23];, 175)\
-    X(FID, float a; int aa; double aaa; char padding[16];, 176)\
-    X(FIF, float a; int aa; float aaa; char padding[20];, 177)\
-    X(FII, float a; int aa; int aaa; char padding[20];, 178)\
-    X(FIL, float a; int aa; long aaa; char padding[16];, 179)\
-    X(FIS, float a; int aa; size_t aaa; char padding[16];, 180)\
-    X(FIU, float a; int aa; uint64_t aaa; char padding[16];, 181)\
-    X(FLC, float a; long aa; char aaa; char padding[19];, 182)\
-    X(FLD, float a; long aa; double aaa; char padding[12];, 183)\
-    X(FLF, float a; long aa; float aaa; char padding[16];, 184)\
-    X(FLI, float a; long aa; int aaa; char padding[16];, 185)\
-    X(FLL, float a; long aa; long aaa; char padding[12];, 186)\
-    X(FLS, float a; long aa; size_t aaa; char padding[12];, 187)\
-    X(FLU, float a; long aa; uint64_t aaa; char padding[12];, 188)\
-    X(FSC, float a; size_t aa; char aaa; char padding[19];, 189)\
-    X(FSD, float a; size_t aa; double aaa; char padding[12];, 190)\
-    X(FSF, float a; size_t aa; float aaa; char padding[16];, 191)\
-    X(FSI, float a; size_t aa; int aaa; char padding[16];, 192)\
-    X(FSL, float a; size_t aa; long aaa; char padding[12];, 193)\
-    X(FSS, float a; size_t aa; size_t aaa; char padding[12];, 194)\
-    X(FSU, float a; size_t aa; uint64_t aaa; char padding[12];, 195)\
-    X(FUC, float a; uint64_t aa; char aaa; char padding[19];, 196)\
-    X(FUD, float a; uint64_t aa; double aaa; char padding[12];, 197)\
-    X(FUF, float a; uint64_t aa; float aaa; char padding[16];, 198)\
-    X(FUI, float a; uint64_t aa; int aaa; char padding[16];, 199)\
-    X(FUL, float a; uint64_t aa; long aaa; char padding[12];, 200)\
-    X(FUS, float a; uint64_t aa; size_t aaa; char padding[12];, 201)\
-    X(FUU, float a; uint64_t aa; uint64_t aaa; char padding[12];, 202)\
-    X(ICC, int a; char aa; char aaa; char padding[26];, 203)\
-    X(ICD, int a; char aa; double aaa; char padding[19];, 204)\
-    X(ICF, int a; char aa; float aaa; char padding[23];, 205)\
-    X(ICI, int a; char aa; int aaa; char padding[23];, 206)\
-    X(ICL, int a; char aa; long aaa; char padding[19];, 207)\
-    X(ICS, int a; char aa; size_t aaa; char padding[19];, 208)\
-    X(ICU, int a; char aa; uint64_t aaa; char padding[19];, 209)\
-    X(IDC, int a; double aa; char aaa; char padding[19];, 210)\
-    X(IDD, int a; double aa; double aaa; char padding[12];, 211)\
-    X(IDF, int a; double aa; float aaa; char padding[16];, 212)\
-    X(IDI, int a; double aa; int aaa; char padding[16];, 213)\
-    X(IDL, int a; double aa; long aaa; char padding[12];, 214)\
-    X(IDS, int a; double aa; size_t aaa; char padding[12];, 215)\
-    X(IDU, int a; double aa; uint64_t aaa; char padding[12];, 216)\
-    X(IFC, int a; float aa; char aaa; char padding[23];, 217)\
-    X(IFD, int a; float aa; double aaa; char padding[16];, 218)\
-    X(IFF, int a; float aa; float aaa; char padding[20];, 219)\
-    X(IFI, int a; float aa; int aaa; char padding[20];, 220)\
-    X(IFL, int a; float aa; long aaa; char padding[16];, 221)\
-    X(IFS, int a; float aa; size_t aaa; char padding[16];, 222)\
-    X(IFU, int a; float aa; uint64_t aaa; char padding[16];, 223)\
-    X(IIC, int a; int aa; char aaa; char padding[23];, 224)\
-    X(IID, int a; int aa; double aaa; char padding[16];, 225)\
-    X(IIF, int a; int aa; float aaa; char padding[20];, 226)\
-    X(III, int a; int aa; int aaa; char padding[20];, 227)\
-    X(IIL, int a; int aa; long aaa; char padding[16];, 228)\
-    X(IIS, int a; int aa; size_t aaa; char padding[16];, 229)\
-    X(IIU, int a; int aa; uint64_t aaa; char padding[16];, 230)\
-    X(ILC, int a; long aa; char aaa; char padding[19];, 231)\
-    X(ILD, int a; long aa; double aaa; char padding[12];, 232)\
-    X(ILF, int a; long aa; float aaa; char padding[16];, 233)\
-    X(ILI, int a; long aa; int aaa; char padding[16];, 234)\
-    X(ILL, int a; long aa; long aaa; char padding[12];, 235)\
-    X(ILS, int a; long aa; size_t aaa; char padding[12];, 236)\
-    X(ILU, int a; long aa; uint64_t aaa; char padding[12];, 237)\
-    X(ISC, int a; size_t aa; char aaa; char padding[19];, 238)\
-    X(ISD, int a; size_t aa; double aaa; char padding[12];, 239)\
-    X(ISF, int a; size_t aa; float aaa; char padding[16];, 240)\
-    X(ISI, int a; size_t aa; int aaa; char padding[16];, 241)\
-    X(ISL, int a; size_t aa; long aaa; char padding[12];, 242)\
-    X(ISS, int a; size_t aa; size_t aaa; char padding[12];, 243)\
-    X(ISU, int a; size_t aa; uint64_t aaa; char padding[12];, 244)\
-    X(IUC, int a; uint64_t aa; char aaa; char padding[19];, 245)\
-    X(IUD, int a; uint64_t aa; double aaa; char padding[12];, 246)\
-    X(IUF, int a; uint64_t aa; float aaa; char padding[16];, 247)\
-    X(IUI, int a; uint64_t aa; int aaa; char padding[16];, 248)\
-    X(IUL, int a; uint64_t aa; long aaa; char padding[12];, 249)\
-    X(IUS, int a; uint64_t aa; size_t aaa; char padding[12];, 250)\
-    X(IUU, int a; uint64_t aa; uint64_t aaa; char padding[12];, 251)\
-    X(LCC, long a; char aa; char aaa; char padding[22];, 252)\
-    X(LCD, long a; char aa; double aaa; char padding[15];, 253)\
-    X(LCF, long a; char aa; float aaa; char padding[19];, 254)\
-    X(LCI, long a; char aa; int aaa; char padding[19];, 255)\
-    X(LCL, long a; char aa; long aaa; char padding[15];, 256)\
-    X(LCS, long a; char aa; size_t aaa; char padding[15];, 257)\
-    X(LCU, long a; char aa; uint64_t aaa; char padding[15];, 258)\
-    X(LDC, long a; double aa; char aaa; char padding[15];, 259)\
-    X(LDD, long a; double aa; double aaa; char padding[8];, 260)\
-    X(LDF, long a; double aa; float aaa; char padding[12];, 261)\
-    X(LDI, long a; double aa; int aaa; char padding[12];, 262)\
-    X(LDL, long a; double aa; long aaa; char padding[8];, 263)\
-    X(LDS, long a; double aa; size_t aaa; char padding[8];, 264)\
-    X(LDU, long a; double aa; uint64_t aaa; char padding[8];, 265)\
-    X(LFC, long a; float aa; char aaa; char padding[19];, 266)\
-    X(LFD, long a; float aa; double aaa; char padding[12];, 267)\
-    X(LFF, long a; float aa; float aaa; char padding[16];, 268)\
-    X(LFI, long a; float aa; int aaa; char padding[16];, 269)\
-    X(LFL, long a; float aa; long aaa; char padding[12];, 270)\
-    X(LFS, long a; float aa; size_t aaa; char padding[12];, 271)\
-    X(LFU, long a; float aa; uint64_t aaa; char padding[12];, 272)\
-    X(LIC, long a; int aa; char aaa; char padding[19];, 273)\
-    X(LID, long a; int aa; double aaa; char padding[12];, 274)\
-    X(LIF, long a; int aa; float aaa; char padding[16];, 275)\
-    X(LII, long a; int aa; int aaa; char padding[16];, 276)\
-    X(LIL, long a; int aa; long aaa; char padding[12];, 277)\
-    X(LIS, long a; int aa; size_t aaa; char padding[12];, 278)\
-    X(LIU, long a; int aa; uint64_t aaa; char padding[12];, 279)\
-    X(LLC, long a; long aa; char aaa; char padding[15];, 280)\
-    X(LLD, long a; long aa; double aaa; char padding[8];, 281)\
-    X(LLF, long a; long aa; float aaa; char padding[12];, 282)\
-    X(LLI, long a; long aa; int aaa; char padding[12];, 283)\
-    X(LLL, long a; long aa; long aaa; char padding[8];, 284)\
-    X(LLS, long a; long aa; size_t aaa; char padding[8];, 285)\
-    X(LLU, long a; long aa; uint64_t aaa; char padding[8];, 286)\
-    X(LSC, long a; size_t aa; char aaa; char padding[15];, 287)\
-    X(LSD, long a; size_t aa; double aaa; char padding[8];, 288)\
-    X(LSF, long a; size_t aa; float aaa; char padding[12];, 289)\
-    X(LSI, long a; size_t aa; int aaa; char padding[12];, 290)\
-    X(LSL, long a; size_t aa; long aaa; char padding[8];, 291)\
-    X(LSS, long a; size_t aa; size_t aaa; char padding[8];, 292)\
-    X(LSU, long a; size_t aa; uint64_t aaa; char padding[8];, 293)\
-    X(LUC, long a; uint64_t aa; char aaa; char padding[15];, 294)\
-    X(LUD, long a; uint64_t aa; double aaa; char padding[8];, 295)\
-    X(LUF, long a; uint64_t aa; float aaa; char padding[12];, 296)\
-    X(LUI, long a; uint64_t aa; int aaa; char padding[12];, 297)\
-    X(LUL, long a; uint64_t aa; long aaa; char padding[8];, 298)\
-    X(LUS, long a; uint64_t aa; size_t aaa; char padding[8];, 299)
-    
-/**
- * xmacro for graph type definition
- */
-#define XGENERATE_TYPES_GRAPH(X)
+    X(CIF, char a; int aa; float aaa; char padding[23];, 79)
 
 XGENERATE_TYPES_BTREE(MAKE_BTREE_HEADER)
 XGENERATE_TYPES_GRAPH(MAKE_GRAPH_HEADER)
